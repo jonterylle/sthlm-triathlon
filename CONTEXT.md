@@ -47,6 +47,8 @@ Antal funktionärer: **70–80 personer**.
 - All kod sparas i den kopplade mappen och pushas till GitHub
 - Jonas kör Claude via Cowork (desktop-app)
 - Uppdatera den här filen löpande när nya beslut tas eller funktioner läggs till
+- **OBS:** Claude kan inte pusha till GitHub direkt (nätverksbegränsning). Jonas kör `git push origin main` från sin dator i terminalen efter varje session.
+- Claude påminner alltid Jonas om att pusha i slutet av varje session.
 
 ---
 
