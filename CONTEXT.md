@@ -53,7 +53,7 @@ Sektioner är helt dynamiska — tävlingsledaren skapar dem i appen.
 
 ## Tekniska val
 
-- **GitHub-repo:** https://github.com/jonterylle/NewInventions
+- **GitHub-repo:** https://github.com/jonterylle/sthlm-triathlon
 - **Lokal mapp:** `C:\Users\JonasR\.claude\projects\NewInventions`
 - Teknikstack: *ännu inte bestämd – diskutera med Jonas*
 
