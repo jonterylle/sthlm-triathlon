@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STHLM Triathlon – Schemavy designförslag</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #FA832E;
+      --navy: #233143;
+      --bg: #FBFAF3;
+      --surface: #FFFFFF;
+      --text: #111111;
+      --muted: #556070;
+      --border: #E5E3D8;
+      --green: #22C55E;
+      --red: #EF4444;
+      --red-light: #FEE2E2;
+      --yellow: #F59E0B;
+      --yellow-light: #FEF3C7;
+      --swim: #3B82F6;
+      --swim-light: #DBEAFE;
+      --bike: #10B981;
+      --bike-light: #D1FAE5;
+      --run: #EF4444;
+      --run-light: #FEE2E2;
+      --general: #8B5CF6;
+      --general-light: #EDE9FE;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: #F0EEE6;
+      color: var(--text);
+      padding: 40px 24px;
+    }
+
+    .page-header { max-width: 1200px; margin: 0 auto 48px; }
+    .page-header h1 { font-size: 2rem; font-weight: 800; }
+    .page-header h1 span { color: var(--orange); }
+    .page-header p { color: var(--muted); margin-top: 4px; font-size: 0.95rem; }
+
+    .design-section { max-width: 1200px; margin: 0 auto 64px; }
+    .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .section-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .section-desc { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6; }
+
+    .screen { background: var(--bg); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 32px rgba(0,0,0,0.10); border: 1px solid var(--border); }
+    .screen-label { background: var(--navy); color: #fff; font-size: 0.75rem; font-weight: 600; padding: 8px 16px; letter-spacing: 0.05em; }
+
+    .navbar { background: var(--navy); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .navbar-logo { font-weight: 800; color: #fff; font-size: 1rem; }
+    .navbar-logo span { color: var(--orange); }
+    .avatar { width: 32px; height: 32px; background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: #fff; }
+
+    .layout-sidebar { display: flex; min-height: 500px; }
+    .sidebar { width: 200px; background: #1C2A38; padding: 16px 0; flex-shrink: 0; }
+    .sidebar-item { padding: 10px 20px; font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 8px; }
+    .sidebar-item.active { color: #fff; background: rgba(250,131,46,0.15); border-left: 3px solid var(--orange); }
+
+    .main-content { flex: 1; padding: 20px; overflow: hidden; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .topbar h2 { font-size: 1.1rem; font-weight: 700; }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 50px; font-family: 'Manrope', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; border: none; }
+    .btn-primary { background: var(--orange); color: #fff; }
+    .btn-secondary { background: var(--navy); color: #fff; }
+    .btn-outline { background: transparent; color: var(--orange); border: 1.5px solid var(--orange); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+    .btn-sm { padding: 5px 14px; font-size: 0.75rem; }
+    .btn-warning { background: var(--yellow); color: #fff; }
+    .btn-approve { background: var(--green); color: #fff; }
+
+    /* ─── TIMELINE ─── */
+    .timeline-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .timeline-header {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .timeline-name-col {
+      width: 160px;
+      flex-shrink: 0;
+      padding: 8px 12px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-right: 1px solid var(--border);
+      background: #F9F8F2;
+    }
+
+    .timeline-hours {
+      flex: 1;
+      display: flex;
+      position: relative;
+      background: #F9F8F2;
+    }
+
+    .hour-mark {
+      flex: 1;
+      padding: 8px 0 8px 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--muted);
+      border-left: 1px solid var(--border);
+    }
+
+    .timeline-row {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      align-items: stretch;
+      min-height: 44px;
+    }
+
+    .timeline-row:last-child { border-bottom: none; }
+    .timeline-row:hover { background: #FDFCF7; }
+
+    .timeline-name {
+      width: 160px;
+      flex-shrink: 0;
+      padding: 8px 12px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .vol-name { font-size: 0.78rem; font-weight: 700; }
+    .vol-role { font-size: 0.65rem; color: var(--muted); }
+
+    .timeline-bars {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Gridlines */
+    .timeline-bars::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 0; right: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent calc(100%/12 - 1px),
+        var(--border) calc(100%/12 - 1px),
+        var(--border) calc(100%/12)
+      );
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .bar {
+      position: absolute;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      z-index: 1;
+    }
+
+    .bar:hover { opacity: 0.85; }
+
+    .bar-swim { background: var(--swim); color: #fff; }
+    .bar-bike { background: var(--bike); color: #fff; }
+    .bar-run { background: var(--run); color: #fff; }
+    .bar-general { background: var(--general); color: #fff; }
+
+    .bar-conflict {
+      outline: 2px solid var(--red);
+      outline-offset: 1px;
+    }
+
+    .bar-conflict-approved {
+      outline: 2px dashed var(--green);
+      outline-offset: 1px;
+      opacity: 0.75;
+    }
+
+    /* Conflict zone overlay */
+    .conflict-zone {
+      position: absolute;
+      height: 100%;
+      background: rgba(239,68,68,0.12);
+      border-left: 2px solid rgba(239,68,68,0.4);
+      border-right: 2px solid rgba(239,68,68,0.4);
+      z-index: 0;
+    }
+
+    /* Warning badge */
+    .warn-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--red-light);
+      color: var(--red);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      margin-left: 6px;
+      border: 1px solid #FECACA;
+    }
+
+    .ok-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #DCFCE7;
+      color: var(--green);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      margin-left: 6px;
+      border: 1px solid #BBF7D0;
+    }
+
+    /* Summary bar */
+    .summary-bar {
+      display: flex;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #F9F8F2;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .summary-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+    /* CONFLICT PANEL */
+    .conflict-panel {
+      background: var(--red-light);
+      border: 1.5px solid #FECACA;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+    .conflict-panel-approved {
+      background: #DCFCE7;
+      border-color: #BBF7D0;
+    }
+
+    .conflict-title { font-size: 0.82rem; font-weight: 700; color: var(--red); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .conflict-title-approved { color: var(--green); }
+    .conflict-detail { font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; line-height: 1.5; }
+    .conflict-actions { display: flex; gap: 8px; }
+
+    /* SECTION SUMMARY for race director */
+    .section-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .section-row-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-row-header.swim-h { border-left: 4px solid var(--swim); }
+    .section-row-header.bike-h { border-left: 4px solid var(--bike); }
+    .section-row-header.run-h { border-left: 4px solid var(--run); }
+    .section-row-header.general-h { border-left: 4px solid var(--general); }
+
+    .section-name { font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .section-meta { display: flex; align-items: center; gap: 12px; font-size: 0.75rem; color: var(--muted); }
+
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; }
+    .chip-swim { background: var(--swim-light); color: var(--swim); }
+    .chip-bike { background: var(--bike-light); color: var(--bike); }
+    .chip-run { background: var(--run-light); color: var(--run); }
+    .chip-general { background: var(--general-light); color: var(--general); }
+
+    /* LEGEND */
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .legend-bar {
+      width: 24px;
+      height: 10px;
+      border-radius: 3px;
+    }
+
+    .legend-conflict {
+      width: 24px;
+      height: 10px;
+      border-radius: 3px;
+      background: #3B82F6;
+      outline: 2px solid var(--red);
+      outline-offset: 1px;
+    }
+
+    .legend-approved {
+      width: 24px;
+      height: 10px;
+      border-radius: 3px;
+      background: #3B82F6;
+      outline: 2px dashed var(--green);
+      outline-offset: 1px;
+      opacity: 0.75;
+    }
+
+    /* MODAL overlay hint */
+    .modal-hint {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      max-width: 320px;
+      position: relative;
+    }
+
+    .modal-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .modal-body { font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 8px; }
+
+    .note-box {
+      background: var(--yellow-light);
+      border: 1.5px solid #FDE68A;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.78rem;
+      color: #92400E;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1><span>STHLM</span> Triathlon — Schemavy</h1>
+  <p>Designskiss · Sektionsledare & Tävlingsledare · April 2026</p>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     DESIGNPRINCIPER
+     ══════════════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Bakgrund</div>
+  <div class="section-title">Designprinciper för schemavyn</div>
+  <div class="section-desc">
+    Schemat visas som ett <strong>tidslinjediagram (Gantt)</strong> där varje rad är en funktionär och varje färgad stapel är ett uppdrag.
+    En funktionär kan ha <strong>ett eller flera uppdrag</strong> under dagen. Om två staplar överlappar i tid markeras detta automatiskt som en <strong>konflikt</strong> — synlig för sektionsledare och tävlingsledare.
+    Konflikter kan granskas och godkännas om de är avsiktliga (t.ex. en erfaren person som täcker upp kortsiktigt).
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-bar" style="background:var(--swim);"></div> Simning</div>
+    <div class="legend-item"><div class="legend-bar" style="background:var(--bike);"></div> Cykling</div>
+    <div class="legend-item"><div class="legend-bar" style="background:var(--run);"></div> Löpning</div>
+    <div class="legend-item"><div class="legend-bar" style="background:var(--general);"></div> Generell</div>
+    <div class="legend-item"><div class="legend-conflict"></div> Konflikt — överlapp</div>
+    <div class="legend-item"><div class="legend-approved"></div> Godkänd konflikt</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     1. SEKTIONSLEDARVY — Simning
+     ══════════════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Vy 1 — Sektionsledare</div>
+  <div class="section-title">Sektionsschema — Simning</div>
+  <div class="section-desc">
+    Sektionsledaren ser alla funktionärer i sin sektion. Uppdragen visas som staplar på en tidslinje.
+    Konflikter är tydligt markerade med rött — och kan granskas och godkännas direkt i vyn.
+  </div>
+
+  <div class="screen">
+    <div class="screen-label">🖥 SEKTIONSLEDARVY — Schema: Simning</div>
+    <div class="navbar">
+      <div class="navbar-logo"><span>STHLM</span> TRIATHLON</div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="color:rgba(255,255,255,0.6); font-size:0.8rem;">Sektionsledare</span>
+        <div class="avatar" style="background:#3B82F6;">MB</div>
+      </div>
+    </div>
+    <div class="layout-sidebar">
+      <div class="sidebar">
+        <div class="sidebar-item"><span>📊</span> Dashboard</div>
+        <div class="sidebar-item"><span>👥</span> Min sektion</div>
+        <div class="sidebar-item active"><span>📅</span> Schema</div>
+        <div class="sidebar-item"><span>🗺</span> Karta</div>
+        <div class="sidebar-item"><span>👤</span> Min profil</div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <h2>🏊 Simbana — Schema 9 aug 2026</h2>
+            <span class="warn-badge">⚠ 2 konflikter</span>
+          </div>
+          <div class="topbar-actions">
+            <select style="padding:6px 10px; border:1.5px solid var(--border); border-radius:8px; font-family:'Manrope',sans-serif; font-size:0.78rem; background:var(--bg);">
+              <option>Visa: Alla</option>
+              <option>Visa: Konflikter</option>
+            </select>
+            <button class="btn btn-ghost btn-sm">📤 Exportera</button>
+          </div>
+        </div>
+
+        <!-- KONFLIKTVARNINGAR -->
+        <div class="conflict-panel">
+          <div class="conflict-title">⚠️ Konflikt: Anna Lindqvist</div>
+          <div class="conflict-detail">
+            <strong>Vändpunkt sim</strong> (06:30–11:00) och <strong>Målpassning</strong> (10:00–13:00) överlappar med <strong>60 min</strong> (10:00–11:00).
+            Är detta avsiktligt?
+          </div>
+          <div class="conflict-actions">
+            <button class="btn btn-sm btn-approve">✓ Godkänn överlapp</button>
+            <button class="btn btn-sm btn-outline">✏️ Justera tider</button>
+            <button class="btn btn-sm btn-ghost">Se i schema</button>
+          </div>
+        </div>
+
+        <div class="conflict-panel conflict-panel-approved">
+          <div class="conflict-title conflict-title-approved">✓ Godkänd: Erik Strand</div>
+          <div class="conflict-detail">
+            <strong>Säkerhetsbåt</strong> (07:00–11:30) och <strong>Upplockning bojar</strong> (11:00–13:00) överlappar 30 min.
+            Godkänd av Magnus Berg — "Erik täcker överlämning."
+          </div>
+          <div class="conflict-actions">
+            <span class="ok-badge">✓ Godkänd</span>
+            <button class="btn btn-sm btn-ghost">Ångra</button>
+          </div>
+        </div>
+
+        <!-- TIDSLINJE -->
+        <div class="timeline-wrap">
+          <div class="summary-bar">
+            <div class="summary-item"><div class="dot" style="background:var(--swim);"></div> 18 funktionärer</div>
+            <div class="summary-item"><div class="dot" style="background:var(--red);"></div> 2 konflikter (1 öppen, 1 godkänd)</div>
+            <div class="summary-item"><div class="dot" style="background:var(--green);"></div> 14 briefingar klara</div>
+          </div>
+
+          <!-- Header: timmar 06-18 -->
+          <div class="timeline-header">
+            <div class="timeline-name-col">Funktionär</div>
+            <div class="timeline-hours">
+              <div class="hour-mark">06</div>
+              <div class="hour-mark">07</div>
+              <div class="hour-mark">08</div>
+              <div class="hour-mark">09</div>
+              <div class="hour-mark">10</div>
+              <div class="hour-mark">11</div>
+              <div class="hour-mark">12</div>
+              <div class="hour-mark">13</div>
+              <div class="hour-mark">14</div>
+              <div class="hour-mark">15</div>
+              <div class="hour-mark">16</div>
+              <div class="hour-mark">17</div>
+            </div>
+          </div>
+
+          <!-- Anna Lindqvist — KONFLIKT -->
+          <!-- 12h span = 100%. 1h = 8.333%. Start=06:00=0% -->
+          <!-- Bar1: 06:30-11:00 = start 4.17%, width 37.5% -->
+          <!-- Bar2: 10:00-13:00 = start 33.3%, width 25% -->
+          <div class="timeline-row">
+            <div class="timeline-name">
+              <div class="vol-name">Anna Lindqvist <span class="warn-badge">⚠</span></div>
+              <div class="vol-role">Simbana</div>
+            </div>
+            <div class="timeline-bars">
+              <div class="conflict-zone" style="left: 33.3%; width: 6.25%;"></div>
+              <div class="bar bar-swim bar-conflict" style="left:4.17%; width:37.5%;" title="Vändpunkt sim 06:30–11:00">Vändpunkt sim 06:30–11:00</div>
+              <div class="bar bar-swim bar-conflict" style="left:33.33%; width:25%; top:4px;" title="Målpassning 10:00–13:00">Målpassning 10:00–13:00</div>
+            </div>
+          </div>
+
+          <!-- Marcus Berg -->
+          <!-- 07:00-12:00: start 8.33%, width 41.67% -->
+          <div class="timeline-row">
+            <div class="timeline-name">
+              <div class="vol-name">Marcus Berg</div>
+              <div class="vol-role">Startfunktionär</div>
+            </div>
+            <div class="timeline-bars">
+              <div class="bar bar-swim" style="left:8.33%; width:41.67%;">Startfunktionär 07:00–12:00</div>
+            </div>
+          </div>
+
+          <!-- Lisa Holm — två uppdrag, ej överlapp -->
+          <!-- 06:00-09:00: start 0%, width 25% -->
+          <!-- 09:00-13:00: start 25%, width 33.33% -->
+          <div class="timeline-row">
+            <div class="timeline-name">
+              <div class="vol-name">Lisa Holm</div>
+              <div class="vol-role">Setup & Markering</div>
+            </div>
+            <div class="timeline-bars">
+              <div class="bar bar-swim" style="left:0%; width:25%;">Setup 06:00–09:00</div>
+              <div class="bar bar-swim" style="left:25%; width:33.33%;">Markeringsboj 09:00–13:00</div>
+            </div>
+          </div>
+
+          <!-- Erik Strand — GODKÄND konflikt -->
+          <!-- 07:00-11:30: start 8.33%, width 37.5% -->
+          <!-- 11:00-13:00: start 41.67%, width 16.67% -->
+          <div class="timeline-row">
+            <div class="timeline-name">
+              <div class="vol-name">Erik Strand <span class="ok-badge">✓ OK</span></div>
+              <div class="vol-role">Säkerhet & Bojar</div>
+            </div>
+            <div class="timeline-bars">
+              <div class="bar bar-swim bar-conflict-approved" style="left:8.33%; width:37.5%;">Säkerhetsbåt 07:00–11:30</div>
+              <div class="bar bar-swim bar-conflict-approved" style="left:41.67%; width:16.67%; top:4px;">Bojar 11:00–13:00</div>
+            </div>
+          </div>
+
+          <!-- Karin Lund -->
+          <!-- 06:00-11:00: start 0%, width 41.67% -->
+          <div class="timeline-row">
+            <div class="timeline-name">
+              <div class="vol-name">Karin Lund</div>
+              <div class="vol-role">Tidtagning</div>
+            </div>
+            <div class="timeline-bars">
+              <div class="bar bar-swim" style="left:0%; width:41.67%;">Tidtagning 06:00–11:00</div>
+            </div>
+          </div>
+
+          <!-- Peter Ek -->
+          <!-- 08:00-13:00 start 16.67% width 41.67% -->
+          <div class="timeline-row">
+            <div class="timeline-name">
+              <div class="vol-name">Peter Ek</div>
+              <div class="vol-role">Säkerhet land</div>
+            </div>
+            <div class="timeline-bars">
+              <div class="bar bar-swim" style="left:16.67%; width:41.67%;">Säkerhet land 08:00–13:00</div>
+            </div>
+          </div>
+
+          <div class="timeline-row" style="opacity:0.5;">
+            <div class="timeline-name"><div class="vol-name" style="color:var(--muted); font-size:0.72rem;">+ 12 funktionärer</div></div>
+            <div class="timeline-bars"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     2. TÄVLINGSLEDARVY — ALLA SEKTIONER
+     ══════════════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Vy 2 — Tävlingsledare</div>
+  <div class="section-title">Övergripande schemaöversikt — alla sektioner</div>
+  <div class="section-desc">
+    Tävlingsledaren ser hela tävlingens schema uppdelat per sektion, med ett samlat konfliktregister högst upp.
+    Varje sektion kan expanderas för att visa den detaljerade tidslinjen. Konflikter kan godkännas direkt utan att byta vy.
+  </div>
+
+  <div class="screen">
+    <div class="screen-label">🖥 TÄVLINGSLEDARVY — Övergripande schema</div>
+    <div class="navbar">
+      <div class="navbar-logo"><span>STHLM</span> TRIATHLON</div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="color:rgba(255,255,255,0.6); font-size:0.8rem;">Tävlingsledare</span>
+        <div class="avatar">JR</div>
+      </div>
+    </div>
+    <div class="layout-sidebar">
+      <div class="sidebar">
+        <div class="sidebar-item"><span>📊</span> Dashboard</div>
+        <div class="sidebar-item"><span>👥</span> Funktionärer</div>
+        <div class="sidebar-item active"><span>📅</span> Schema</div>
+        <div class="sidebar-item"><span>📥</span> Importera</div>
+        <div class="sidebar-item"><span>🗺</span> Karta</div>
+        <div class="sidebar-item"><span>⚙️</span> Inställningar</div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <h2>Schemaöversikt — 9 aug 2026</h2>
+            <span class="warn-badge">⚠ 5 konflikter totalt</span>
+          </div>
+          <div class="topbar-actions">
+            <select style="padding:6px 10px; border:1.5px solid var(--border); border-radius:8px; font-family:'Manrope',sans-serif; font-size:0.78rem; background:var(--bg);">
+              <option>Visa: Alla sektioner</option>
+            </select>
+            <button class="btn btn-ghost btn-sm">📤 Exportera alla</button>
+          </div>
+        </div>
+
+        <!-- KONFLIKTSUMMERING -->
+        <div class="note-box">
+          <strong>⚠️ Samlade konflikter (5 st) — 9 aug 2026</strong><br>
+          Simning: 2 konflikter (1 öppen, 1 godkänd) &nbsp;·&nbsp;
+          Cykling: 2 konflikter (2 öppna) &nbsp;·&nbsp;
+          Löpning: 1 konflikt (1 öppen) &nbsp;·&nbsp;
+          <a href="#" style="color: var(--orange); text-decoration:none; font-weight:700;">Visa alla →</a>
+        </div>
+
+        <!-- SIMNING — expanderad -->
+        <div class="section-row">
+          <div class="section-row-header swim-h">
+            <div class="section-name">
+              🏊 Simning
+              <span class="chip chip-swim">18 funktionärer</span>
+              <span class="warn-badge">⚠ 1 öppen</span>
+              <span class="ok-badge">✓ 1 godkänd</span>
+            </div>
+            <div class="section-meta">
+              <span>Sektionsledare: Magnus Berg</span>
+              <span>06:00–14:00</span>
+              <span style="color:var(--orange); font-weight:700;">▲ Dölj</span>
+            </div>
+          </div>
+
+          <!-- Inbäddad tidslinje för simning (förkortad) -->
+          <div style="padding: 12px 16px;">
+            <div class="timeline-wrap">
+              <div class="timeline-header">
+                <div class="timeline-name-col">Funktionär</div>
+                <div class="timeline-hours">
+                  <div class="hour-mark">06</div><div class="hour-mark">07</div><div class="hour-mark">08</div>
+                  <div class="hour-mark">09</div><div class="hour-mark">10</div><div class="hour-mark">11</div>
+                  <div class="hour-mark">12</div><div class="hour-mark">13</div><div class="hour-mark">14</div>
+                  <div class="hour-mark">15</div><div class="hour-mark">16</div><div class="hour-mark">17</div>
+                </div>
+              </div>
+              <div class="timeline-row">
+                <div class="timeline-name"><div class="vol-name">Anna Lindqvist <span class="warn-badge">⚠</span></div><div class="vol-role">Vändpunkt + Mål</div></div>
+                <div class="timeline-bars">
+                  <div class="conflict-zone" style="left:33.3%; width:6.25%;"></div>
+                  <div class="bar bar-swim bar-conflict" style="left:4.17%; width:37.5%;">06:30–11:00</div>
+                  <div class="bar bar-swim bar-conflict" style="left:33.33%; width:25%; top:4px;">10:00–13:00</div>
+                </div>
+              </div>
+              <div class="timeline-row">
+                <div class="timeline-name"><div class="vol-name">Marcus Berg</div><div class="vol-role">Startfunktionär</div></div>
+                <div class="timeline-bars"><div class="bar bar-swim" style="left:8.33%; width:41.67%;">07:00–12:00</div></div>
+              </div>
+              <div class="timeline-row">
+                <div class="timeline-name"><div class="vol-name">Erik Strand <span class="ok-badge">✓</span></div><div class="vol-role">Säkerhet & Bojar</div></div>
+                <div class="timeline-bars">
+                  <div class="bar bar-swim bar-conflict-approved" style="left:8.33%; width:37.5%;">07:00–11:30</div>
+                  <div class="bar bar-swim bar-conflict-approved" style="left:41.67%; width:16.67%; top:4px;">11:00–13:00</div>
+                </div>
+              </div>
+              <div class="timeline-row" style="opacity:0.4;">
+                <div class="timeline-name"><div class="vol-name" style="font-size:0.72rem; color:var(--muted);">+ 15 funktionärer</div></div>
+                <div class="timeline-bars"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CYKLING — kollapsad med konflikter -->
+        <div class="section-row">
+          <div class="section-row-header bike-h">
+            <div class="section-name">
+              🚴 Cykling
+              <span class="chip chip-bike">28 funktionärer</span>
+              <span class="warn-badge">⚠ 2 öppna</span>
+            </div>
+            <div class="section-meta">
+              <span>Sektionsledare: Sara Petersson</span>
+              <span>07:00–17:00</span>
+              <span style="color:var(--orange); font-weight:700;">▼ Visa schema</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LÖPNING — kollapsad med konflikt -->
+        <div class="section-row">
+          <div class="section-row-header run-h">
+            <div class="section-name">
+              🏃 Löpning
+              <span class="chip chip-run">22 funktionärer</span>
+              <span class="warn-badge">⚠ 1 öppen</span>
+            </div>
+            <div class="section-meta">
+              <span>Sektionsledare: Lars Grön</span>
+              <span>09:00–16:00</span>
+              <span style="color:var(--orange); font-weight:700;">▼ Visa schema</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- GENERELL — ok -->
+        <div class="section-row">
+          <div class="section-row-header general-h">
+            <div class="section-name">
+              ⚡ Generellt
+              <span class="chip chip-general">6 funktionärer</span>
+              <span class="ok-badge">✓ Inga konflikter</span>
+            </div>
+            <div class="section-meta">
+              <span>Tävlingsledare: Jonas Rylander</span>
+              <span>06:00–18:00</span>
+              <span style="color:var(--orange); font-weight:700;">▼ Visa schema</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     3. KONFLIKTMODAL
+     ══════════════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Interaktion</div>
+  <div class="section-title">Konfliktpopup — klicka på ett uppdrag</div>
+  <div class="section-desc">
+    När man klickar på en röd stapel eller ett varningsbadge öppnas en popup med detaljer om konflikten.
+    Härifrån kan sektionsledare eller tävlingsledare godkänna överlappet med en valfri kommentar.
+  </div>
+
+  <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+    <div class="modal-hint">
+      <div class="modal-title">⚠️ Överlappande uppdrag</div>
+      <div style="font-weight:700; font-size:0.82rem; margin-bottom:6px;">Anna Lindqvist</div>
+      <div class="modal-body">
+        <div style="background:var(--swim-light); border-radius:6px; padding:8px 10px; margin-bottom:6px;">
+          <strong>Uppdrag 1:</strong> Vändpunkt sim<br>
+          📍 Vändpunkt Stora Skuggan &nbsp;·&nbsp; 06:30–11:00
+        </div>
+        <div style="background:var(--swim-light); border-radius:6px; padding:8px 10px; margin-bottom:8px;">
+          <strong>Uppdrag 2:</strong> Målpassning<br>
+          📍 Målgång &nbsp;·&nbsp; 10:00–13:00
+        </div>
+        <div style="background:var(--red-light); border-radius:6px; padding:8px 10px; border:1px solid #FECACA;">
+          ⚠️ <strong>Överlapp: 60 min</strong> (10:00–11:00)<br>
+          Funktionären är schemalagd på två platser samtidigt.
+        </div>
+      </div>
+      <div style="margin-bottom:8px;">
+        <input style="width:100%; padding:7px 10px; border:1.5px solid var(--border); border-radius:8px; font-family:'Manrope',sans-serif; font-size:0.78rem;" placeholder="Kommentar (valfritt)..." />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-approve btn-sm">✓ Godkänn ändå</button>
+        <button class="btn btn-outline btn-sm">✏️ Justera tider</button>
+        <button class="btn btn-ghost btn-sm">Stäng</button>
+      </div>
+    </div>
+
+    <div style="flex:1; min-width:260px; display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px;">
+        <div style="font-size:0.78rem; font-weight:700; margin-bottom:8px; color:var(--navy);">🔔 Hur konflikter detekteras</div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Automatisk kontroll vid varje sparning</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Kontroll vid Excel-import</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Varning direkt i tidslinjen</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Sammanfattning i dashboard</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Godkännande sparas med kommentar och datum</li>
+        </ul>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px;">
+        <div style="font-size:0.78rem; font-weight:700; margin-bottom:8px; color:var(--navy);">👤 Vem kan godkänna?</div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--orange);">★</span> <strong>Tävlingsledare</strong> — alla konflikter</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--navy); font-weight:700;">◆</span> <strong>Sektionsledare</strong> — sin sektion</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--muted);">✗</span> Funktionär — kan inte godkänna</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--muted);">✗</span> Läsare — kan inte godkänna</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

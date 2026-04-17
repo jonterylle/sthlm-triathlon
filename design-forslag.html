@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STHLM Triathlon – Designförslag Funktionärsapp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #FA832E;
+      --navy: #233143;
+      --bg: #FBFAF3;
+      --surface: #FFFFFF;
+      --text: #111111;
+      --muted: #556070;
+      --border: #E5E3D8;
+      --green: #22C55E;
+      --red: #EF4444;
+      --yellow: #FFD200;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: #F0EEE6;
+      color: var(--text);
+      padding: 40px 24px;
+    }
+
+    /* PAGE HEADER */
+    .page-header {
+      max-width: 1100px;
+      margin: 0 auto 48px;
+    }
+
+    .page-header h1 { font-size: 2rem; font-weight: 800; }
+    .page-header h1 span { color: var(--orange); }
+    .page-header p { color: var(--muted); margin-top: 4px; font-size: 0.95rem; }
+
+    /* SECTION */
+    .design-section {
+      max-width: 1100px;
+      margin: 0 auto 64px;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .section-desc {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    /* SCREEN WRAPPER */
+    .screen {
+      background: var(--bg);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+      border: 1px solid var(--border);
+    }
+
+    .screen-label {
+      background: var(--navy);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      letter-spacing: 0.05em;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      background: var(--navy);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .navbar-logo { font-weight: 800; color: #fff; font-size: 1rem; }
+    .navbar-logo span { color: var(--orange); }
+    .navbar-right { display: flex; align-items: center; gap: 12px; }
+    .navbar-right .avatar {
+      width: 32px; height: 32px;
+      background: var(--orange);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #fff;
+    }
+    .badge {
+      background: var(--orange);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+    }
+    .badge.navy { background: var(--navy); }
+    .badge.green { background: var(--green); }
+    .badge.muted { background: var(--muted); }
+
+    /* SIDEBAR LAYOUT */
+    .layout-sidebar {
+      display: flex;
+      min-height: 500px;
+    }
+
+    .sidebar {
+      width: 200px;
+      background: #1C2A38;
+      padding: 16px 0;
+      flex-shrink: 0;
+    }
+
+    .sidebar-item {
+      padding: 10px 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-item.active {
+      color: #fff;
+      background: rgba(250,131,46,0.15);
+      border-left: 3px solid var(--orange);
+    }
+
+    .sidebar-item .icon { font-size: 1rem; }
+
+    .main-content {
+      flex: 1;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .topbar h2 { font-size: 1.1rem; font-weight: 700; }
+    .topbar-actions { display: flex; gap: 8px; }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 50px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary { background: var(--orange); color: #fff; }
+    .btn-secondary { background: var(--navy); color: #fff; }
+    .btn-outline { background: transparent; color: var(--orange); border: 1.5px solid var(--orange); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+    .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
+
+    /* STATS CARDS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .stat-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .stat-value { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+    .stat-sub { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    /* TABLE */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr 80px;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #F5F4ED;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr 80px;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    .table-row:last-child { border-bottom: none; }
+    .table-row:hover { background: #FDFCF7; }
+
+    .person-cell { display: flex; align-items: center; gap: 10px; }
+    .avatar-sm {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .person-name { font-weight: 600; font-size: 0.82rem; }
+    .person-email { font-size: 0.7rem; color: var(--muted); }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .status-confirmed { color: var(--green); }
+    .status-confirmed .status-dot { background: var(--green); }
+    .status-invited { color: var(--orange); }
+    .status-invited .status-dot { background: var(--orange); }
+    .status-cancelled { color: var(--red); }
+    .status-cancelled .status-dot { background: var(--red); }
+
+    /* CHIP */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .chip-swim { background: #DBEAFE; color: #1D4ED8; }
+    .chip-bike { background: #D1FAE5; color: #065F46; }
+    .chip-run { background: #FEE2E2; color: #991B1B; }
+    .chip-general { background: #F3F4F6; color: #374151; }
+
+    /* FORM */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .form-input {
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.85rem;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .form-input:focus { border-color: var(--orange); outline: none; }
+    .form-input.focused { border-color: var(--orange); }
+    .form-select {
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.85rem;
+      background: var(--bg);
+    }
+
+    .form-section-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin: 16px 0 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-section-title::before {
+      content: '';
+      width: 3px;
+      height: 14px;
+      background: var(--orange);
+      border-radius: 2px;
+    }
+
+    /* MOBILE SCREEN */
+    .mobile-wrap {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .mobile-frame {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--bg);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+      border: 1px solid var(--border);
+    }
+
+    .mobile-navbar {
+      background: var(--navy);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mobile-navbar .logo { font-weight: 800; font-size: 0.85rem; color: #fff; }
+    .mobile-navbar .logo span { color: var(--orange); }
+
+    .mobile-content { padding: 16px; }
+
+    .mobile-greeting { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .mobile-sub { font-size: 0.75rem; color: var(--muted); margin-bottom: 16px; }
+
+    .mobile-card {
+      background: var(--surface);
+      border: 1.5px solid var(--orange);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .mobile-card-title { font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .mobile-card-row { font-size: 0.75rem; color: var(--muted); margin-bottom: 3px; display: flex; gap: 6px; }
+    .mobile-card-row strong { color: var(--text); font-weight: 600; }
+
+    .mobile-tab-bar {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 10px 0 6px;
+    }
+
+    .mobile-tab {
+      flex: 1;
+      text-align: center;
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .mobile-tab.active { color: var(--orange); }
+    .mobile-tab .tab-icon { font-size: 1.2rem; display: block; }
+
+    /* IMPORT SCREEN */
+    .import-area {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .import-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .import-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .import-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 16px; }
+
+    .mapping-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .mapping-header {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #F5F4ED;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mapping-row {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr;
+      gap: 12px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    .mapping-row:last-child { border-bottom: none; }
+    .mapping-arrow { color: var(--orange); text-align: center; font-weight: 700; }
+    .excel-col { font-family: monospace; background: #F5F4ED; padding: 2px 8px; border-radius: 4px; font-size: 0.78rem; }
+
+    /* ROLES TABLE */
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .role-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .role-card.role-admin { border-color: var(--orange); }
+    .role-card.role-section { border-color: var(--navy); }
+    .role-card.role-volunteer { border-color: var(--green); }
+    .role-card.role-reader { border-color: var(--muted); }
+
+    .role-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+    .role-desc { font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; }
+    .role-perms { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .role-perms li { font-size: 0.72rem; display: flex; align-items: flex-start; gap: 6px; }
+    .perm-yes::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .perm-no::before { content: '✗'; color: var(--red); font-weight: 700; flex-shrink: 0; }
+
+    /* DATA MODEL */
+    .model-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .model-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .model-card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--navy);
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--orange);
+    }
+
+    .model-field {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+    }
+
+    .model-field:last-child { border-bottom: none; }
+    .field-name { font-weight: 600; }
+    .field-type { font-family: monospace; font-size: 0.68rem; color: var(--muted); background: #F5F4ED; padding: 1px 6px; border-radius: 4px; }
+    .field-req { color: var(--orange); font-size: 0.65rem; font-weight: 700; }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 48px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1><span>STHLM</span> Triathlon — Funktionärsapp</h1>
+  <p>Designförslag · Version 1.0 · April 2026</p>
+</div>
+
+<!-- ═══════════════════════════════════════
+     1. DATAMODELL
+     ═══════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 1</div>
+  <div class="section-title">Datamodell — Funktionär</div>
+  <div class="section-desc">Alla fält som lagras i databasen per funktionär. Systemet är byggt för att enkelt utökas med nya fält.</div>
+
+  <div class="model-grid">
+    <div class="model-card">
+      <div class="model-card-title">👤 Personuppgifter</div>
+      <div class="model-field"><span class="field-name">Förnamn</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">Efternamn</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">E-post</span><span class="field-type">email</span></div>
+      <div class="model-field"><span class="field-name">Mobilnummer</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">T-shirt-storlek</span><span class="field-type">enum</span></div>
+      <div class="model-field"><span class="field-name">Matpreferenser</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">Allergier</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">Nödkontakt namn</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">Nödkontakt tel.</span><span class="field-type">text</span></div>
+    </div>
+
+    <div class="model-card">
+      <div class="model-card-title">🏅 Tävlingsinfo</div>
+      <div class="model-field"><span class="field-name">Roll / Titel</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">Gren</span><span class="field-type">enum</span></div>
+      <div class="model-field"><span class="field-name">Post / Plats</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">Pass start</span><span class="field-type">tid</span></div>
+      <div class="model-field"><span class="field-name">Pass slut</span><span class="field-type">tid</span></div>
+      <div class="model-field"><span class="field-name">Sektionsledare</span><span class="field-type">relation</span></div>
+      <div class="model-field"><span class="field-name">Erfarenhet</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">Körkort</span><span class="field-type">bool</span></div>
+      <div class="model-field"><span class="field-name">Bil tillgänglig</span><span class="field-type">bool</span></div>
+    </div>
+
+    <div class="model-card">
+      <div class="model-card-title">⚙️ System & Status</div>
+      <div class="model-field"><span class="field-name">Status</span><span class="field-type">enum</span></div>
+      <div class="model-field"><span class="field-name">Briefing klar</span><span class="field-type">bool</span></div>
+      <div class="model-field"><span class="field-name">Anteckningar</span><span class="field-type">text</span></div>
+      <div class="model-field"><span class="field-name">Användarroll</span><span class="field-type">enum</span></div>
+      <div class="model-field"><span class="field-name">Inloggning aktiv</span><span class="field-type">bool</span></div>
+      <div class="model-field"><span class="field-name">Skapad</span><span class="field-type">datum</span></div>
+      <div class="model-field"><span class="field-name">Uppdaterad</span><span class="field-type">datum</span></div>
+      <div class="model-field" style="border-top: 2px dashed var(--border); margin-top:8px; padding-top:8px;">
+        <span class="field-name" style="color:var(--orange);">+ Anpassade fält</span>
+        <span class="field-type">JSON</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     2. BEHÖRIGHETSNIVÅER
+     ═══════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 2</div>
+  <div class="section-title">Behörighetsnivåer</div>
+  <div class="section-desc">Fyra roller med tydlig hierarki — från full kontroll till läsåtkomst.</div>
+
+  <div class="roles-grid">
+    <div class="role-card role-admin">
+      <div class="role-title">🏆 Tävlingsledare</div>
+      <div class="role-desc">Full kontroll över hela appen och alla funktionärer.</div>
+      <ul class="role-perms">
+        <li class="perm-yes">Lägg till/redigera/ta bort funktionärer</li>
+        <li class="perm-yes">Hantera alla sektioner</li>
+        <li class="perm-yes">Importera från Excel</li>
+        <li class="perm-yes">Exportera data</li>
+        <li class="perm-yes">Hantera användarkonton</li>
+        <li class="perm-yes">Se all information</li>
+      </ul>
+    </div>
+
+    <div class="role-card role-section">
+      <div class="role-title">👔 Sektionsledare</div>
+      <div class="role-desc">Hanterar funktionärer inom sin tilldelade gren eller post.</div>
+      <ul class="role-perms">
+        <li class="perm-yes">Redigera sin sektions funktionärer</li>
+        <li class="perm-yes">Se sin sektions schema</li>
+        <li class="perm-yes">Markera briefing-status</li>
+        <li class="perm-no">Ta bort funktionärer</li>
+        <li class="perm-no">Importera från Excel</li>
+        <li class="perm-no">Se andra sektioner</li>
+      </ul>
+    </div>
+
+    <div class="role-card role-volunteer">
+      <div class="role-title">🙋 Funktionär</div>
+      <div class="role-desc">Ser sin egen information, roll och schema.</div>
+      <ul class="role-perms">
+        <li class="perm-yes">Se eget schema & roll</li>
+        <li class="perm-yes">Se kontaktinfo till sektionsledare</li>
+        <li class="perm-yes">Redigera egna uppgifter</li>
+        <li class="perm-no">Se andra funktionärer</li>
+        <li class="perm-no">Ändra roll eller pass</li>
+        <li class="perm-no">Adminvyer</li>
+      </ul>
+    </div>
+
+    <div class="role-card role-reader">
+      <div class="role-title">👁 Läsare</div>
+      <div class="role-desc">Kan se allt men inte göra några ändringar.</div>
+      <ul class="role-perms">
+        <li class="perm-yes">Se alla funktionärer</li>
+        <li class="perm-yes">Se alla scheman</li>
+        <li class="perm-yes">Se statistik</li>
+        <li class="perm-no">Redigera något</li>
+        <li class="perm-no">Importera / exportera</li>
+        <li class="perm-no">Hantera konton</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     3. ADMINVY — DASHBOARD
+     ═══════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 3 — Adminvy (Tävlingsledare/Sektionsledare)</div>
+  <div class="section-title">Dashboard</div>
+  <div class="section-desc">Översikt med nyckeltal och snabbåtkomst till viktiga funktioner.</div>
+
+  <div class="screen">
+    <div class="screen-label">🖥 ADMINVY — Dashboard</div>
+    <div class="navbar">
+      <div class="navbar-logo"><span>STHLM</span> TRIATHLON</div>
+      <div class="navbar-right">
+        <span style="color:rgba(255,255,255,0.6); font-size:0.8rem;">Tävlingsledare</span>
+        <div class="avatar">JR</div>
+      </div>
+    </div>
+    <div class="layout-sidebar">
+      <div class="sidebar">
+        <div class="sidebar-item active"><span class="icon">📊</span> Dashboard</div>
+        <div class="sidebar-item"><span class="icon">👥</span> Funktionärer</div>
+        <div class="sidebar-item"><span class="icon">📅</span> Schema</div>
+        <div class="sidebar-item"><span class="icon">📥</span> Importera</div>
+        <div class="sidebar-item"><span class="icon">🗺</span> Karta</div>
+        <div class="sidebar-item"><span class="icon">⚙️</span> Inställningar</div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <h2>Dashboard — STHLM Triathlon 2026</h2>
+          <div class="topbar-actions">
+            <button class="btn btn-ghost btn-sm">📤 Exportera</button>
+            <button class="btn btn-primary btn-sm">+ Lägg till funktionär</button>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Totalt</div>
+            <div class="stat-value">74</div>
+            <div class="stat-sub">av 80 platser fyllda</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Bekräftade</div>
+            <div class="stat-value" style="color: var(--green);">58</div>
+            <div class="stat-sub">78% av registrerade</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Inväntar svar</div>
+            <div class="stat-value" style="color: var(--orange);">16</div>
+            <div class="stat-sub">Skicka påminnelse</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Briefing klar</div>
+            <div class="stat-value" style="color: var(--navy);">31</div>
+            <div class="stat-sub">42% klara</div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; margin-top:4px;">
+          <div class="stat-card" style="border-color: #DBEAFE;">
+            <div class="stat-label" style="color:#1D4ED8;">🏊 Simning</div>
+            <div class="stat-value">18</div>
+            <div class="stat-sub">funktionärer</div>
+          </div>
+          <div class="stat-card" style="border-color: #D1FAE5;">
+            <div class="stat-label" style="color:#065F46;">🚴 Cykling</div>
+            <div class="stat-value">28</div>
+            <div class="stat-sub">funktionärer</div>
+          </div>
+          <div class="stat-card" style="border-color: #FEE2E2;">
+            <div class="stat-label" style="color:#991B1B;">🏃 Löpning</div>
+            <div class="stat-value">22</div>
+            <div class="stat-sub">funktionärer</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     4. ADMINVY — FUNKTIONÄRSLISTA
+     ═══════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 4 — Adminvy</div>
+  <div class="section-title">Funktionärslista</div>
+  <div class="section-desc">Sökbar och filterbar lista med alla registrerade funktionärer.</div>
+
+  <div class="screen">
+    <div class="screen-label">🖥 ADMINVY — Funktionärer</div>
+    <div class="navbar">
+      <div class="navbar-logo"><span>STHLM</span> TRIATHLON</div>
+      <div class="navbar-right">
+        <div class="avatar">JR</div>
+      </div>
+    </div>
+    <div class="layout-sidebar">
+      <div class="sidebar">
+        <div class="sidebar-item"><span class="icon">📊</span> Dashboard</div>
+        <div class="sidebar-item active"><span class="icon">👥</span> Funktionärer</div>
+        <div class="sidebar-item"><span class="icon">📅</span> Schema</div>
+        <div class="sidebar-item"><span class="icon">📥</span> Importera</div>
+        <div class="sidebar-item"><span class="icon">🗺</span> Karta</div>
+        <div class="sidebar-item"><span class="icon">⚙️</span> Inställningar</div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <h2>Funktionärer (74)</h2>
+          <div class="topbar-actions">
+            <button class="btn btn-ghost btn-sm">📥 Importera Excel</button>
+            <button class="btn btn-primary btn-sm">+ Ny funktionär</button>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <input style="flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-family:'Manrope',sans-serif; font-size:0.82rem; background:var(--surface);" placeholder="🔍  Sök namn, e-post, roll...">
+          <select class="form-select" style="width:auto; font-size:0.8rem;">
+            <option>Alla grenar</option>
+            <option>Simning</option>
+            <option>Cykling</option>
+            <option>Löpning</option>
+          </select>
+          <select class="form-select" style="width:auto; font-size:0.8rem;">
+            <option>Alla statusar</option>
+            <option>Bekräftad</option>
+            <option>Inbjuden</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-header">
+            <div>Namn</div>
+            <div>Roll</div>
+            <div>Gren</div>
+            <div>Pass</div>
+            <div>Status</div>
+            <div></div>
+          </div>
+          <div class="table-row">
+            <div class="person-cell">
+              <div class="avatar-sm" style="background:#FA832E;">AL</div>
+              <div><div class="person-name">Anna Lindqvist</div><div class="person-email">anna@email.se</div></div>
+            </div>
+            <div style="font-size:0.8rem;">Vändpunkt sim</div>
+            <div><span class="chip chip-swim">🏊 Sim</span></div>
+            <div style="font-size:0.78rem; color:var(--muted);">06:30–11:00</div>
+            <div class="status-confirmed"><span class="status-dot"></span>Bekräftad</div>
+            <div><button class="btn btn-outline btn-sm">Öppna</button></div>
+          </div>
+          <div class="table-row">
+            <div class="person-cell">
+              <div class="avatar-sm" style="background:#233143;">MJ</div>
+              <div><div class="person-name">Marcus Johansson</div><div class="person-email">marcus@email.se</div></div>
+            </div>
+            <div style="font-size:0.8rem;">Tidtagning km 22</div>
+            <div><span class="chip chip-bike">🚴 Cykel</span></div>
+            <div style="font-size:0.78rem; color:var(--muted);">07:00–13:00</div>
+            <div class="status-confirmed"><span class="status-dot"></span>Bekräftad</div>
+            <div><button class="btn btn-outline btn-sm">Öppna</button></div>
+          </div>
+          <div class="table-row">
+            <div class="person-cell">
+              <div class="avatar-sm" style="background:#22C55E;">SE</div>
+              <div><div class="person-name">Sara Eriksson</div><div class="person-email">sara@email.se</div></div>
+            </div>
+            <div style="font-size:0.8rem;">Vattenstation km 5</div>
+            <div><span class="chip chip-run">🏃 Löpning</span></div>
+            <div style="font-size:0.78rem; color:var(--muted);">09:00–14:30</div>
+            <div class="status-invited"><span class="status-dot"></span>Inbjuden</div>
+            <div><button class="btn btn-outline btn-sm">Öppna</button></div>
+          </div>
+          <div class="table-row">
+            <div class="person-cell">
+              <div class="avatar-sm" style="background:#556070;">KN</div>
+              <div><div class="person-name">Karl Nilsson</div><div class="person-email">karl@email.se</div></div>
+            </div>
+            <div style="font-size:0.8rem;">Startfunktionär</div>
+            <div><span class="chip chip-general">⚡ Generell</span></div>
+            <div style="font-size:0.78rem; color:var(--muted);">06:00–10:00</div>
+            <div class="status-invited"><span class="status-dot"></span>Inbjuden</div>
+            <div><button class="btn btn-outline btn-sm">Öppna</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     5. LÄGG TILL / REDIGERA FUNKTIONÄR
+     ═══════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 5 — Adminvy</div>
+  <div class="section-title">Lägg till / Redigera funktionär</div>
+  <div class="section-desc">Formulär för att registrera eller uppdatera en funktionär. Uppdelat i logiska sektioner.</div>
+
+  <div class="screen">
+    <div class="screen-label">🖥 ADMINVY — Ny funktionär</div>
+    <div class="navbar">
+      <div class="navbar-logo"><span>STHLM</span> TRIATHLON</div>
+      <div class="navbar-right"><div class="avatar">JR</div></div>
+    </div>
+    <div class="layout-sidebar">
+      <div class="sidebar">
+        <div class="sidebar-item"><span class="icon">📊</span> Dashboard</div>
+        <div class="sidebar-item active"><span class="icon">👥</span> Funktionärer</div>
+        <div class="sidebar-item"><span class="icon">📅</span> Schema</div>
+        <div class="sidebar-item"><span class="icon">📥</span> Importera</div>
+        <div class="sidebar-item"><span class="icon">🗺</span> Karta</div>
+        <div class="sidebar-item"><span class="icon">⚙️</span> Inställningar</div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <h2>← Ny funktionär</h2>
+          <div class="topbar-actions">
+            <button class="btn btn-ghost btn-sm">Avbryt</button>
+            <button class="btn btn-primary btn-sm">💾 Spara</button>
+          </div>
+        </div>
+
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px;">
+          <div class="form-grid">
+            <div class="form-section-title">Personuppgifter</div>
+            <div class="form-group">
+              <label class="form-label">Förnamn *</label>
+              <input class="form-input focused" value="Anna" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Efternamn *</label>
+              <input class="form-input" value="Lindqvist" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">E-post *</label>
+              <input class="form-input" value="anna@email.se" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mobilnummer</label>
+              <input class="form-input" value="070-123 45 67" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">T-shirt-storlek</label>
+              <select class="form-select"><option>M</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Matpreferenser / Allergier</label>
+              <input class="form-input" value="Vegetarian, nötallergiker" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nödkontakt — Namn</label>
+              <input class="form-input" value="Per Lindqvist" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nödkontakt — Telefon</label>
+              <input class="form-input" value="070-987 65 43" />
+            </div>
+
+            <div class="form-section-title">Tävlingsuppgifter</div>
+            <div class="form-group">
+              <label class="form-label">Roll / Titel</label>
+              <input class="form-input" value="Vändpunkt funktionär" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gren</label>
+              <select class="form-select"><option>Simning</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Post / Plats</label>
+              <input class="form-input" value="Vändpunkt Stora Skuggan" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sektionsledare</label>
+              <select class="form-select"><option>Jonas Rylander</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Pass start</label>
+              <input class="form-input" value="06:30" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Pass slut</label>
+              <input class="form-input" value="11:00" />
+            </div>
+
+            <div class="form-section-title">Status & Övrigt</div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select class="form-select"><option>Inbjuden</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Användarroll i appen</label>
+              <select class="form-select"><option>Funktionär</option></select>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Anteckningar (intern)</label>
+              <input class="form-input" value="Har erfarenhet från Lidingöloppet 2024." />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     6. EXCEL-IMPORT
+     ═══════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 6 — Adminvy</div>
+  <div class="section-title">Importera från Excel</div>
+  <div class="section-desc">Ladda upp ett Excel-ark och mappa kolumnerna mot appens fält. Inga tekniska kunskaper behövs.</div>
+
+  <div class="screen">
+    <div class="screen-label">🖥 ADMINVY — Importera Excel</div>
+    <div class="navbar">
+      <div class="navbar-logo"><span>STHLM</span> TRIATHLON</div>
+      <div class="navbar-right"><div class="avatar">JR</div></div>
+    </div>
+    <div class="layout-sidebar">
+      <div class="sidebar">
+        <div class="sidebar-item"><span class="icon">📊</span> Dashboard</div>
+        <div class="sidebar-item"><span class="icon">👥</span> Funktionärer</div>
+        <div class="sidebar-item"><span class="icon">📅</span> Schema</div>
+        <div class="sidebar-item active"><span class="icon">📥</span> Importera</div>
+        <div class="sidebar-item"><span class="icon">🗺</span> Karta</div>
+        <div class="sidebar-item"><span class="icon">⚙️</span> Inställningar</div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <h2>Importera funktionärer</h2>
+        </div>
+
+        <div class="import-area">
+          <div class="import-icon">📊</div>
+          <div class="import-title">Dra och släpp ditt Excel-ark här</div>
+          <div class="import-sub">Eller klicka för att välja fil · Stödjer .xlsx och .csv</div>
+          <button class="btn btn-primary">Välj fil</button>
+        </div>
+
+        <div style="font-size:0.82rem; font-weight:700; margin-bottom:8px; color:var(--navy);">
+          Steg 2 — Mappa kolumner
+        </div>
+        <div style="font-size:0.78rem; color:var(--muted); margin-bottom:12px;">
+          Vi hittade 74 rader i ditt Excel-ark. Koppla kolumnerna nedan mot rätt fält i appen.
+        </div>
+
+        <div class="mapping-table">
+          <div class="mapping-header">
+            <div>Kolumn i Excel</div>
+            <div></div>
+            <div>Fält i appen</div>
+          </div>
+          <div class="mapping-row">
+            <span class="excel-col">Förnamn</span>
+            <div class="mapping-arrow">→</div>
+            <select class="form-select" style="font-size:0.78rem; padding:4px 8px;"><option>Förnamn</option></select>
+          </div>
+          <div class="mapping-row">
+            <span class="excel-col">Efternamn</span>
+            <div class="mapping-arrow">→</div>
+            <select class="form-select" style="font-size:0.78rem; padding:4px 8px;"><option>Efternamn</option></select>
+          </div>
+          <div class="mapping-row">
+            <span class="excel-col">Epost</span>
+            <div class="mapping-arrow">→</div>
+            <select class="form-select" style="font-size:0.78rem; padding:4px 8px;"><option>E-post</option></select>
+          </div>
+          <div class="mapping-row">
+            <span class="excel-col">Tfn</span>
+            <div class="mapping-arrow">→</div>
+            <select class="form-select" style="font-size:0.78rem; padding:4px 8px;"><option>Mobilnummer</option></select>
+          </div>
+          <div class="mapping-row">
+            <span class="excel-col">Funktion</span>
+            <div class="mapping-arrow">→</div>
+            <select class="form-select" style="font-size:0.78rem; padding:4px 8px;"><option>Roll / Titel</option></select>
+          </div>
+        </div>
+
+        <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:8px;">
+          <button class="btn btn-ghost btn-sm">Avbryt</button>
+          <button class="btn btn-primary btn-sm">✓ Importera 74 funktionärer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     7. FUNKTIONÄRSVY (MOBIL)
+     ═══════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 7 — Funktionärsvy (mobil)</div>
+  <div class="section-title">Vad funktionären ser</div>
+  <div class="section-desc">Enkel mobilvy där funktionären ser sitt schema, roll och kontaktuppgifter till sektionsledaren.</div>
+
+  <div style="display:flex; gap:24px; flex-wrap:wrap;">
+
+    <div class="mobile-frame">
+      <div class="mobile-navbar">
+        <div class="logo"><span>STHLM</span> TRI</div>
+        <div class="avatar" style="width:28px;height:28px;font-size:0.65rem;">AL</div>
+      </div>
+      <div class="mobile-content">
+        <div class="mobile-greeting">Hej, Anna! 👋</div>
+        <div class="mobile-sub">STHLM Triathlon · 9 aug 2026</div>
+
+        <div class="mobile-card">
+          <div class="mobile-card-title"><span class="chip chip-swim" style="font-size:0.65rem;">🏊 Simning</span> Ditt uppdrag</div>
+          <div class="mobile-card-row"><strong>Roll:</strong> Vändpunkt funktionär</div>
+          <div class="mobile-card-row"><strong>Plats:</strong> Vändpunkt Stora Skuggan</div>
+          <div class="mobile-card-row"><strong>Pass:</strong> 06:30 – 11:00</div>
+          <div class="mobile-card-row"><strong>Status:</strong> <span style="color:var(--green); font-weight:700;">✓ Bekräftad</span></div>
+        </div>
+
+        <div class="mobile-card">
+          <div class="mobile-card-title">📞 Sektionsledare</div>
+          <div class="mobile-card-row"><strong>Namn:</strong> Jonas Rylander</div>
+          <div class="mobile-card-row"><strong>Mobil:</strong> 070-123 45 67</div>
+        </div>
+
+        <button class="btn btn-outline" style="width:100%; justify-content:center; font-size:0.8rem; margin-top:4px;">📋 Mina uppgifter</button>
+      </div>
+      <div class="mobile-tab-bar">
+        <div class="mobile-tab active"><span class="tab-icon">🏠</span>Hem</div>
+        <div class="mobile-tab"><span class="tab-icon">📅</span>Schema</div>
+        <div class="mobile-tab"><span class="tab-icon">🗺</span>Karta</div>
+        <div class="mobile-tab"><span class="tab-icon">👤</span>Profil</div>
+      </div>
+    </div>
+
+    <div class="mobile-frame">
+      <div class="mobile-navbar">
+        <div class="logo"><span>STHLM</span> TRI</div>
+        <div class="avatar" style="width:28px;height:28px;font-size:0.65rem;">AL</div>
+      </div>
+      <div class="mobile-content">
+        <div class="mobile-greeting">Min profil</div>
+        <div class="mobile-sub" style="margin-bottom:12px;">Uppdatera dina uppgifter</div>
+
+        <div class="mobile-card" style="border-color:var(--border);">
+          <div class="mobile-card-row"><strong>Namn:</strong> Anna Lindqvist</div>
+          <div class="mobile-card-row"><strong>E-post:</strong> anna@email.se</div>
+          <div class="mobile-card-row"><strong>Mobil:</strong> 070-123 45 67</div>
+          <div class="mobile-card-row"><strong>T-shirt:</strong> M</div>
+          <div class="mobile-card-row"><strong>Mat:</strong> Vegetarian</div>
+        </div>
+
+        <div class="mobile-card" style="border-color:var(--border);">
+          <div class="mobile-card-title" style="font-size:0.75rem;">🆘 Nödkontakt</div>
+          <div class="mobile-card-row"><strong>Namn:</strong> Per Lindqvist</div>
+          <div class="mobile-card-row"><strong>Tel:</strong> 070-987 65 43</div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%; justify-content:center; font-size:0.8rem; margin-top:4px;">✏️ Redigera</button>
+      </div>
+      <div class="mobile-tab-bar">
+        <div class="mobile-tab"><span class="tab-icon">🏠</span>Hem</div>
+        <div class="mobile-tab"><span class="tab-icon">📅</span>Schema</div>
+        <div class="mobile-tab"><span class="tab-icon">🗺</span>Karta</div>
+        <div class="mobile-tab active"><span class="tab-icon">👤</span>Profil</div>
+      </div>
+    </div>
+
+    <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:12px;">
+      <div style="background:var(--surface); border:1.5px solid var(--border); border-radius:12px; padding:16px;">
+        <div style="font-size:0.78rem; font-weight:700; margin-bottom:8px; color:var(--navy);">📱 Funktionärsvyn innehåller</div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:0.78rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Eget schema och roll</li>
+          <li style="font-size:0.78rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Plats och passinformation</li>
+          <li style="font-size:0.78rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Kontaktinfo till sektionsledare</li>
+          <li style="font-size:0.78rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Redigera egna uppgifter</li>
+          <li style="font-size:0.78rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Karta med sin post</li>
+          <li style="font-size:0.78rem; display:flex; gap:8px;"><span style="color:var(--orange);">✓</span> Fungerar offline under tävling</li>
+        </ul>
+      </div>
+      <div style="background:var(--surface); border:1.5px solid var(--border); border-radius:12px; padding:16px;">
+        <div style="font-size:0.78rem; font-weight:700; margin-bottom:8px; color:var(--navy);">🔐 Inloggning</div>
+        <div style="font-size:0.75rem; color:var(--muted); line-height:1.6;">
+          Funktionärer loggar in med sin e-postadress. Vid första inloggning skickas en engångslänk till deras mail — inget lösenord behövs.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

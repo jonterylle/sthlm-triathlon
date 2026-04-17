@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STHLM Triathlon – Brand Kit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: #FBFAF3;
+      color: #111111;
+      padding: 40px 24px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    h1 span { color: #FA832E; }
+
+    .subtitle {
+      color: #556070;
+      font-size: 1rem;
+      margin-bottom: 48px;
+    }
+
+    h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #556070;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #E5E3D8;
+    }
+
+    section { margin-bottom: 48px; }
+
+    /* COLORS */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+    }
+
+    .color-card {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #E5E3D8;
+      background: #fff;
+    }
+
+    .color-swatch {
+      height: 80px;
+      width: 100%;
+    }
+
+    .color-info {
+      padding: 12px;
+    }
+
+    .color-name {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 2px;
+    }
+
+    .color-hex {
+      font-size: 0.75rem;
+      color: #556070;
+      font-family: monospace;
+    }
+
+    .color-usage {
+      font-size: 0.7rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    /* TYPOGRAPHY */
+    .type-samples { display: flex; flex-direction: column; gap: 20px; }
+
+    .type-row {
+      background: #fff;
+      border: 1px solid #E5E3D8;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: baseline;
+      gap: 24px;
+    }
+
+    .type-meta {
+      min-width: 140px;
+      font-size: 0.72rem;
+      color: #888;
+      line-height: 1.6;
+    }
+
+    .type-meta strong { display: block; color: #111; font-size: 0.8rem; }
+
+    .t-display { font-size: 2.5rem; font-weight: 800; }
+    .t-h1 { font-size: 1.75rem; font-weight: 700; }
+    .t-h2 { font-size: 1.25rem; font-weight: 700; }
+    .t-h3 { font-size: 1rem; font-weight: 600; }
+    .t-body { font-size: 1rem; font-weight: 400; }
+    .t-small { font-size: 0.85rem; font-weight: 400; color: #556070; }
+    .t-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #556070; }
+
+    /* COMPONENTS */
+    .component-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border-radius: 50px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary { background: #FA832E; color: #fff; }
+    .btn-secondary { background: #233143; color: #fff; }
+    .btn-outline { background: transparent; color: #FA832E; border: 2px solid #FA832E; }
+    .btn-ghost { background: transparent; color: #233143; border: 2px solid #233143; }
+
+    /* CARDS */
+    .card-demos { display: flex; flex-wrap: wrap; gap: 16px; }
+
+    .demo-card {
+      background: #fff;
+      border: 1.5px solid #FA832E;
+      border-radius: 12px;
+      padding: 20px;
+      width: 220px;
+    }
+
+    .demo-card .card-icon {
+      width: 32px;
+      height: 32px;
+      background: #FA832E;
+      border-radius: 50%;
+      margin-bottom: 12px;
+    }
+
+    .demo-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .demo-card p { font-size: 0.82rem; color: #556070; }
+
+    /* NAVBAR */
+    .demo-navbar {
+      background: #233143;
+      border-radius: 12px;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .nav-logo { font-weight: 800; font-size: 1rem; color: #fff; }
+    .nav-logo span { color: #FA832E; }
+    .nav-links { display: flex; gap: 20px; }
+    .nav-links a { color: #fff; font-size: 0.82rem; font-weight: 500; text-decoration: none; }
+
+    /* SPACING */
+    .spacing-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .spacing-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .spacing-box {
+      background: #FA832E;
+      opacity: 0.7;
+      border-radius: 4px;
+      width: 40px;
+    }
+
+    .spacing-label {
+      font-size: 0.7rem;
+      color: #556070;
+      font-weight: 600;
+    }
+
+    /* LOGO */
+    .logo-demos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .logo-box {
+      border-radius: 12px;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-box.light { background: #fff; border: 1px solid #E5E3D8; }
+    .logo-box.dark { background: #233143; }
+    .logo-box.orange { background: #FA832E; }
+
+    .logo-text { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+    .logo-text .sthlm { color: #FA832E; }
+    .logo-text .sthlm-light { color: #fff; }
+    .logo-text .tri { color: #233143; }
+    .logo-text .tri-light { color: #fff; }
+
+    /* ICONS */
+    .icon-grid {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .icon-chip {
+      background: #fff;
+      border: 1px solid #E5E3D8;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #FA832E;
+      display: inline-block;
+    }
+
+    .dot.navy { background: #233143; }
+
+    /* CSS VARS */
+    .vars-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .var-row {
+      background: #fff;
+      border: 1px solid #E5E3D8;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .var-name { font-family: monospace; color: #FA832E; font-weight: 600; }
+    .var-value { font-family: monospace; color: #556070; }
+  </style>
+</head>
+<body>
+
+  <h1><span>STHLM</span> TRIATHLON</h1>
+  <p class="subtitle">Brand Kit — Funktionärsappen · April 2026</p>
+
+  <!-- COLORS -->
+  <section>
+    <h2>Färgpalett</h2>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-swatch" style="background:#FA832E;"></div>
+        <div class="color-info">
+          <div class="color-name">STHLM Orange</div>
+          <div class="color-hex">#FA832E · rgb(250,131,46)</div>
+          <div class="color-usage">Primärfärg · Knappar · Accenter · Logotyp</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#233143;"></div>
+        <div class="color-info">
+          <div class="color-name">STHLM Navy</div>
+          <div class="color-hex">#233143 · rgb(35,49,67)</div>
+          <div class="color-usage">Navbar · Sekundär · Rubriker</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#FBFAF3; border-bottom: 1px solid #E5E3D8;"></div>
+        <div class="color-info">
+          <div class="color-name">Cream White</div>
+          <div class="color-hex">#FBFAF3 · rgb(251,250,243)</div>
+          <div class="color-usage">Sidans bakgrundsfärg</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#FFFFFF; border-bottom: 1px solid #E5E3D8;"></div>
+        <div class="color-info">
+          <div class="color-name">White</div>
+          <div class="color-hex">#FFFFFF</div>
+          <div class="color-usage">Kortbakgrunder · Formulär</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#111111;"></div>
+        <div class="color-info">
+          <div class="color-name">Near Black</div>
+          <div class="color-hex">#111111 · rgb(17,17,17)</div>
+          <div class="color-usage">Brödtext · Rubriker</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#556070;"></div>
+        <div class="color-info">
+          <div class="color-name">Slate Gray</div>
+          <div class="color-hex">#556070</div>
+          <div class="color-usage">Sekundär text · Metadata · Labels</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#E5E3D8;"></div>
+        <div class="color-info">
+          <div class="color-name">Border</div>
+          <div class="color-hex">#E5E3D8</div>
+          <div class="color-usage">Kortborders · Avdelare</div>
+        </div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#FFD200;"></div>
+        <div class="color-info">
+          <div class="color-name">Tri4Fun Yellow</div>
+          <div class="color-hex">#FFD200</div>
+          <div class="color-usage">Barn & ungdom · Accent</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TYPOGRAPHY -->
+  <section>
+    <h2>Typografi</h2>
+    <div class="type-samples">
+      <div class="type-row">
+        <div class="type-meta"><strong>Display</strong>Manrope 800<br>2.5rem / 40px</div>
+        <div class="t-display">STHLM Triathlon</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><strong>Heading 1</strong>Manrope 700<br>1.75rem / 28px</div>
+        <div class="t-h1">Funktionärsschema</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><strong>Heading 2</strong>Manrope 700<br>1.25rem / 20px</div>
+        <div class="t-h2">Simbana – Post 3</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><strong>Heading 3</strong>Manrope 600<br>1rem / 16px</div>
+        <div class="t-h3">Dina uppdrag idag</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><strong>Body</strong>Manrope 400<br>1rem / 16px</div>
+        <div class="t-body">Rapporten sig till startlinjen senast kl 06:30. Ta med din funktionärsvästeller badge.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><strong>Small</strong>Manrope 400<br>0.85rem / 13.6px</div>
+        <div class="t-small">Uppdaterad 09:14 · Tävlingsledare: Jonas</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><strong>Label / Tag</strong>Manrope 700<br>0.72rem / uppercase</div>
+        <div class="t-label">Simbana · Cykel · Löpning</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOGOTYP -->
+  <section>
+    <h2>Logotyp — varianter</h2>
+    <div class="logo-demos">
+      <div class="logo-box light">
+        <div class="logo-text">
+          <span class="sthlm">STHLM</span> <span class="tri">TRIATHLON</span>
+        </div>
+      </div>
+      <div class="logo-box dark">
+        <div class="logo-text">
+          <span class="sthlm">STHLM</span> <span class="tri-light">TRIATHLON</span>
+        </div>
+      </div>
+      <div class="logo-box orange">
+        <div class="logo-text">
+          <span class="sthlm-light">STHLM</span> <span class="tri-light">TRIATHLON</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KNAPPAR -->
+  <section>
+    <h2>Knappar</h2>
+    <div class="component-grid">
+      <button class="btn btn-primary">Bekräfta pass</button>
+      <button class="btn btn-secondary">Visa schema</button>
+      <button class="btn btn-outline">Redigera</button>
+      <button class="btn btn-ghost">Avbryt</button>
+    </div>
+  </section>
+
+  <!-- NAVBAR -->
+  <section>
+    <h2>Navigation</h2>
+    <div class="demo-navbar">
+      <div class="nav-logo"><span>STHLM</span> TRIATHLON</div>
+      <div class="nav-links">
+        <a href="#">Schema</a>
+        <a href="#">Mitt pass</a>
+        <a href="#">Karta</a>
+        <a href="#">Kontakt</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- KORT -->
+  <section>
+    <h2>Informationskort</h2>
+    <div class="card-demos">
+      <div class="demo-card">
+        <div class="card-icon"></div>
+        <h3>Simbana</h3>
+        <p>Post 3 · Vändpunkt<br>Kl 07:00 – 10:30</p>
+      </div>
+      <div class="demo-card">
+        <div class="card-icon"></div>
+        <h3>Cykelbana</h3>
+        <p>Tidtagning · Km 22<br>Kl 08:00 – 13:00</p>
+      </div>
+      <div class="demo-card">
+        <div class="card-icon"></div>
+        <h3>Löpbana</h3>
+        <p>Vattenstation · Km 5<br>Kl 09:30 – 14:00</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DISCIPLINE TAGS -->
+  <section>
+    <h2>Grenar & taggar</h2>
+    <div class="icon-grid">
+      <div class="icon-chip"><span class="dot"></span> Simning</div>
+      <div class="icon-chip"><span class="dot"></span> Cykling</div>
+      <div class="icon-chip"><span class="dot"></span> Löpning</div>
+      <div class="icon-chip"><span class="dot navy"></span> Admin</div>
+      <div class="icon-chip"><span class="dot navy"></span> Tävlingsledare</div>
+      <div class="icon-chip"><span style="width:10px;height:10px;border-radius:50%;background:#FFD200;display:inline-block;"></span> Tri4Fun</div>
+    </div>
+  </section>
+
+  <!-- CSS VARIABLER -->
+  <section>
+    <h2>CSS-variabler för appen</h2>
+    <div class="vars-grid">
+      <div class="var-row"><span class="var-name">--color-primary</span><span class="var-value">#FA832E</span></div>
+      <div class="var-row"><span class="var-name">--color-navy</span><span class="var-value">#233143</span></div>
+      <div class="var-row"><span class="var-name">--color-bg</span><span class="var-value">#FBFAF3</span></div>
+      <div class="var-row"><span class="var-name">--color-surface</span><span class="var-value">#FFFFFF</span></div>
+      <div class="var-row"><span class="var-name">--color-text</span><span class="var-value">#111111</span></div>
+      <div class="var-row"><span class="var-name">--color-muted</span><span class="var-value">#556070</span></div>
+      <div class="var-row"><span class="var-name">--color-border</span><span class="var-value">#E5E3D8</span></div>
+      <div class="var-row"><span class="var-name">--color-accent</span><span class="var-value">#FFD200</span></div>
+      <div class="var-row"><span class="var-name">--font-family</span><span class="var-value">Manrope, sans-serif</span></div>
+      <div class="var-row"><span class="var-name">--radius-card</span><span class="var-value">12px</span></div>
+      <div class="var-row"><span class="var-name">--radius-btn</span><span class="var-value">50px</span></div>
+      <div class="var-row"><span class="var-name">--radius-sm</span><span class="var-value">8px</span></div>
+    </div>
+  </section>
+
+</body>
+</html>

@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STHLM Triathlon – Sektionshantering</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #FA832E;
+      --navy: #233143;
+      --bg: #FBFAF3;
+      --surface: #FFFFFF;
+      --text: #111111;
+      --muted: #556070;
+      --border: #E5E3D8;
+      --green: #22C55E;
+      --red: #EF4444;
+      --yellow: #F59E0B;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Manrope', sans-serif; background: #F0EEE6; color: var(--text); padding: 40px 24px; }
+
+    .page-header { max-width: 1200px; margin: 0 auto 48px; }
+    .page-header h1 { font-size: 2rem; font-weight: 800; }
+    .page-header h1 span { color: var(--orange); }
+    .page-header p { color: var(--muted); margin-top: 4px; font-size: 0.95rem; }
+
+    .design-section { max-width: 1200px; margin: 0 auto 64px; }
+    .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .section-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .section-desc { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6; }
+
+    .screen { background: var(--bg); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 32px rgba(0,0,0,0.10); border: 1px solid var(--border); }
+    .screen-label { background: var(--navy); color: #fff; font-size: 0.75rem; font-weight: 600; padding: 8px 16px; letter-spacing: 0.05em; }
+
+    .navbar { background: var(--navy); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .navbar-logo { font-weight: 800; color: #fff; font-size: 1rem; }
+    .navbar-logo span { color: var(--orange); }
+    .avatar { width: 32px; height: 32px; background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: #fff; }
+
+    .layout-sidebar { display: flex; min-height: 540px; }
+    .sidebar { width: 200px; background: #1C2A38; padding: 16px 0; flex-shrink: 0; }
+    .sidebar-item { padding: 10px 20px; font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 8px; }
+    .sidebar-item.active { color: #fff; background: rgba(250,131,46,0.15); border-left: 3px solid var(--orange); }
+
+    .main-content { flex: 1; padding: 20px; overflow: hidden; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .topbar h2 { font-size: 1.1rem; font-weight: 700; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border-radius: 50px; font-family: 'Manrope', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; border: none; }
+    .btn-primary { background: var(--orange); color: #fff; }
+    .btn-outline { background: transparent; color: var(--orange); border: 1.5px solid var(--orange); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+    .btn-sm { padding: 5px 14px; font-size: 0.75rem; }
+    .btn-danger { background: transparent; color: var(--red); border: 1.5px solid #FECACA; }
+
+    /* SECTION CARDS GRID */
+    .sections-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.15s;
+    }
+
+    .section-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+
+    .section-card-top {
+      height: 8px;
+    }
+
+    .section-card-body {
+      padding: 14px;
+    }
+
+    .section-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .section-icon-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-emoji {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .section-name { font-size: 0.9rem; font-weight: 700; }
+    .section-leader { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+    .section-stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .stat-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: #F5F4ED;
+      color: var(--muted);
+    }
+
+    .stat-pill.warn { background: #FEE2E2; color: var(--red); }
+    .stat-pill.ok { background: #DCFCE7; color: var(--green); }
+
+    .section-card-actions {
+      display: flex;
+      gap: 6px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* CROSS SECTION BADGE */
+    .cross-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #FEF3C7;
+      color: #92400E;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid #FDE68A;
+    }
+
+    /* NEW SECTION CARD (add button) */
+    .section-card-add {
+      background: transparent;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      min-height: 160px;
+    }
+
+    .section-card-add:hover { border-color: var(--orange); background: #FFF8F3; }
+    .section-card-add .add-icon { font-size: 1.8rem; margin-bottom: 8px; color: var(--muted); }
+    .section-card-add .add-text { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+
+    /* FORM MODAL */
+    .modal-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+      max-width: 480px;
+    }
+
+    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+    .modal-sub { font-size: 0.78rem; color: var(--muted); margin-bottom: 20px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .form-input { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
+    .form-input.focused { border-color: var(--orange); }
+    .form-select { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Manrope', sans-serif; font-size: 0.85rem; background: var(--bg); }
+
+    /* COLOR PICKER */
+    .color-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .color-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s;
+    }
+
+    .color-dot:hover { transform: scale(1.1); }
+    .color-dot.selected { border-color: var(--text); }
+
+    /* ICON PICKER */
+    .icon-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .icon-btn {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      background: var(--bg);
+      transition: border-color 0.1s;
+    }
+
+    .icon-btn:hover { border-color: var(--orange); }
+    .icon-btn.selected { border-color: var(--orange); background: #FFF8F3; }
+
+    /* CHECKBOX TOGGLE */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #F9F8F2;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .toggle-label { font-size: 0.82rem; font-weight: 600; }
+    .toggle-sub { font-size: 0.7rem; color: var(--muted); }
+
+    .toggle-switch {
+      width: 38px; height: 22px;
+      background: var(--orange);
+      border-radius: 11px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      background: white;
+      border-radius: 50%;
+      top: 3px; right: 3px;
+    }
+
+    .toggle-switch.off {
+      background: var(--border);
+    }
+
+    .toggle-switch.off::after { right: auto; left: 3px; }
+
+    /* SCHEMA OVERVIEW UPDATE */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .overview-card {
+      background: var(--surface);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .overview-card-top { height: 6px; }
+    .overview-card-body { padding: 12px; }
+    .overview-card-name { font-size: 0.82rem; font-weight: 700; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+    .overview-card-meta { font-size: 0.68rem; color: var(--muted); }
+    .overview-card-stats { display: flex; gap: 6px; margin-top: 8px; }
+
+    .mini-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #F5F4ED;
+      color: var(--muted);
+    }
+
+    .mini-pill.warn { background: #FEE2E2; color: var(--red); }
+    .mini-pill.ok { background: #DCFCE7; color: var(--green); }
+
+    /* Timeline mini */
+    .timeline-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .timeline-header { display: flex; border-bottom: 2px solid var(--border); }
+    .timeline-name-col { width: 150px; flex-shrink: 0; padding: 8px 12px; font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; border-right: 1px solid var(--border); background: #F9F8F2; }
+    .timeline-hours { flex: 1; display: flex; background: #F9F8F2; }
+    .hour-mark { flex: 1; padding: 8px 0 8px 4px; font-size: 0.62rem; font-weight: 700; color: var(--muted); border-left: 1px solid var(--border); }
+    .timeline-row { display: flex; border-bottom: 1px solid var(--border); align-items: stretch; min-height: 42px; }
+    .timeline-row:last-child { border-bottom: none; }
+    .timeline-name { width: 150px; flex-shrink: 0; padding: 8px 12px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
+    .vol-name { font-size: 0.75rem; font-weight: 700; }
+    .vol-role { font-size: 0.62rem; color: var(--muted); }
+    .timeline-bars { flex: 1; position: relative; display: flex; align-items: center; }
+    .timeline-bars::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background: repeating-linear-gradient(90deg, transparent, transparent calc(100%/12 - 1px), var(--border) calc(100%/12 - 1px), var(--border) calc(100%/12)); pointer-events: none; opacity: 0.4; }
+    .bar { position: absolute; height: 22px; border-radius: 5px; display: flex; align-items: center; padding: 0 7px; font-size: 0.6rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 1; }
+    .warn-badge { display: inline-flex; align-items: center; gap: 3px; background: #FEE2E2; color: var(--red); font-size: 0.62rem; font-weight: 700; padding: 1px 6px; border-radius: 20px; margin-left: 4px; }
+    .ok-badge { display: inline-flex; align-items: center; gap: 3px; background: #DCFCE7; color: var(--green); font-size: 0.62rem; font-weight: 700; padding: 1px 6px; border-radius: 20px; margin-left: 4px; }
+    .section-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+    .section-row-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid transparent; }
+    .section-name-hdr { font-size: 0.88rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .section-meta-hdr { display: flex; align-items: center; gap: 12px; font-size: 0.73rem; color: var(--muted); }
+    .chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 9px; border-radius: 20px; font-size: 0.67rem; font-weight: 700; }
+
+    .note-box { background: #FEF3C7; border: 1.5px solid #FDE68A; border-radius: 10px; padding: 12px 16px; font-size: 0.78rem; color: #92400E; line-height: 1.6; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1><span>STHLM</span> Triathlon — Sektionshantering</h1>
+  <p>Designskiss · Dynamiska sektioner & uppdaterad schemaöversikt · April 2026</p>
+</div>
+
+<!-- ══════════════════════════════════════════
+     1. SEKTIONSÖVERSIKT
+     ══════════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 1 — Tävlingsledarvy</div>
+  <div class="section-title">Sektionsöversikt — alla sektioner</div>
+  <div class="section-desc">
+    Tävlingsledaren kan skapa, redigera och ta bort sektioner fritt. Varje sektion får ett namn, ikon, färg och en tilldelad sektionsledare.
+    Nya sektioner skapas enkelt via <em>"+  Ny sektion"</em>-knappen. Sektioner som spänner över flera grenar (t.ex. Sjukvård) markeras särskilt.
+  </div>
+
+  <div class="screen">
+    <div class="screen-label">🖥 TÄVLINGSLEDARVY — Inställningar → Sektioner</div>
+    <div class="navbar">
+      <div class="navbar-logo"><span>STHLM</span> TRIATHLON</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="color:rgba(255,255,255,0.6);font-size:0.8rem;">Tävlingsledare</span>
+        <div class="avatar">JR</div>
+      </div>
+    </div>
+    <div class="layout-sidebar">
+      <div class="sidebar">
+        <div class="sidebar-item"><span>📊</span> Dashboard</div>
+        <div class="sidebar-item"><span>👥</span> Funktionärer</div>
+        <div class="sidebar-item"><span>📅</span> Schema</div>
+        <div class="sidebar-item"><span>📥</span> Importera</div>
+        <div class="sidebar-item"><span>🗺</span> Karta</div>
+        <div class="sidebar-item active"><span>⚙️</span> Inställningar</div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <div>
+            <h2>Sektioner</h2>
+            <div style="font-size:0.75rem; color:var(--muted); margin-top:2px;">Hantera tävlingens sektioner och sektionsledare</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm">Ordna om</button>
+            <button class="btn btn-primary btn-sm">+ Ny sektion</button>
+          </div>
+        </div>
+
+        <div class="sections-grid">
+
+          <!-- Simning -->
+          <div class="section-card">
+            <div class="section-card-top" style="background:#3B82F6;"></div>
+            <div class="section-card-body">
+              <div class="section-card-header">
+                <div class="section-icon-name">
+                  <div class="section-emoji" style="background:#DBEAFE;">🏊</div>
+                  <div>
+                    <div class="section-name">Simning</div>
+                    <div class="section-leader">Magnus Berg</div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-stats">
+                <div class="stat-pill">18 funktionärer</div>
+                <div class="stat-pill warn">⚠ 1 konflikt</div>
+              </div>
+              <div class="section-card-actions">
+                <button class="btn btn-outline btn-sm">✏️ Redigera</button>
+                <button class="btn btn-ghost btn-sm">📅 Schema</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cykling -->
+          <div class="section-card">
+            <div class="section-card-top" style="background:#10B981;"></div>
+            <div class="section-card-body">
+              <div class="section-card-header">
+                <div class="section-icon-name">
+                  <div class="section-emoji" style="background:#D1FAE5;">🚴</div>
+                  <div>
+                    <div class="section-name">Cykling</div>
+                    <div class="section-leader">Sara Petersson</div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-stats">
+                <div class="stat-pill">28 funktionärer</div>
+                <div class="stat-pill warn">⚠ 2 konflikter</div>
+              </div>
+              <div class="section-card-actions">
+                <button class="btn btn-outline btn-sm">✏️ Redigera</button>
+                <button class="btn btn-ghost btn-sm">📅 Schema</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Löpning -->
+          <div class="section-card">
+            <div class="section-card-top" style="background:#EF4444;"></div>
+            <div class="section-card-body">
+              <div class="section-card-header">
+                <div class="section-icon-name">
+                  <div class="section-emoji" style="background:#FEE2E2;">🏃</div>
+                  <div>
+                    <div class="section-name">Löpning</div>
+                    <div class="section-leader">Lars Grön</div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-stats">
+                <div class="stat-pill">22 funktionärer</div>
+                <div class="stat-pill ok">✓ Inga konflikter</div>
+              </div>
+              <div class="section-card-actions">
+                <button class="btn btn-outline btn-sm">✏️ Redigera</button>
+                <button class="btn btn-ghost btn-sm">📅 Schema</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Växling 1 -->
+          <div class="section-card">
+            <div class="section-card-top" style="background:#F59E0B;"></div>
+            <div class="section-card-body">
+              <div class="section-card-header">
+                <div class="section-icon-name">
+                  <div class="section-emoji" style="background:#FEF3C7;">🔄</div>
+                  <div>
+                    <div class="section-name">Växling 1</div>
+                    <div class="section-leader">Petra Lund</div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-stats">
+                <div class="stat-pill">8 funktionärer</div>
+                <div class="stat-pill ok">✓ Inga konflikter</div>
+              </div>
+              <div class="section-card-actions">
+                <button class="btn btn-outline btn-sm">✏️ Redigera</button>
+                <button class="btn btn-ghost btn-sm">📅 Schema</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Växling 2 -->
+          <div class="section-card">
+            <div class="section-card-top" style="background:#F97316;"></div>
+            <div class="section-card-body">
+              <div class="section-card-header">
+                <div class="section-icon-name">
+                  <div class="section-emoji" style="background:#FFEDD5;">🔁</div>
+                  <div>
+                    <div class="section-name">Växling 2</div>
+                    <div class="section-leader">Johan Ek</div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-stats">
+                <div class="stat-pill">7 funktionärer</div>
+                <div class="stat-pill ok">✓ Inga konflikter</div>
+              </div>
+              <div class="section-card-actions">
+                <button class="btn btn-outline btn-sm">✏️ Redigera</button>
+                <button class="btn btn-ghost btn-sm">📅 Schema</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sjukvård — TVÄRSEKTIONELL -->
+          <div class="section-card" style="border-color:#FDE68A;">
+            <div class="section-card-top" style="background:#DC2626;"></div>
+            <div class="section-card-body">
+              <div class="section-card-header">
+                <div class="section-icon-name">
+                  <div class="section-emoji" style="background:#FEE2E2;">🏥</div>
+                  <div>
+                    <div class="section-name">Sjukvård</div>
+                    <div class="section-leader">Dr. Maria Holm</div>
+                  </div>
+                </div>
+                <span class="cross-badge">↔ Tvärsektionell</span>
+              </div>
+              <div class="section-stats">
+                <div class="stat-pill">6 funktionärer</div>
+                <div class="stat-pill ok">✓ Inga konflikter</div>
+              </div>
+              <div style="font-size:0.68rem; color:#92400E; background:#FEF3C7; border-radius:6px; padding:5px 8px; margin-bottom:8px;">
+                Spänner över: Simning · Cykling · Löpning
+              </div>
+              <div class="section-card-actions">
+                <button class="btn btn-outline btn-sm">✏️ Redigera</button>
+                <button class="btn btn-ghost btn-sm">📅 Schema</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generellt -->
+          <div class="section-card">
+            <div class="section-card-top" style="background:#8B5CF6;"></div>
+            <div class="section-card-body">
+              <div class="section-card-header">
+                <div class="section-icon-name">
+                  <div class="section-emoji" style="background:#EDE9FE;">⚡</div>
+                  <div>
+                    <div class="section-name">Generellt</div>
+                    <div class="section-leader">Jonas Rylander</div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-stats">
+                <div class="stat-pill">5 funktionärer</div>
+                <div class="stat-pill ok">✓ Inga konflikter</div>
+              </div>
+              <div class="section-card-actions">
+                <button class="btn btn-outline btn-sm">✏️ Redigera</button>
+                <button class="btn btn-ghost btn-sm">📅 Schema</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lägg till ny -->
+          <div class="section-card-add">
+            <div class="add-icon">＋</div>
+            <div class="add-text">Ny sektion</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     2. SKAPA NY SEKTION — FORMULÄR
+     ══════════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 2 — Formulär</div>
+  <div class="section-title">Skapa / Redigera sektion</div>
+  <div class="section-desc">
+    Enkelt formulär för att konfigurera en sektion. Tvärsektionella sektioner (som Sjukvård) aktiveras med ett toggle
+    och man väljer vilka grenar/sektioner de spänner över.
+  </div>
+
+  <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+    <div class="modal-wrap">
+      <div class="modal-title">Skapa ny sektion</div>
+      <div class="modal-sub">Fyll i uppgifter för den nya sektionen</div>
+
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Sektionsnamn *</label>
+          <input class="form-input focused" value="Sjukvård" />
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">Välj ikon</label>
+          <div class="icon-picker">
+            <div class="icon-btn">🏊</div>
+            <div class="icon-btn">🚴</div>
+            <div class="icon-btn">🏃</div>
+            <div class="icon-btn">🔄</div>
+            <div class="icon-btn selected">🏥</div>
+            <div class="icon-btn">⚡</div>
+            <div class="icon-btn">🔁</div>
+            <div class="icon-btn">🎯</div>
+            <div class="icon-btn">📋</div>
+            <div class="icon-btn">🚩</div>
+            <div class="icon-btn">🛡</div>
+            <div class="icon-btn">🍎</div>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">Välj färg</label>
+          <div class="color-picker">
+            <div class="color-dot" style="background:#3B82F6;"></div>
+            <div class="color-dot" style="background:#10B981;"></div>
+            <div class="color-dot selected" style="background:#DC2626;"></div>
+            <div class="color-dot" style="background:#F59E0B;"></div>
+            <div class="color-dot" style="background:#F97316;"></div>
+            <div class="color-dot" style="background:#8B5CF6;"></div>
+            <div class="color-dot" style="background:#06B6D4;"></div>
+            <div class="color-dot" style="background:#EC4899;"></div>
+            <div class="color-dot" style="background:#84CC16;"></div>
+            <div class="color-dot" style="background:#233143;"></div>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">Sektionsledare</label>
+          <select class="form-select"><option>Dr. Maria Holm</option></select>
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">Beskrivning (valfritt)</label>
+          <input class="form-input" value="Sjukvård och akutberedskap under hela tävlingen" />
+        </div>
+
+        <!-- TVÄRSEKTIONELL TOGGLE -->
+        <div class="form-group full">
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Tvärsektionell</div>
+              <div class="toggle-sub">Sektionen är aktiv över flera grenar / sektioner</div>
+            </div>
+            <div class="toggle-switch"></div>
+          </div>
+        </div>
+
+        <!-- Visas när toggle är på -->
+        <div class="form-group full">
+          <label class="form-label">Spänner över (välj grenar)</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+              <input type="checkbox" checked style="accent-color:var(--orange);"> 🏊 Simning
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+              <input type="checkbox" checked style="accent-color:var(--orange);"> 🚴 Cykling
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+              <input type="checkbox" checked style="accent-color:var(--orange);"> 🏃 Löpning
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+              <input type="checkbox" style="accent-color:var(--orange);"> 🔄 Växling 1
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+              <input type="checkbox" style="accent-color:var(--orange);"> 🔁 Växling 2
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+        <button class="btn btn-ghost btn-sm">Avbryt</button>
+        <button class="btn btn-primary btn-sm">💾 Spara sektion</button>
+      </div>
+    </div>
+
+    <div style="flex:1; min-width:240px; display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px;">
+        <div style="font-size:0.78rem; font-weight:700; margin-bottom:8px; color:var(--navy);">💡 Vad är en tvärsektionell sektion?</div>
+        <div style="font-size:0.75rem; color:var(--muted); line-height:1.7;">
+          En tvärsektionell sektion, som Sjukvård, är aktiv under hela tävlingen och inte knuten till en enda gren.
+          Sjukvårdsfunktionärer kan ha uppdrag som löper parallellt med simning, cykling och löpning.<br><br>
+          I schemaöversikten visas tvärsektionella sektioner med ett eget spår som sträcker sig horisontellt under alla grenar.
+        </div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px;">
+        <div style="font-size:0.78rem; font-weight:700; margin-bottom:8px; color:var(--navy);">🔧 Sektioner kan alltid</div>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px;">
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Byta namn, ikon och färg</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Byta sektionsledare</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Aktiveras / inaktiveras</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--green);">✓</span> Ordnas om i listvy</li>
+          <li style="font-size:0.75rem; display:flex; gap:8px;"><span style="color:var(--orange);">⚠</span> Tas bort (om inga funktionärer är kopplade)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     3. UPPDATERAD SCHEMAÖVERSIKT MED ALLA SEKTIONER
+     ══════════════════════════════════════════ -->
+<div class="design-section">
+  <div class="section-label">Del 3 — Tävlingsledarvy</div>
+  <div class="section-title">Uppdaterad schemaöversikt med alla sektioner</div>
+  <div class="section-desc">
+    Tävlingsledaren ser nu alla 7 sektioner. Sjukvård visas som ett eget horisontellt spår som sträcker sig över hela dagen —
+    tydligt markerat som tvärsektionell. Växlingssektionerna syns som korta, intensiva pass runt övergångarna.
+  </div>
+
+  <div class="screen">
+    <div class="screen-label">🖥 TÄVLINGSLEDARVY — Schema, alla sektioner</div>
+    <div class="navbar">
+      <div class="navbar-logo"><span>STHLM</span> TRIATHLON</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="color:rgba(255,255,255,0.6);font-size:0.8rem;">Tävlingsledare</span>
+        <div class="avatar">JR</div>
+      </div>
+    </div>
+    <div class="layout-sidebar">
+      <div class="sidebar">
+        <div class="sidebar-item"><span>📊</span> Dashboard</div>
+        <div class="sidebar-item"><span>👥</span> Funktionärer</div>
+        <div class="sidebar-item active"><span>📅</span> Schema</div>
+        <div class="sidebar-item"><span>📥</span> Importera</div>
+        <div class="sidebar-item"><span>🗺</span> Karta</div>
+        <div class="sidebar-item"><span>⚙️</span> Inställningar</div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <h2>Schemaöversikt — 9 aug 2026</h2>
+            <span style="display:inline-flex;align-items:center;gap:4px;background:#FEE2E2;color:var(--red);font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid #FECACA;">⚠ 3 öppna konflikter</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <select style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Manrope',sans-serif;font-size:0.78rem;background:var(--bg);"><option>Alla sektioner</option></select>
+            <button class="btn btn-ghost btn-sm">📤 Exportera</button>
+          </div>
+        </div>
+
+        <div class="note-box">
+          <strong>⚠️ Öppna konflikter (3):</strong> &nbsp;
+          Simning: 1 &nbsp;·&nbsp; Cykling: 2 &nbsp;·&nbsp;
+          <a href="#" style="color:var(--orange);text-decoration:none;font-weight:700;">Hantera alla →</a>
+        </div>
+
+        <!-- 🏊 Simning -->
+        <div class="section-row">
+          <div class="section-row-header" style="border-left:4px solid #3B82F6;">
+            <div class="section-name-hdr">🏊 Simning
+              <span class="chip" style="background:#DBEAFE;color:#1D4ED8;">18 funktionärer</span>
+              <span style="display:inline-flex;align-items:center;gap:3px;background:#FEE2E2;color:var(--red);font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">⚠ 1</span>
+            </div>
+            <div class="section-meta-hdr">
+              <span>Magnus Berg</span><span>06:00–13:00</span>
+              <span style="color:var(--orange);font-weight:700;">▼ Visa</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔄 Växling 1 -->
+        <div class="section-row">
+          <div class="section-row-header" style="border-left:4px solid #F59E0B;">
+            <div class="section-name-hdr">🔄 Växling 1
+              <span class="chip" style="background:#FEF3C7;color:#92400E;">8 funktionärer</span>
+              <span style="display:inline-flex;align-items:center;gap:3px;background:#DCFCE7;color:var(--green);font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">✓ OK</span>
+            </div>
+            <div class="section-meta-hdr"><span>Petra Lund</span><span>10:00–12:00</span><span style="color:var(--orange);font-weight:700;">▼ Visa</span></div>
+          </div>
+        </div>
+
+        <!-- 🚴 Cykling -->
+        <div class="section-row">
+          <div class="section-row-header" style="border-left:4px solid #10B981;">
+            <div class="section-name-hdr">🚴 Cykling
+              <span class="chip" style="background:#D1FAE5;color:#065F46;">28 funktionärer</span>
+              <span style="display:inline-flex;align-items:center;gap:3px;background:#FEE2E2;color:var(--red);font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">⚠ 2</span>
+            </div>
+            <div class="section-meta-hdr"><span>Sara Petersson</span><span>07:00–17:00</span><span style="color:var(--orange);font-weight:700;">▼ Visa</span></div>
+          </div>
+        </div>
+
+        <!-- 🔁 Växling 2 -->
+        <div class="section-row">
+          <div class="section-row-header" style="border-left:4px solid #F97316;">
+            <div class="section-name-hdr">🔁 Växling 2
+              <span class="chip" style="background:#FFEDD5;color:#9A3412;">7 funktionärer</span>
+              <span style="display:inline-flex;align-items:center;gap:3px;background:#DCFCE7;color:var(--green);font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">✓ OK</span>
+            </div>
+            <div class="section-meta-hdr"><span>Johan Ek</span><span>12:00–14:00</span><span style="color:var(--orange);font-weight:700;">▼ Visa</span></div>
+          </div>
+        </div>
+
+        <!-- 🏃 Löpning -->
+        <div class="section-row">
+          <div class="section-row-header" style="border-left:4px solid #EF4444;">
+            <div class="section-name-hdr">🏃 Löpning
+              <span class="chip" style="background:#FEE2E2;color:#991B1B;">22 funktionärer</span>
+              <span style="display:inline-flex;align-items:center;gap:3px;background:#DCFCE7;color:var(--green);font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">✓ OK</span>
+            </div>
+            <div class="section-meta-hdr"><span>Lars Grön</span><span>09:00–16:00</span><span style="color:var(--orange);font-weight:700;">▼ Visa</span></div>
+          </div>
+        </div>
+
+        <!-- 🏥 Sjukvård — TVÄRSEKTIONELL, expanderad -->
+        <div class="section-row" style="border-color:#FDE68A;">
+          <div class="section-row-header" style="border-left:4px solid #DC2626; background:#FFFBEB;">
+            <div class="section-name-hdr">🏥 Sjukvård
+              <span class="chip" style="background:#FEE2E2;color:#991B1B;">6 funktionärer</span>
+              <span class="cross-badge">↔ Tvärsektionell</span>
+              <span style="display:inline-flex;align-items:center;gap:3px;background:#DCFCE7;color:var(--green);font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">✓ OK</span>
+            </div>
+            <div class="section-meta-hdr"><span>Dr. Maria Holm</span><span>06:00–18:00 (hela tävlingen)</span><span style="color:var(--orange);font-weight:700;">▲ Dölj</span></div>
+          </div>
+          <div style="padding:12px 16px; background:#FFFBEB;">
+            <div style="font-size:0.72rem; color:#92400E; margin-bottom:10px;">
+              ↔ Spänner över: 🏊 Simning · 🚴 Cykling · 🏃 Löpning
+            </div>
+            <div class="timeline-wrap">
+              <div class="timeline-header">
+                <div class="timeline-name-col">Funktionär</div>
+                <div class="timeline-hours">
+                  <div class="hour-mark">06</div><div class="hour-mark">07</div><div class="hour-mark">08</div>
+                  <div class="hour-mark">09</div><div class="hour-mark">10</div><div class="hour-mark">11</div>
+                  <div class="hour-mark">12</div><div class="hour-mark">13</div><div class="hour-mark">14</div>
+                  <div class="hour-mark">15</div><div class="hour-mark">16</div><div class="hour-mark">17</div>
+                </div>
+              </div>
+              <div class="timeline-row">
+                <div class="timeline-name"><div class="vol-name">Dr. Maria Holm</div><div class="vol-role">Läkare — hela dagen</div></div>
+                <div class="timeline-bars">
+                  <div class="bar" style="left:0%;width:100%;background:#DC2626;">Jour 06:00–18:00</div>
+                </div>
+              </div>
+              <div class="timeline-row">
+                <div class="timeline-name"><div class="vol-name">Anders Sköld</div><div class="vol-role">Sjuksköterska</div></div>
+                <div class="timeline-bars">
+                  <div class="bar" style="left:0%;width:66.67%;background:#EF4444;">Sjötillsyn + Cykel 06:00–14:00</div>
+                </div>
+              </div>
+              <div class="timeline-row">
+                <div class="timeline-name"><div class="vol-name">Lena Björk</div><div class="vol-role">Första hjälpen</div></div>
+                <div class="timeline-bars">
+                  <div class="bar" style="left:25%;width:66.67%;background:#EF4444;">Löpning + Mål 09:00–17:00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⚡ Generellt -->
+        <div class="section-row">
+          <div class="section-row-header" style="border-left:4px solid #8B5CF6;">
+            <div class="section-name-hdr">⚡ Generellt
+              <span class="chip" style="background:#EDE9FE;color:#5B21B6;">5 funktionärer</span>
+              <span style="display:inline-flex;align-items:center;gap:3px;background:#DCFCE7;color:var(--green);font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;">✓ OK</span>
+            </div>
+            <div class="section-meta-hdr"><span>Jonas Rylander</span><span>06:00–18:00</span><span style="color:var(--orange);font-weight:700;">▼ Visa</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

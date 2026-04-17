@@ -23,14 +23,31 @@ Antal funktionärer: **70–80 personer**.
 
 ---
 
-## Funktioner att bygga (att utforska/definiera vidare)
+## Funktioner att bygga
 
-- [ ] Hantera funktionärer (namn, kontaktinfo, roll)
-- [ ] Tilldela funktionärer till positioner och pass
-- [ ] Översikt per gren (sim, cykel, löpning) och per plats
-- [ ] Kommunikation med funktionärer (t.ex. notiser, schema)
-- [ ] Tävlingsledarens adminvy
-- [ ] Funktionärsvy (vad ska jag göra, när, var)
+- [ ] Hantera funktionärer (namn, kontaktinfo, roll, pass, nödkontakt, t-shirt, mat)
+- [ ] Dynamiska sektioner — tävlingsledare kan skapa/redigera/ta bort sektioner
+- [ ] Tvärsektionella sektioner (t.ex. Sjukvård som spänner över hela tävlingen)
+- [ ] Schemavy med Gantt-tidslinje per sektionsledare och tävlingsledare
+- [ ] Automatisk konfliktdetektering vid överlappande uppdrag
+- [ ] Konfliktgodkännande med kommentar (sektionsledare/tävlingsledare)
+- [ ] Excel-import med kolumnmappning
+- [ ] Funktionärsvy (mobilanpassad) — eget schema, roll, plats, kontakt
+- [ ] Inloggning via engångslänk (magic link) till e-post
+- [ ] Fyra behörighetsnivåer: Tävlingsledare, Sektionsledare, Funktionär, Läsare
+
+## Sektioner (dynamiska, konfigurerbara av tävlingsledare)
+
+Planerade sektioner för STHLM Triathlon 2026:
+- 🏊 Simning
+- 🔄 Växling 1 (sim → cykel)
+- 🚴 Cykling
+- 🔁 Växling 2 (cykel → löpning)
+- 🏃 Löpning
+- 🏥 Sjukvård (tvärsektionell — spänner över hela tävlingen)
+- ⚡ Generellt
+
+Sektioner är helt dynamiska — tävlingsledaren skapar dem i appen.
 
 ---
 
