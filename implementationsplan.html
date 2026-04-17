@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STHLM Triathlon – Implementationsplan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #FA832E;
+      --navy: #233143;
+      --bg: #FBFAF3;
+      --surface: #FFFFFF;
+      --text: #111111;
+      --muted: #556070;
+      --border: #E5E3D8;
+      --green: #22C55E;
+      --red: #EF4444;
+      --yellow: #F59E0B;
+      --blue: #3B82F6;
+      --purple: #8B5CF6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background: #F0EEE6;
+      color: var(--text);
+      padding: 40px 24px;
+    }
+
+    .page-header { max-width: 1100px; margin: 0 auto 16px; }
+    .page-header h1 { font-size: 2rem; font-weight: 800; }
+    .page-header h1 span { color: var(--orange); }
+    .page-header p { color: var(--muted); margin-top: 4px; font-size: 0.95rem; }
+
+    .wrapper { max-width: 1100px; margin: 0 auto; }
+
+    /* INTRO BOX */
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 40px;
+      margin-top: 24px;
+    }
+
+    .info-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .info-card h3 { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
+    .info-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.7; }
+    .info-card p strong { color: var(--text); }
+
+    /* SPRINT OVERVIEW TIMELINE */
+    .sprint-overview {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 40px;
+      overflow-x: auto;
+    }
+
+    .sprint-overview h3 { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 20px; }
+
+    .timeline-row-overview {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 10px;
+    }
+
+    .tl-label {
+      width: 140px;
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      padding-right: 12px;
+    }
+
+    .tl-bar-wrap {
+      flex: 1;
+      display: flex;
+      gap: 3px;
+    }
+
+    .tl-sprint {
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+      padding: 0 8px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* SPRINT CARDS */
+    .sprint-section {
+      margin-bottom: 32px;
+    }
+
+    .sprint-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .sprint-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sprint-number {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+
+    .sprint-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .sprint-subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      max-width: 500px;
+      line-height: 1.6;
+    }
+
+    .sprint-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+      margin-left: 20px;
+    }
+
+    .sprint-weeks {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: #F5F4ED;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .sprint-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+    }
+
+    .sprint-col {
+      padding: 20px 24px;
+      border-right: 1px solid var(--border);
+    }
+
+    .sprint-col:last-child { border-right: none; }
+
+    .col-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .story-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .story-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+
+    .story-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    /* DELIVERABLE TAG */
+    .deliverable-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    /* WALKING SKELETON HIGHLIGHT */
+    .skeleton-card {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 2px rgba(250,131,46,0.15);
+    }
+
+    .skeleton-banner {
+      background: linear-gradient(135deg, var(--orange) 0%, #F97316 100%);
+      color: white;
+      padding: 10px 24px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* DONE CRITERIA */
+    .done-criteria {
+      background: #F9F8F2;
+      border-top: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .done-label { font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; flex-shrink: 0; }
+    .done-item { font-size: 0.72rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .done-item::before { content: '✓'; color: var(--green); font-weight: 800; }
+
+    /* TECH STACK */
+    .tech-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+
+    /* DEPENDENCY ARROW */
+    .dep-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin: 8px 0;
+    }
+
+    /* SECTION DIVIDER */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 40px 0 24px;
+    }
+
+    .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .section-divider-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); white-space: nowrap; }
+
+    /* VELOCITY TABLE */
+    .velocity-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+
+    .velocity-table th {
+      background: #F5F4ED;
+      padding: 8px 14px;
+      text-align: left;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      border-bottom: 2px solid var(--border);
+    }
+
+    .velocity-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .velocity-table tr:last-child td { border-bottom: none; }
+    .velocity-table tr:hover td { background: #FDFCF7; }
+
+    .sprint-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1><span>STHLM</span> Triathlon — Implementationsplan</h1>
+  <p>Scrum · Walking Skeleton · 8 sprintar · ~16 veckor</p>
+</div>
+
+<div class="wrapper">
+
+  <!-- INTRO -->
+  <div class="intro-grid">
+    <div class="info-card">
+      <h3>🦴 Walking Skeleton-principen</h3>
+      <p>
+        Vi börjar med ett <strong>"walking skeleton"</strong> — ett minimalt men fullt fungerande system
+        som kopplar ihop alla arkitekturella lager: frontend → backend → databas → hosting.
+        Det är inte komplett, men det <strong>lever, kan driftsättas och tar ett steg från ände till ände</strong>.
+        Allt därefter bygger ovanpå det skelettet, sprint för sprint.
+      </p>
+    </div>
+    <div class="info-card">
+      <h3>📐 Scrum-format</h3>
+      <p>
+        Varje sprint är <strong>2 veckor</strong>. Varje sprint levererar fungerande, testbar mjukvara.
+        Vi följer prioriteringsordningen: <strong>kärna först</strong> (fungerande data och flöden),
+        sedan <strong>schema och konfliktlogik</strong> (det unika värdet), sist
+        <strong>import, mobilpolish och lansering</strong>.
+        Säkerhetsgranskning sker löpande och summeras i sista sprinten.
+      </p>
+    </div>
+    <div class="info-card">
+      <h3>🛠 Teknikstack</h3>
+      <p>
+        <span class="tech-tag">Next.js 14</span>
+        <span class="tech-tag">TypeScript</span>
+        <span class="tech-tag">Tailwind CSS</span>
+        <span class="tech-tag">Supabase</span>
+        <span class="tech-tag">PostgreSQL</span>
+        <span class="tech-tag">Vercel</span>
+      </p>
+      <p style="margin-top:10px;">
+        One codebase, one language, managed infrastructure.
+        GitHub → Vercel CD pipeline från dag ett.
+      </p>
+    </div>
+    <div class="info-card">
+      <h3>📅 Tidslinje</h3>
+      <p>
+        <strong>8 sprintar × 2 veckor = 16 veckor</strong> (ca 4 månader).
+        Tävlingen är <strong>9 augusti 2026</strong>.
+        Mjukvaran bör vara produktionsklar senast <strong>slutet av juni 2026</strong>
+        för att ge tid till testning och onboarding av funktionärer i juli.
+      </p>
+    </div>
+  </div>
+
+  <!-- SPRINT OVERVIEW BAR -->
+  <div class="sprint-overview">
+    <h3>Övergripande tidslinje</h3>
+
+    <div class="timeline-row-overview">
+      <div class="tl-label" style="color:var(--orange);font-weight:800;">Sprint 0</div>
+      <div class="tl-bar-wrap">
+        <div class="tl-sprint" style="background:var(--orange); flex:1;">🦴 Walking Skeleton — Deploy, Auth, DB, Roller</div>
+      </div>
+    </div>
+    <div class="timeline-row-overview">
+      <div class="tl-label">Sprint 1</div>
+      <div class="tl-bar-wrap">
+        <div style="flex:1;"></div>
+        <div class="tl-sprint" style="background:#3B82F6; flex:1;">👥 Funktionärsregister (CRUD + attribut)</div>
+      </div>
+    </div>
+    <div class="timeline-row-overview">
+      <div class="tl-label">Sprint 2</div>
+      <div class="tl-bar-wrap">
+        <div style="flex:2;"></div>
+        <div class="tl-sprint" style="background:#10B981; flex:1;">🗂 Sektioner & Uppdrag</div>
+      </div>
+    </div>
+    <div class="timeline-row-overview">
+      <div class="tl-label">Sprint 3</div>
+      <div class="tl-bar-wrap">
+        <div style="flex:3;"></div>
+        <div class="tl-sprint" style="background:#8B5CF6; flex:1;">📅 Tidslinje & Konfliktdetektering</div>
+      </div>
+    </div>
+    <div class="timeline-row-overview">
+      <div class="tl-label">Sprint 4</div>
+      <div class="tl-bar-wrap">
+        <div style="flex:4;"></div>
+        <div class="tl-sprint" style="background:#233143; flex:1;">🏆 Tävlingsledarvy & Konfliktgodkännande</div>
+      </div>
+    </div>
+    <div class="timeline-row-overview">
+      <div class="tl-label">Sprint 5</div>
+      <div class="tl-bar-wrap">
+        <div style="flex:5;"></div>
+        <div class="tl-sprint" style="background:#F59E0B; flex:1;">📥 Excel-import</div>
+      </div>
+    </div>
+    <div class="timeline-row-overview">
+      <div class="tl-label">Sprint 6</div>
+      <div class="tl-bar-wrap">
+        <div style="flex:6;"></div>
+        <div class="tl-sprint" style="background:#EC4899; flex:1;">📱 Funktionärsmobilvy</div>
+      </div>
+    </div>
+    <div class="timeline-row-overview">
+      <div class="tl-label">Sprint 7</div>
+      <div class="tl-bar-wrap">
+        <div style="flex:7;"></div>
+        <div class="tl-sprint" style="background:#22C55E; flex:1;">🚀 Polering, säkerhet & lansering</div>
+      </div>
+    </div>
+
+    <div style="display:flex; margin-top:16px; padding-left:140px; font-size:0.65rem; color:var(--muted); font-weight:600; gap:0;">
+      <div style="flex:1; border-left:1px solid var(--border); padding-left:4px;">v.1</div>
+      <div style="flex:1; border-left:1px solid var(--border); padding-left:4px;">v.3</div>
+      <div style="flex:1; border-left:1px solid var(--border); padding-left:4px;">v.5</div>
+      <div style="flex:1; border-left:1px solid var(--border); padding-left:4px;">v.7</div>
+      <div style="flex:1; border-left:1px solid var(--border); padding-left:4px;">v.9</div>
+      <div style="flex:1; border-left:1px solid var(--border); padding-left:4px;">v.11</div>
+      <div style="flex:1; border-left:1px solid var(--border); padding-left:4px;">v.13</div>
+      <div style="flex:1; border-left:1px solid var(--border); padding-left:4px;">v.15 (juni)</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SPRINT 0 — WALKING SKELETON
+       ════════════════════════════════════ -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Sprint 0 — Walking Skeleton</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="sprint-card skeleton-card">
+    <div class="skeleton-banner">🦴 Walking Skeleton — Det första skelettet som lever</div>
+    <div class="sprint-header">
+      <div>
+        <div class="sprint-number" style="color:var(--orange);">Sprint 0 · Vecka 1–2</div>
+        <div class="sprint-title">Infrastruktur, Auth & Roller</div>
+        <div class="sprint-subtitle">
+          Målet är inte funktioner — det är ett <strong>fungerande, driftsatt system</strong> som bevisar att alla lager fungerar tillsammans.
+          En tävlingsledare kan logga in och se en tom dashboard. En funktionär kan logga in och se "Välkommen".
+          Det är tillräckligt för att bygga allt annat på.
+        </div>
+      </div>
+      <div class="sprint-meta">
+        <span class="sprint-weeks">2 veckor</span>
+        <span class="deliverable-tag" style="background:#FFF8F3; color:var(--orange); border:1.5px solid var(--orange);">🌐 Live på Vercel</span>
+      </div>
+    </div>
+
+    <div class="sprint-body">
+      <div class="sprint-col">
+        <div class="col-title">🏗 Setup & Infrastruktur</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Skapa Next.js-projekt med TypeScript + Tailwind</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Koppla till GitHub-repot (jonterylle/NewInventions)</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Sätta upp Vercel + automatisk deploy vid push</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Skapa Supabase-projekt (databas + auth)</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Konfigurera miljövariabler (.env) säkert</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Brand kit i Tailwind-konfiguration (färger, font)</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">🔐 Auth & Databas</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Magic link-inloggning via Supabase Auth (e-post)</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Databasschema: users, roles, volunteers (tomma tabeller)</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Row-Level Security (RLS) i Supabase — grundregler per roll</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Middleware: skydda rutter baserat på inloggning och roll</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Skapa testanvändare: tävlingsledare, sektionsledare, funktionär</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">📄 Första sidor (skelett)</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Inloggningssida med STHLM Triathlon-design</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Tom dashboard — tävlingsledare ser "0 funktionärer"</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Tom startsida — funktionär ser "Välkommen, [namn]"</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Navbar + sidopanel-layout (återanvänds alla admin-sidor)</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>404-sida och felsidor</li>
+          <li class="story-item"><div class="story-dot" style="background:var(--orange);"></div>Mobil-navigation (hamburgermeny)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="done-criteria">
+      <span class="done-label">Definition of Done:</span>
+      <span class="done-item">App lever på Vercel-URL</span>
+      <span class="done-item">Push till GitHub → auto-deploy fungerar</span>
+      <span class="done-item">Magic link-login fungerar</span>
+      <span class="done-item">Tre roller loggar in och ser rätt vy</span>
+      <span class="done-item">DB-anslutning verifierad</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SPRINT 1 — FUNKTIONÄRSREGISTER
+       ════════════════════════════════════ -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Sprint 1 — Funktionärsregister</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="sprint-card">
+    <div class="sprint-header">
+      <div>
+        <div class="sprint-number" style="color:#3B82F6;">Sprint 1 · Vecka 3–4</div>
+        <div class="sprint-title">Funktionärsregister — CRUD & attribut</div>
+        <div class="sprint-subtitle">
+          Tävlingsledaren kan nu registrera, visa, redigera och ta bort funktionärer med samtliga attribut.
+          Det är hjärtat i appen — allt annat bygger på att funktionärer finns i systemet.
+        </div>
+      </div>
+      <div class="sprint-meta">
+        <span class="sprint-weeks">2 veckor</span>
+        <span class="deliverable-tag" style="background:#DBEAFE;color:#1D4ED8;border:1.5px solid #BFDBFE;">👥 Funktionärer hanteras</span>
+      </div>
+    </div>
+
+    <div class="sprint-body">
+      <div class="sprint-col">
+        <div class="col-title">🗄 Databas</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Komplett volunteers-tabell med alla attribut</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>JSONB-kolumn för framtida anpassade fält</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Databasmigration med Supabase migrations</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>RLS: tävlingsledare ser alla, sektionsledare sin sektion</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">🖥 Adminvy</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Funktionärslista med sök och filter (gren, status)</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Formulär: lägg till ny funktionär</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Formulär: redigera funktionär</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Ta bort funktionär med bekräftelsedialog</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Statushantering: Inbjuden / Bekräftad / Avbokad</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">✅ Validering & UX</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Formulärvalidering (obligatoriska fält, e-postformat)</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Toast-notiser vid lyckad/misslyckad sparing</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Loading states på alla knappar</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>Responsivt formulär (fungerar på mobil)</li>
+          <li class="story-item"><div class="story-dot" style="background:#3B82F6;"></div>🔐 Säkerhetsgranskning av Sprint 1-kod</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="done-criteria">
+      <span class="done-label">Definition of Done:</span>
+      <span class="done-item">Skapa, läsa, redigera, ta bort funktionär fungerar</span>
+      <span class="done-item">Alla attribut sparas i DB</span>
+      <span class="done-item">Sök och filter fungerar</span>
+      <span class="done-item">Mobilresponsivt</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SPRINT 2 — SEKTIONER & UPPDRAG
+       ════════════════════════════════════ -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Sprint 2 — Sektioner & Uppdrag</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="sprint-card">
+    <div class="sprint-header">
+      <div>
+        <div class="sprint-number" style="color:#10B981;">Sprint 2 · Vecka 5–6</div>
+        <div class="sprint-title">Dynamiska sektioner & Uppdrag</div>
+        <div class="sprint-subtitle">
+          Tävlingsledaren kan skapa och konfigurera sektioner (inklusive tvärsektionella).
+          Funktionärer kan tilldelas uppdrag med starttid, sluttid och plats — en funktionär kan ha flera uppdrag.
+        </div>
+      </div>
+      <div class="sprint-meta">
+        <span class="sprint-weeks">2 veckor</span>
+        <span class="deliverable-tag" style="background:#D1FAE5;color:#065F46;border:1.5px solid #A7F3D0;">🗂 Sektioner & pass</span>
+      </div>
+    </div>
+
+    <div class="sprint-body">
+      <div class="sprint-col">
+        <div class="col-title">🗄 Databas</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Tabell: sections (id, name, icon, color, is_cross_sectional)</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Tabell: section_spans (sektion ↔ annan sektion)</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Tabell: assignments (volunteer_id, section_id, role, location, start_time, end_time)</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>FK-relationer och index för tidsfrågor</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">🖥 Sektionshantering</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Sektionsöversikt (kort-vy med alla sektioner)</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Skapa / redigera sektion (namn, ikon, färg, ledare)</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Toggle: tvärsektionell + välj vilka sektioner den spänner över</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Ta bort sektion (om inga aktiva funktionärer)</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Ordna om sektioner (drag eller piltangenter)</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">📋 Uppdrag per funktionär</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Lägg till uppdrag på en funktionär (sektion, plats, tider)</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>En funktionär kan ha flera uppdrag</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Uppdrag visas som lista på funktionärens profilsida</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>Redigera och ta bort enskilt uppdrag</li>
+          <li class="story-item"><div class="story-dot" style="background:#10B981;"></div>🔐 Säkerhetsgranskning av Sprint 2-kod</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="done-criteria">
+      <span class="done-label">Definition of Done:</span>
+      <span class="done-item">Sektioner kan skapas och redigeras dynamiskt</span>
+      <span class="done-item">Tvärsektionell-flagga fungerar</span>
+      <span class="done-item">Funktionär kan ha flera uppdrag med tider</span>
+      <span class="done-item">Sektionsledare kopplad till sektion</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SPRINT 3 — TIDSLINJE & KONFLIKTER
+       ════════════════════════════════════ -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Sprint 3 — Tidslinje & Konfliktdetektering</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="sprint-card">
+    <div class="sprint-header">
+      <div>
+        <div class="sprint-number" style="color:#8B5CF6;">Sprint 3 · Vecka 7–8</div>
+        <div class="sprint-title">Gantt-tidslinje & Automatisk konfliktdetektering</div>
+        <div class="sprint-subtitle">
+          Sektionsledaren kan nu se sitt sektionsschema som ett Gantt-diagram. Systemet detekterar automatiskt
+          överlappande uppdrag och markerar dem tydligt. Det här är appens kärna — det unika värdet.
+        </div>
+      </div>
+      <div class="sprint-meta">
+        <span class="sprint-weeks">2 veckor</span>
+        <span class="deliverable-tag" style="background:#EDE9FE;color:#5B21B6;border:1.5px solid #C4B5FD;">📅 Tidslinje live</span>
+      </div>
+    </div>
+
+    <div class="sprint-body">
+      <div class="sprint-col">
+        <div class="col-title">⚙️ Konfliktlogik (backend)</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Algoritm: detektera överlappande uppdrag per funktionär</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Körs automatiskt vid varje sparing av uppdrag</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Tabell: conflicts (assignment_1, assignment_2, overlap_start, overlap_end, status, approved_by)</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>API-endpoint: hämta konflikter per sektion</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">📅 Gantt-tidslinje</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Tidslinje-komponent: en rad per funktionär, staplar per uppdrag</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Konflikter markeras med rött + röd overlay-zon</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Godkända konflikter visas med grön streckad kant</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Klick på stapel öppnar detalj-popup</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Filter: visa alla / visa bara konflikter</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">👔 Sektionsledarvy</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Sektionsledare ser sin sektion i tidslinjen</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Konflikt-kort ovanför tidslinjen med åtgärdsknappar</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Kan godkänna konflikter i sin sektion</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>Kan ej se eller redigera andra sektioner</li>
+          <li class="story-item"><div class="story-dot" style="background:#8B5CF6;"></div>🔐 Säkerhetsgranskning Sprint 3</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="done-criteria">
+      <span class="done-label">Definition of Done:</span>
+      <span class="done-item">Gantt-tidslinje renderas korrekt</span>
+      <span class="done-item">Konflikter detekteras automatiskt</span>
+      <span class="done-item">Konflikter visas visuellt</span>
+      <span class="done-item">Sektionsledare ser bara sin sektion</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SPRINT 4 — TÄVLINGSLEDARVY
+       ════════════════════════════════════ -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Sprint 4 — Tävlingsledarvy & Konfliktgodkännande</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="sprint-card">
+    <div class="sprint-header">
+      <div>
+        <div class="sprint-number" style="color:#233143;">Sprint 4 · Vecka 9–10</div>
+        <div class="sprint-title">Tävlingsledarens övergripande schema & godkännanden</div>
+        <div class="sprint-subtitle">
+          Tävlingsledaren kan nu se alla sektioners scheman i en samlad vy med expanderbara sektioner.
+          Konfliktgodkännanden loggas med kommentar, tidsstämpel och vem som godkände.
+        </div>
+      </div>
+      <div class="sprint-meta">
+        <span class="sprint-weeks">2 veckor</span>
+        <span class="deliverable-tag" style="background:#F1F5F9;color:#233143;border:1.5px solid #CBD5E1;">🏆 Full adminöversikt</span>
+      </div>
+    </div>
+
+    <div class="sprint-body">
+      <div class="sprint-col">
+        <div class="col-title">📊 Dashboard</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Statistikkort: totalt, bekräftade, väntande, briefing</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Statistik per gren/sektion</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Samlad konfliktöversikt med länk till respektive sektion</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Exportera hela funktionärslistan (CSV)</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">📅 Schema alla sektioner</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Alla sektioner i ordning med expand/kollaps</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Sjukvård visas med tvärsektionell markering</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Filter: visa alla sektioner / välj specifika</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Tävlingsledare kan godkänna konflikter i alla sektioner</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">✅ Konfliktgodkännande</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Popup med konfliktsdetalj och kommentarsfält</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Godkännande sparas: vem, när, kommentar</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Möjlighet att ångra ett godkännande</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>Briefing-markering per funktionär</li>
+          <li class="story-item"><div class="story-dot" style="background:#233143;"></div>🔐 Säkerhetsgranskning Sprint 4</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="done-criteria">
+      <span class="done-label">Definition of Done:</span>
+      <span class="done-item">Alla sektioner visas i schemaöversikten</span>
+      <span class="done-item">Godkännanden loggas korrekt</span>
+      <span class="done-item">Dashboard visar korrekta nyckeltal</span>
+      <span class="done-item">Export till CSV fungerar</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SPRINT 5 — EXCEL-IMPORT
+       ════════════════════════════════════ -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Sprint 5 — Excel-import</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="sprint-card">
+    <div class="sprint-header">
+      <div>
+        <div class="sprint-number" style="color:#F59E0B;">Sprint 5 · Vecka 11–12</div>
+        <div class="sprint-title">Importera funktionärer från Excel</div>
+        <div class="sprint-subtitle">
+          Tävlingsledaren kan ladda upp ett Excel-ark, mappa kolumnerna mot appens fält, förhandsgranska data
+          och importera med ett klick. Konflikter detekteras automatiskt under importen.
+        </div>
+      </div>
+      <div class="sprint-meta">
+        <span class="sprint-weeks">2 veckor</span>
+        <span class="deliverable-tag" style="background:#FEF3C7;color:#92400E;border:1.5px solid #FDE68A;">📥 Excel-import</span>
+      </div>
+    </div>
+
+    <div class="sprint-body">
+      <div class="sprint-col">
+        <div class="col-title">📂 Filuppladdning</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Drag-and-drop uppladdning (.xlsx, .csv)</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Parsa Excel med SheetJS (klient-side)</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Automatisk kolumnigenkänning (fuzzy match mot kända namn)</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Manuell kolumnmappning via dropdown</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">👁 Förhandsgranskning</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Visa de 5 första raderna innan import</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Markera rader med valideringsfel (saknad e-post etc.)</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Möjlighet att hoppa över felaktiga rader</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Importera: ny / uppdatera befintlig / hoppa över dubbletter</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">⚙️ Importlogik</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Batch-insert i Supabase</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Konfliktdetektering körs efter import</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Importrapport: X skapade, Y uppdaterade, Z fel</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>Ångra senaste import (mjuk borttagning)</li>
+          <li class="story-item"><div class="story-dot" style="background:#F59E0B;"></div>🔐 Säkerhetsgranskning Sprint 5</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="done-criteria">
+      <span class="done-label">Definition of Done:</span>
+      <span class="done-item">Excel-uppladdning fungerar</span>
+      <span class="done-item">Kolumnmappning sparas</span>
+      <span class="done-item">Import av 80 funktionärer fungerar</span>
+      <span class="done-item">Konflikter detekteras vid import</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SPRINT 6 — FUNKTIONÄRSMOBILVY
+       ════════════════════════════════════ -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Sprint 6 — Funktionärens mobilvy</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="sprint-card">
+    <div class="sprint-header">
+      <div>
+        <div class="sprint-number" style="color:#EC4899;">Sprint 6 · Vecka 13–14</div>
+        <div class="sprint-title">Funktionärens mobilanpassade vy</div>
+        <div class="sprint-subtitle">
+          Varje funktionär kan logga in via magic link och se sitt eget schema, sina uppdrag, plats och
+          kontaktinfo till sektionsledaren — optimerat för mobiltelefon och tävlingsdag-användning.
+        </div>
+      </div>
+      <div class="sprint-meta">
+        <span class="sprint-weeks">2 veckor</span>
+        <span class="deliverable-tag" style="background:#FCE7F3;color:#9D174D;border:1.5px solid #F9A8D4;">📱 Mobilvy klar</span>
+      </div>
+    </div>
+
+    <div class="sprint-body">
+      <div class="sprint-col">
+        <div class="col-title">📱 Funktionärsvy</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Startsida: "Mitt uppdrag idag" med nästa uppdrag prominant</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Fullt schema: alla uppdrag med tider och platser</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Kontaktinfo: sektionsledarens namn + telefon</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Bottom tab-bar: Hem, Schema, Karta, Profil</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">👤 Profilhantering</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Funktionär kan redigera egna kontaktuppgifter</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Uppdatera t-shirt-storlek och matpreferenser</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Uppdatera nödkontakt</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Kan ej ändra roll, pass eller sektion</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">⚡ Prestanda & offline</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Progressive Web App (PWA) — kan läggas till på hemskärm</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Schema cachas lokalt — fungerar utan nät under tävling</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>Touch-optimerade knappar och formulär</li>
+          <li class="story-item"><div class="story-dot" style="background:#EC4899;"></div>🔐 Säkerhetsgranskning Sprint 6</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="done-criteria">
+      <span class="done-label">Definition of Done:</span>
+      <span class="done-item">Funktionär loggar in med magic link</span>
+      <span class="done-item">Ser eget schema och uppdrag</span>
+      <span class="done-item">Kan redigera egna uppgifter</span>
+      <span class="done-item">Fungerar offline (PWA)</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════
+       SPRINT 7 — POLERING & LANSERING
+       ════════════════════════════════════ -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Sprint 7 — Polering, säkerhet & lansering</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="sprint-card">
+    <div class="sprint-header">
+      <div>
+        <div class="sprint-number" style="color:#22C55E;">Sprint 7 · Vecka 15–16</div>
+        <div class="sprint-title">Slutpolering, säkerhetsaudit & produktionslansering</div>
+        <div class="sprint-subtitle">
+          Fullständig säkerhetsgranskning (OWASP Top 10), prestandaoptimering, buggrättning och final deployment.
+          Onboarding av Jonas och sektionsledare. Systemet är redo för tävlingsdagen 9 aug 2026.
+        </div>
+      </div>
+      <div class="sprint-meta">
+        <span class="sprint-weeks">2 veckor</span>
+        <span class="deliverable-tag" style="background:#DCFCE7;color:#14532D;border:1.5px solid #A7F3D0;">🚀 Produktionsklar</span>
+      </div>
+    </div>
+
+    <div class="sprint-body">
+      <div class="sprint-col">
+        <div class="col-title">🔐 Säkerhet & kvalitet</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Fullständig OWASP Top 10-granskning av all kod</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Penetrationstestning av auth och API-routes</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>GDPR-kontroll (personuppgifter, lagringstid)</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Säkra HTTP-headers (CSP, X-Frame-Options)</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Rate limiting på API-routes</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">⚡ Prestanda & polish</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Lighthouse-audit: sikta på 90+ poäng mobil</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Optimera DB-queries (index, n+1-problem)</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>End-to-end testning av alla kritiska flöden</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Buggfixar från Sprint 0–6</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Feltolerans: vad händer om Supabase är nere?</li>
+        </ul>
+      </div>
+      <div class="sprint-col">
+        <div class="col-title">🚀 Lansering & onboarding</div>
+        <ul class="story-list">
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Produktionsmiljö på Vercel med egen domän</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Backupstrategi för Supabase-databasen</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Onboarding: Jonas som tävlingsledare (guide)</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Onboarding: sektionsledare bjuds in</li>
+          <li class="story-item"><div class="story-dot" style="background:#22C55E;"></div>Funktionärer får magic link-inbjudan</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="done-criteria">
+      <span class="done-label">Definition of Done:</span>
+      <span class="done-item">Alla kritiska säkerhetsbrister åtgärdade</span>
+      <span class="done-item">Appen live på produktions-URL</span>
+      <span class="done-item">Jonas kan logga in och hantera allt</span>
+      <span class="done-item">Funktionärer kan ta emot inbjudan</span>
+    </div>
+  </div>
+
+  <!-- SUMMARY TABLE -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Summering</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="info-card" style="margin-bottom:40px;">
+    <h3 style="margin-bottom:16px;">📋 Sprint-summering</h3>
+    <table class="velocity-table">
+      <thead>
+        <tr>
+          <th>Sprint</th>
+          <th>Namn</th>
+          <th>Veckor</th>
+          <th>Leverans</th>
+          <th>Nyckelberoende</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="sprint-badge" style="background:var(--orange);">S0</span></td>
+          <td><strong>Walking Skeleton</strong></td>
+          <td>1–2</td>
+          <td>Live app, auth, roller, DB-schema</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="sprint-badge" style="background:#3B82F6;">S1</span></td>
+          <td><strong>Funktionärsregister</strong></td>
+          <td>3–4</td>
+          <td>CRUD, alla attribut, sökning</td>
+          <td>Sprint 0</td>
+        </tr>
+        <tr>
+          <td><span class="sprint-badge" style="background:#10B981;">S2</span></td>
+          <td><strong>Sektioner & Uppdrag</strong></td>
+          <td>5–6</td>
+          <td>Dynamiska sektioner, uppdrag med tider</td>
+          <td>Sprint 1</td>
+        </tr>
+        <tr>
+          <td><span class="sprint-badge" style="background:#8B5CF6;">S3</span></td>
+          <td><strong>Tidslinje & Konflikter</strong></td>
+          <td>7–8</td>
+          <td>Gantt, automatisk konfliktdetektering</td>
+          <td>Sprint 2</td>
+        </tr>
+        <tr>
+          <td><span class="sprint-badge" style="background:#233143;">S4</span></td>
+          <td><strong>Tävlingsledarvy</strong></td>
+          <td>9–10</td>
+          <td>Samlad schemaöversikt, godkännanden</td>
+          <td>Sprint 3</td>
+        </tr>
+        <tr>
+          <td><span class="sprint-badge" style="background:#F59E0B;">S5</span></td>
+          <td><strong>Excel-import</strong></td>
+          <td>11–12</td>
+          <td>Filuppladdning, mappning, batch-import</td>
+          <td>Sprint 1</td>
+        </tr>
+        <tr>
+          <td><span class="sprint-badge" style="background:#EC4899;">S6</span></td>
+          <td><strong>Mobilvy funktionär</strong></td>
+          <td>13–14</td>
+          <td>PWA, magic link, eget schema offline</td>
+          <td>Sprint 2 + 3</td>
+        </tr>
+        <tr>
+          <td><span class="sprint-badge" style="background:#22C55E;">S7</span></td>
+          <td><strong>Lansering</strong></td>
+          <td>15–16</td>
+          <td>Säkerhetsaudit, produktionsmiljö, onboarding</td>
+          <td>Sprint 0–6</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:16px; padding:12px 16px; background:#FFF8F3; border:1.5px solid var(--orange); border-radius:10px; font-size:0.78rem; color:var(--muted); line-height:1.7;">
+      🎯 <strong style="color:var(--text);">Målsättning:</strong> Produktionsklar i slutet av juni 2026 — 6 veckor före tävlingsdagen 9 aug 2026 — för att ge tid till testning, onboarding och eventuella justeringar.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
