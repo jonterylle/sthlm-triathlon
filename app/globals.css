@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-blue: #0066CC;
+    --brand-orange: #FF6B35;
+    --brand-dark: #1A1A2E;
+    --brand-light: #F5F7FA;
+  }
+
+  body {
+    @apply bg-brand-light text-brand-dark;
+  }
+}

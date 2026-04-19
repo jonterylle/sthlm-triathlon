@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "triathlon-rules", "runs": [{"id": "eval-1-with_skill", "prompt": "Vi planerar STHLM Triathlon 2026 med ca 600 deltagare, varav ungef\u00e4r h\u00e4lften springer i motionsklass och h\u00e4lften i Age Group. Vi har rekryterat 12 funktion\u00e4rer till cykelbanan. R\u00e4cker det? Hur m\u00e5nga domare p\u00e5 MC beh\u00f6ver vi egentligen?", "eval_id": 1, "outputs": [{"name": "answer.md", "type": "text", "content": "# Bemanningsfr\u00e5gor cykelbana \u2013 STHLM Triathlon 2026\n\n## Sammanfattning av situationen\n\n- **Totalt antal deltagare**: ~600\n- **Motionsklass**: ~300 deltagare\n- **Age Group (t\u00e4vlingsklass)**: ~300 deltagare\n- **Rekryterade funktion\u00e4rer till cykelbanan**: 12 st\n\n---\n\n## Regelgrunden: Cykeldomare p\u00e5 MC\n\nEnligt STF:s t\u00e4vlingsreglemente 2026 g\u00e4ller f\u00f6ljande minimikrav f\u00f6r cykelbanan:\n\n> **Minimum 1 MC-domare per 50 aktiva deltagare p\u00e5 banan.**\n\nDessutom: MC-f\u00f6raren och domaren m\u00e5ste vara **tv\u00e5 separata personer** \u2013 en person k\u00f6r motorcykeln och en annan \u00e4r domare/officiell. Det inneb\u00e4r att varje MC-enhet kr\u00e4ver 2 personer.\n\n---\n\n## Ber\u00e4kning: Hur m\u00e5nga MC-domare beh\u00f6vs?\n\n### Utg\u00e5ngspunkt\n\nAlla 600 deltagare cyklar, men de befinner sig inte p\u00e5 banan samtidigt. Med v\u00e5gstarter (waves) \u00e4r det vanligt att max 400\u2013500 aktiva befinner sig p\u00e5 cykelbanan vid ett och samma tillf\u00e4lle f\u00f6r ett lopp i den h\u00e4r storleksklassen. Men f\u00f6r **minimiber\u00e4kning** anv\u00e4nds det totala antalet registrerade deltagare per klass som dimensioneras.\n\n### Motionsklass (~300 deltagare)\n- Inga tidsstraff utdelas i motionsklasser.\n- Ingen straffbox kr\u00e4vs f\u00f6r motionsklasser.\n- **Rekommenderat** (men inte obligatoriskt): minst 1 MC-funktion\u00e4r p\u00e5 banan f\u00f6r s\u00e4kerhet och ordning.\n- Formellt minimikrav: **0 MC-domare med penaltybefogenhet**, men minst 1 MC f\u00f6r s\u00e4kerhets\u00f6vervakning rekommenderas starkt.\n\n### Age Group (~300 deltagare)\n- Fullt regelverk g\u00e4ller, inklusive draftingkontroll och straffbox.\n- Minimiber\u00e4kning: 300 \u00f7 50 = **6 MC-enheter** (d.v.s. 6 domare + 6 f\u00f6rare = **12 personer** f\u00f6r MC-sidan).\n\n> **OBS:** Varje MC-enhet = 1 f\u00f6rare + 1 domare = 2 personer. 6 MC-enheter kr\u00e4ver allts\u00e5 12 personer enbart f\u00f6r MC-tj\u00e4nsten i Age Group-klassen.\n\n---\n\n## R\u00e4cker 12 funktion\u00e4rer?\n\n**Nej, 12 funktion\u00e4rer r\u00e4cker troligen inte** om man r\u00e4knar hela cykelbanan f\u00f6r b\u00e5da klasserna. S\u00e5 h\u00e4r ser behovet ut:\n\n| Post | Antal personer | Kommentar |\n|------|---------------|-----------|\n| MC-domare Age Group (6 enheter \u00d7 2) | **12** | 6 f\u00f6rare + 6 domare; minimiber\u00e4kning 300/50 |\n| MC-s\u00e4kerhet Motionsklass (rekommenderat, 1 enhet \u00d7 2) | **2** | Starkt rekommenderat f\u00f6r 300 deltagare |\n| Straffbox (Age Group, minst 1 per varv) | **1\u20132** | Beror p\u00e5 antal varv; 1 person per box |\n| Station\u00e4ra cykelmarskalk vid korsningar | **3\u20136** | Beror p\u00e5 antal korsningar/v\u00e4ndpunkter |\n| V\u00e4ndpunktsmarskalk | **1\u20132 per v\u00e4ndpunkt** | Varje v\u00e4ndpunkt p\u00e5 banan |\n\n**Minimibehovet enbart f\u00f6r MC (Age Group) \u00e4r allts\u00e5 12 personer**, och d\u00e5 \u00e5terst\u00e5r fortfarande:\n- MC-bevakning f\u00f6r motionsklassen\n- Straffboxpersonal\n- Station\u00e4ra marskalker vid v\u00e4ndpunkter och korsningar\n\n### Slutsats\n\nMed 12 funktion\u00e4rer **totalt** till cykelbanan \u00e4r det **inte tillr\u00e4ckligt** f\u00f6r att uppfylla STF:s minimikrav plus rimlig operativ s\u00e4kerhet. En realistisk minimibemanningsplan f\u00f6r cykelbanan vid 600 deltagare ser ut ungef\u00e4r s\u00e5 h\u00e4r:\n\n| Funktion | Minimiantal personer |\n|----------|---------------------|\n| MC-domare + f\u00f6rare, Age Group (6 enheter) | 12 |\n| MC-s\u00e4kerhet + f\u00f6rare, Motionsklass (1\u20132 enheter) | 2\u20134 |\n| Straffboxansvarig (per varv) | 1\u20132 |\n| V\u00e4ndpunktsmarskalk | 2\u20134 |\n| Station\u00e4ra cykelmarskalk vid korsningar | 3\u20136 |\n| **Total minimiuppskattning** | **20\u201328 personer** |\n\n---\n\n## Viktiga distinktioner att ha i \u00e5tanke\n\n1. **Motionsklass**: Inga formella straff (inget tidsstraff, ingen DQ). Ingen straffbox kr\u00e4vs. MC rekommenderas \u00e4nd\u00e5 f\u00f6r s\u00e4kerhet.\n\n2. **Age Group**: Fullt draftingregelverk. Straffbox obligatorisk (minst 1 per varv, bemannad). MC-domare obligatoriskt.\n\n3. **MC = 2 personer per enhet**: F\u00f6rare och domare \u00e4r alltid tv\u00e5 separata individer. Gl\u00f6ms ofta bort vid bemanningsplanering.\n\n4. **\"Per 50 aktiva p\u00e5 banan\"** \u2013 om loppen (Age Group och Motionsklass) k\u00f6rs i separerade v\u00e5gor och inte \u00f6verlappar tidsm\u00e4ssigt, kan man i teorin \u00e5teranv\u00e4nda samma MC-enheter. Men detta kr\u00e4ver noggrann schemal\u00e4ggning och \u00e4r riskabelt i praktiken.\n\n---\n\n## Rekommendation\n\nRekrytera minst **20\u201324 funktion\u00e4rer** specifikt f\u00f6r cykelbanan:\n- 12 f\u00f6r Age Group MC (6 domare + 6 f\u00f6rare)\n- 4 f\u00f6r Motionsklass MC (2 domare + 2 f\u00f6rare)\n- 2 f\u00f6r straffbox (Age Group)\n- 4\u20136 station\u00e4ra marskalker vid v\u00e4ndpunkter och kritiska korsningar\n\nOm tidsplanen f\u00f6r de tv\u00e5 klasserna \u00e4r v\u00e4lseparerade (Age Group och Motionsklass cyklar vid helt olika tidpunkter) finns en m\u00f6jlighet att \u00e5teranv\u00e4nda delar av MC-bemanningen, men det kr\u00e4ver tydlig schema- och rollplanering. Kontakta STF:s Tekniska Kommitt\u00e9 om dispens eller tolkning av bemanningskrav beh\u00f6vs f\u00f6r er specifika kursutformning.\n"}], "grading": {"eval_id": 1, "configuration": "with_skill", "expectations": [{"text": "Mentions STF rule of minimum 1 MC official per 50 athletes on course", "passed": true, "evidence": "States explicitly: 'Minimum 1 MC-domare per 50 aktiva deltagare p\u00e5 banan' with calculation 300\u00f750=6 MC units"}, {"text": "Mentions that MC driver and referee must be two separate people", "passed": true, "evidence": "States: 'MC-f\u00f6raren och domaren m\u00e5ste vara tv\u00e5 separata personer \u2013 en person k\u00f6r motorcykeln och en annan \u00e4r domare/officiell'"}, {"text": "Distinguishes between AG (formal requirements) and motionsklass (recommended but no formal penalty enforcement)", "passed": true, "evidence": "Clear table and text: motionsklass = no time penalties, no straffbox required, MC recommended but not obligatory"}, {"text": "Correctly concludes that 12 is insufficient for the full picture", "passed": true, "evidence": "Concludes 12 covers only MC for AG class, recommends 20-28 total"}], "pass_rate": 1.0}}, {"id": "eval-1-without_skill", "prompt": "Vi planerar STHLM Triathlon 2026 med ca 600 deltagare, varav ungef\u00e4r h\u00e4lften springer i motionsklass och h\u00e4lften i Age Group. Vi har rekryterat 12 funktion\u00e4rer till cykelbanan. R\u00e4cker det? Hur m\u00e5nga domare p\u00e5 MC beh\u00f6ver vi egentligen?", "eval_id": 1, "outputs": [{"name": "answer.md", "type": "text", "content": "# Funktion\u00e4rer p\u00e5 cykelbanan \u2013 STHLM Triathlon 2026\n\n## Sammanfattning\n\n12 funktion\u00e4rer r\u00e4cker troligtvis **inte** f\u00f6r 600 deltagare, framf\u00f6r allt inte om Age Group-klassen t\u00e4vlar under ITU/World Triathlon- eller Svenska Triathlonf\u00f6rbundets regler med drafting-f\u00f6rbud. Nedan f\u00f6ljer en genomg\u00e5ng av vad som kr\u00e4vs och varf\u00f6r.\n\n---\n\n## Regelm\u00e4ssig bakgrund\n\n### Motionsklass\nMotionsklassen t\u00e4vlar vanligtvis utan str\u00e4nga drafting-regler eller med enklare lokala regler. Behovet av tekniska domare \u00e4r l\u00e4gre, men s\u00e4kerhetsfunktion\u00e4rer beh\u00f6vs \u00e4nd\u00e5 l\u00e4ngs banan.\n\n### Age Group (AG) \u2013 drafting-f\u00f6rbudsregler\nI Age Group till\u00e4mpas normalt **drafting-f\u00f6rbudsregler** (non-drafting), vilket inneb\u00e4r:\n- Varje cyklist m\u00e5ste h\u00e5lla ett best\u00e4mt avst\u00e5nd till framf\u00f6rvarande cyklist (typiskt **12 meter** enligt World Triathlon-regler, 10 m enligt vissa nationella regler).\n- Domare p\u00e5 motorcykel (MC-domare/moto judges) \u00f6vervakar och delar ut tidsstraff (normalt 30 sekunders \"stop-and-go\" i en straffzon).\n- Reglerna kr\u00e4ver aktiv n\u00e4rvaro av domare under hela cykelsegmentet.\n\n---\n\n## Rekommenderat antal funktion\u00e4rer\n\n### MC-domare (tekniska domare p\u00e5 motorcykel)\nWorld Triathlon och Svenska Triathlonf\u00f6rbundet rekommenderar generellt:\n\n| Antal t\u00e4vlande (AG, non-drafting) | Rekommenderade MC-domare |\n|-----------------------------------|--------------------------|\n| Upp till 200                      | 2\u20133 MC                   |\n| 200\u2013400                           | 3\u20135 MC                   |\n| 400\u2013600+                          | 5\u20138 MC                   |\n\nF\u00f6r **ca 300 Age Group-deltagare** i ett lopp med non-drafting \u00e4r **minst 4\u20136 MC-domare** en rimlig miniminiv\u00e5. Vid en stor stadst\u00e4vling som STHLM Triathlon, med sannolikt teknisk bana och h\u00f6g deltagarkoncentration i starten av cykelsegmentet, rekommenderas **6\u20138 MC-domare**.\n\n### Station\u00e4ra banfunktion\u00e4rer\nUt\u00f6ver MC-domare beh\u00f6vs station\u00e4ra funktion\u00e4rer l\u00e4ngs cykelbanan f\u00f6r:\n- Trafiks\u00e4kerhet och v\u00e4gavst\u00e4ngningar (bemannas ofta av polis/trafikv\u00e4kter, men t\u00e4vlingsfunktion\u00e4rer beh\u00f6vs \u00e4nd\u00e5 vid nyckelplatser)\n- Varv-/rundr\u00e4kning och timing vid v\u00e4ndpunkter\n- Hantering av cykelproblem/punktering\n- Straffzonsvakter (penalty tent)\n\nEn **tumregel** \u00e4r 1 station\u00e4r funktion\u00e4r per 2\u20133 km bana, plus personal i straffzonen (minst 2 personer).\n\n### Totalbehov \u2013 uppskattning f\u00f6r STHLM Triathlon 2026\n\n| Roll | Antal |\n|------|-------|\n| MC-domare (non-drafting, AG) | 6\u20138 |\n| Station\u00e4ra banfunktion\u00e4rer (s\u00e4kerhet/v\u00e4ndpunkter) | 8\u201312 |\n| Straffzonspersonal | 2\u20133 |\n| Bannsamordnare/chefsdomare cykel | 1 |\n| **Totalt** | **17\u201324** |\n\n---\n\n## Slutsats\n\n**12 funktion\u00e4rer r\u00e4cker troligtvis inte** f\u00f6r ett lopp med 600 deltagare, varav 300 i Age Group med non-drafting-regler. Rekommendationen \u00e4r:\n\n1. **Rekrytera ytterligare 5\u201312 funktion\u00e4rer** till cykelbanan, beroende p\u00e5 banans l\u00e4ngd och layout.\n2. **S\u00e4kerst\u00e4ll minst 4\u20136 kvalificerade MC-domare** med erfarenhet av non-drafting-regler \u2013 detta \u00e4r den kritiska resursen f\u00f6r Age Group.\n3. Kontakta **Svenska Triathlonf\u00f6rbundet** f\u00f6r att st\u00e4mma av exakta krav, eftersom officiella t\u00e4vlingar ofta har minimikrav p\u00e5 antal licensierade domare f\u00f6r att t\u00e4vlingen ska vara sanktionerad.\n4. Beakta att cykelsegmentet i en stadst\u00e4vling ofta inneb\u00e4r **flera varv**, vilket \u00f6kar belastningen p\u00e5 MC-domarna och g\u00f6r fler domare n\u00f6dv\u00e4ndiga f\u00f6r kontinuerlig t\u00e4ckning.\n\n### Praktisk rekommendation f\u00f6r MC-domare\nF\u00f6r 300 AG-deltagare i ett flervarvslopp: **minst 5\u20136 MC-domare**, varav en \u00e4r chefsdomare f\u00f6r cykelsegmentet. Vid ett kortare lopp med koncentrerade startblock kan 4 MC fungera som absolut minimum, men risken f\u00f6r \u00f6verklaganden och regelbrott \u00f6kar.\n"}], "grading": {"eval_id": 1, "configuration": "without_skill", "expectations": [{"text": "Mentions STF rule of minimum 1 MC official per 50 athletes on course", "passed": false, "evidence": "Uses vague table (200-400 = 3-5 MC) without citing the 1/50 STF rule. Does not reference STF 2026 regulation."}, {"text": "Mentions that MC driver and referee must be two separate people", "passed": false, "evidence": "Never mentions the two-person MC rule. Treats MC judge as a single role."}, {"text": "Distinguishes between AG (formal requirements) and motionsklass (recommended but no formal penalty enforcement)", "passed": true, "evidence": "Mentions motionsklass has 'simpler local rules' though not as precisely as the STF rule"}, {"text": "Correctly concludes that 12 is insufficient for the full picture", "passed": true, "evidence": "Concludes 12 is not enough, recommends 17-24 total"}], "pass_rate": 0.5}}, {"id": "eval-2-with_skill", "prompt": "En deltagare i motionsklassen cyklar t\u00e4tt bakom en annan cyklist och en funktion\u00e4r ser det. Vad ska funktion\u00e4ren g\u00f6ra? Ska deltagaren skickas till straffboxen?", "eval_id": 2, "outputs": [{"name": "answer.md", "type": "text", "content": "# Drafting i motionsklassen \u2014 vad ska funktion\u00e4ren g\u00f6ra?\n\n## Kort svar\n\nNej, deltagaren ska **inte** skickas till straffboxen. I motionsklassen g\u00e4ller inga tidsstraff eller diskvalificeringar. Funktion\u00e4ren kan ge muntlig v\u00e4gledning till deltagaren, men inga formella p\u00e5f\u00f6ljder utdelas.\n\n---\n\n## Detaljerad f\u00f6rklaring\n\n### Regeln om straffbox g\u00e4ller inte motionsklassen\n\nEnligt STF:s t\u00e4vlingsreglemente 2026 \u00e4r straffboxen (penalty box) p\u00e5 cykelrundan ett krav **enbart f\u00f6r t\u00e4vlingar med t\u00e4vlingsklasser** (Age Group / elit). F\u00f6r motionsklassen g\u00e4ller f\u00f6ljande:\n\n> *\"I motionsklasser och f\u00f6r barn: INGA tidsstraff eller diskvalificeringar utdelas \u00f6verhuvudtaget.\"*\n\nDetta \u00e4r en grundl\u00e4ggande skillnad mot t\u00e4vlingsklasserna.\n\n### Drafting-regeln i sig\n\nDrafting-regeln inneb\u00e4r att en deltagare inte f\u00e5r befinna sig i en annan cyklist drafting zone, definierad som:\n- **12 meter bakom** framf\u00f6rvarande cyklist\n- **1,5 meter \u00e5t sidan**\n\nOm en passning p\u00e5b\u00f6rjas m\u00e5ste den genomf\u00f6ras inom **25 sekunder**.\n\nI t\u00e4vlingsklassen skulle ett brott mot denna regel leda till att funktion\u00e4ren noterar startnummer, tid och plats, varefter deltagaren kallas in till straffboxen. Upprepad f\u00f6rseelse kan leda till DQ.\n\n### Vad funktion\u00e4ren faktiskt ska g\u00f6ra i motionsklassen\n\n1. **Ge muntlig v\u00e4gledning** \u2014 Funktion\u00e4ren (t.ex. en MC-domare eller station\u00e4r cykelmarskalk) kan k\u00f6ra upp bredvid deltagaren och informera om att man cyklar f\u00f6r n\u00e4ra, och uppmana deltagaren att \u00f6ka avst\u00e5ndet.\n2. **Ingen straffbox** \u2014 Deltagaren ska inte h\u00e4nvisas till straffboxen (och det beh\u00f6ver inte ens finnas n\u00e5gon straffbox p\u00e5 banan f\u00f6r motionsklassen).\n3. **Inga formella p\u00e5f\u00f6ljder** \u2014 Varken tidsstraff eller diskvalificering \u00e4r aktuellt, oavsett hur tydlig f\u00f6rseelsen \u00e4r.\n4. **S\u00e4kerhetsaspekten** \u2014 Om t\u00e4tt bakomk\u00f6rande bed\u00f6ms utg\u00f6ra en direkt s\u00e4kerhetsrisk (t.ex. risk f\u00f6r kollision), kan funktion\u00e4ren av s\u00e4kerhetssk\u00e4l ingripa mer aktivt och informera T\u00e4vlingsledaren (TL).\n\n### Rekommendation om MC-funktion\u00e4r p\u00e5 banan\n\n\u00c4ven om inga straff g\u00e4ller i motionsklassen rekommenderar STF att det **\u00e4nd\u00e5 finns MC-funktion\u00e4rer** p\u00e5 cykelbanan i motionsklassen \u2014 just f\u00f6r att uppr\u00e4tth\u00e5lla ordning, informera deltagare om korrekt beteende och hantera s\u00e4kerhetsfr\u00e5gor.\n\n---\n\n## Sammanfattning\n\n| Situation | T\u00e4vlingsklass | Motionsklass |\n|-----------|--------------|--------------|\n| Drafting observerat av funktion\u00e4r | Notera nummer \u2192 straffbox \u2192 ev. DQ | Muntlig information/v\u00e4gledning |\n| Straffbox kr\u00e4vs | Ja | Nej |\n| Tidsstraff m\u00f6jligt | Ja | Nej |\n| DQ m\u00f6jligt | Ja (vid upprepad/grov f\u00f6rseelse) | Nej |\n\n**Slutsats:** Funktion\u00e4ren ska ge deltagaren muntlig information om att drafting inte \u00e4r till\u00e5tet och uppmana hen att \u00f6ka avst\u00e5ndet. Ingen straffbox, inget tidsstraff, ingen DQ.\n"}], "grading": {"eval_id": 2, "configuration": "with_skill", "expectations": [{"text": "Clearly states that NO time penalties or DQ apply in motionsklassen", "passed": true, "evidence": "States: 'I motionsklassen g\u00e4ller inga tidsstraff eller diskvalificeringar' and summary table confirms"}, {"text": "States that straffbox is NOT required/used for motionsklassen", "passed": true, "evidence": "States: 'Ingen straffbox kr\u00e4vs f\u00f6r motionsklassen' and 'det beh\u00f6ver inte ens finnas n\u00e5gon straffbox'"}, {"text": "States that only verbal guidance/warning is appropriate", "passed": true, "evidence": "Lists 'Ge muntlig v\u00e4gledning' as the correct action for the official"}, {"text": "Does NOT incorrectly say to issue a yellow/blue card penalty", "passed": true, "evidence": "Explicitly says 'Inga formella p\u00e5f\u00f6ljder \u2014 Varken tidsstraff eller diskvalificering \u00e4r aktuellt'"}], "pass_rate": 1.0}}, {"id": "eval-2-without_skill", "prompt": "En deltagare i motionsklassen cyklar t\u00e4tt bakom en annan cyklist och en funktion\u00e4r ser det. Vad ska funktion\u00e4ren g\u00f6ra? Ska deltagaren skickas till straffboxen?", "eval_id": 2, "outputs": [{"name": "answer.md", "type": "text", "content": "# Drafting (t\u00e4kt cykling) i motionsklassen \u2013 vad ska funktion\u00e4ren g\u00f6ra?\n\n## Bakgrund: Drafting-regeln i triathlon\n\nI triathlon g\u00e4ller som huvudregel att cyklister inte f\u00e5r ligga t\u00e4tt bakom en annan cyklist och utnyttja luftmotst\u00e5ndet (drafting/t\u00e4kt cykling). Regeln syftar till att cykeletappen ska genomf\u00f6ras som ett individuellt lopp.\n\nReglerna skiljer sig dock \u00e5t beroende p\u00e5 t\u00e4vlingsformat:\n\n- **Elite/\u00e5ldersgrupp (draft-illegal):** Drafting \u00e4r f\u00f6rbjudet och bestraffas.\n- **Motionsklass (mass participation/fun):** Reglerna varierar beroende p\u00e5 arrang\u00f6r och t\u00e4vlingsformat. M\u00e5nga motionslopp f\u00f6ljer International Triathlon Union (ITU, numera World Triathlon) eller nationella f\u00f6rbundsregler, men med viss anpassning.\n\n---\n\n## Vad g\u00e4ller specifikt i motionsklassen?\n\nI de flesta motionslopp som f\u00f6ljer World Triathlon- eller nationella f\u00f6rbunds (t.ex. Svenska Triathlonf\u00f6rbundets) regler g\u00e4ller f\u00f6ljande:\n\n### Drafting-zonen\nVarje cyklist har en skyddad zon runt sig (drafting-zonen). Enligt World Triathlon-reglerna \u00e4r denna zon:\n- **12 meter l\u00e5ng och 3 meter bred** (m\u00e4tt bak\u00e5t fr\u00e5n framhjulet p\u00e5 den framf\u00f6rvarande cyklisten).\n\nEn cyklist som befinner sig inom denna zon utan att aktivt k\u00f6ra om anses drafta.\n\n### Till\u00e5ten tid i zonen\nEn cyklist f\u00e5r befinna sig i en annan cyklists drafting-zon i **maximalt 25 sekunder** (enl. World Triathlon-regler) f\u00f6r att genomf\u00f6ra en omk\u00f6rning. Sker inte omk\u00f6rningen inom den tiden r\u00e4knas det som drafting.\n\n---\n\n## Funktion\u00e4rens agerande vid observerad drafting\n\nN\u00e4r en funktion\u00e4r (t\u00e4vlingsdomare/observat\u00f6r p\u00e5 motorcykel eller vid sidan av banan) observerar drafting ska f\u00f6ljande ske:\n\n### Steg 1: Observation och bed\u00f6mning\nFunktion\u00e4ren konstaterar att en deltagare befinner sig i drafting-zonen under l\u00e4ngre tid \u00e4n till\u00e5tet (mer \u00e4n 25 sekunder utan att genomf\u00f6ra en omk\u00f6rning).\n\n### Steg 2: Visa varningskort / utd\u00f6ma straff\nFunktion\u00e4ren visar ett **gult kort** (varning) eller utdelar direkt ett **straff** (beroende p\u00e5 regelverket f\u00f6r det specifika loppet). I m\u00e5nga motionslopp ges en direkt straffvarning.\n\n### Steg 3: Anvisning om straffbox\nDeltagaren ska anvisas till **straffboxen (penalty tent/box)** vid n\u00e4sta straffbox-station l\u00e4ngs cykelbanan eller vid l\u00f6parstart/T2.\n\n---\n\n## Ska deltagaren skickas till straffboxen?\n\n**Ja, i regel ska deltagaren till straffboxen.**\n\nEnligt standard World Triathlon-regler f\u00f6r draft-illegal triathlon (som oftast till\u00e4mpas \u00e4ven i organiserade motionslopp):\n\n- Funktion\u00e4ren delar ut ett **straff** och noterar startnumret.\n- Deltagaren **m\u00e5ste stanna i straffboxen** i **5 minuter** (standardstraff f\u00f6r drafting).\n- Om deltagaren ignorerar straffet och inte stannar i boxen kan hen bli **diskvalificerad (DSQ)**.\n\n### Undantag och variationer i motionsklassen\nVissa arrang\u00f6rer av motionslopp v\u00e4ljer att:\n- Ge en **muntlig varning** vid f\u00f6rsta tillf\u00e4llet i st\u00e4llet f\u00f6r direkt straffbox.\n- Anv\u00e4nda kortare strafftider.\n- Enbart registrera regel\u00f6vertr\u00e4delsen utan strafftid (beroende p\u00e5 arrang\u00f6rens egna regler).\n\nDet \u00e4r d\u00e4rf\u00f6r viktigt att funktion\u00e4ren k\u00e4nner till **det specifika loppets regelverk** och instruktioner fr\u00e5n t\u00e4vlingsledningen.\n\n---\n\n## Sammanfattning\n\n| \u00c5tg\u00e4rd | Beskrivning |\n|--------|-------------|\n| Observation | Funktion\u00e4ren bekr\u00e4ftar att drafting sker (>25 sek i zonen) |\n| Kortvisning | Gult kort visas f\u00f6r deltagaren |\n| Notering | Startnummer noteras och rapporteras |\n| Straffbox | Deltagaren anvisas till n\u00e4sta straffbox |\n| Strafftid | Normalt 5 minuters strafftid i boxen |\n| Vid v\u00e4gran | Risk f\u00f6r diskvalificering |\n\n**Slutsvar:** Ja, funktion\u00e4ren ska visa kort och skicka deltagaren till straffboxen. Strafftiden \u00e4r normalt 5 minuter. Om loppet har egna motionsregler som avviker fr\u00e5n standardreglerna ska dessa f\u00f6ljas, men principen om straffbox g\u00e4ller i de flesta organiserade triatlont\u00e4vlingar oavsett klass.\n"}], "grading": {"eval_id": 2, "configuration": "without_skill", "expectations": [{"text": "Clearly states that NO time penalties or DQ apply in motionsklassen", "passed": false, "evidence": "Incorrectly says 'Ja, deltagaren ska till straffboxen' with '5 minuters strafftid'"}, {"text": "States that straffbox is NOT required/used for motionsklassen", "passed": false, "evidence": "Incorrectly says the participant should be directed to the penalty box"}, {"text": "States that only verbal guidance/warning is appropriate", "passed": false, "evidence": "Says to show yellow card and send to straffbox \u2014 not just verbal"}, {"text": "Does NOT incorrectly say to issue a yellow/blue card penalty", "passed": false, "evidence": "Explicitly says: 'Funktion\u00e4ren visar ett gult kort (varning) eller utdelar direkt ett straff'"}], "pass_rate": 0.0}}, {"id": "eval-3-with_skill", "prompt": "Hur ska vi placera ut straffboxar p\u00e5 cykelbanan? Vi har en 10 km l\u00e5ng bana som deltagarna cyklar fyra varv p\u00e5 (40 km totalt). Var ska boxarna st\u00e5?", "eval_id": 3, "outputs": [{"name": "answer.md", "type": "text", "content": "# Placering av straffboxar p\u00e5 cykelbanan\n\n## Regelkrav enligt STF T\u00e4vlingsreglemente 2026\n\nStraffboxar (penalty boxes) \u00e4r obligatoriska vid t\u00e4vlingar med **t\u00e4vlingsklasser** (Age Group / kompetitiva klasser). F\u00f6r motionsklasser kr\u00e4vs inga straffboxar.\n\n### Grundregel: Minst en straffbox per varv\n\nRegeln \u00e4r tydlig:\n> **Minimum en straffbox per varv, placerad n\u00e4ra slutet av varvet, precis innan deltagarna k\u00f6r in mot T2.**\n\n---\n\n## Till\u00e4mpning p\u00e5 er 10 km bana \u00d7 4 varv (40 km totalt)\n\n### Antal straffboxar\nNi beh\u00f6ver **minst 4 straffboxar** \u2014 en per varv.\n\nI praktiken \u00e4r det vanligast att anv\u00e4nda **en fysisk plats** f\u00f6r straffboxen, men med en placering som inneb\u00e4r att deltagarna passerar den en g\u00e5ng per varv. Det \u00e4r allts\u00e5 inte n\u00f6dv\u00e4ndigt att ha fyra separata platser med fyra separata boxar \u2014 en v\u00e4lplacerad box som alla fyra varven passerar r\u00e4cker, f\u00f6rutsatt att den \u00e4r bemannad och att logistiken fungerar.\n\n### Var ska boxen st\u00e5?\n\n**Placera straffboxen n\u00e4ra slutet av varvet, strax innan deltagarna passerar startlinjen/varvslinjen (eller vid infl\u00f6det mot T2 p\u00e5 det sista varvet).**\n\nKonkreta kriterier f\u00f6r platsvalet:\n1. **N\u00e4ra varvsslingan slut** \u2014 helst de sista 500\u20131 000 meterna av varje varv, s\u00e5 att deltagaren tj\u00e4nar straffet och direkt forts\u00e4tter in i n\u00e4sta varv (eller mot T2 p\u00e5 varv 4).\n2. **S\u00e4ker och synlig plats** \u2014 deltagare m\u00e5ste kunna bromsa och stanna utan att riskera kollision med andra. Undvik kurvor, smala passager eller tekniska sektioner.\n3. **Tydlig skyltning** \u2014 boxen ska vara tydligt markerad s\u00e5 att domaren p\u00e5 MC enkelt kan peka dit och deltagaren vet var den \u00e4r.\n4. **Tillr\u00e4ckligt utrymme** \u2014 plats f\u00f6r minst ett par cyklar att st\u00e5 still, utan att blockera den aktiva cykelbanan.\n\n### Bemanningskrav\nVarje straffbox m\u00e5ste bemannas av **minst en person** (domare eller volont\u00e4r) som:\n- Stoppar och identifierar deltagare med utdelat straff\n- Tar tid p\u00e5 straffet\n- Loggar att straffet verkligen avtj\u00e4nats\n- Rapporterar vid uteblivet straff (kan leda till diskvalificering)\n\n---\n\n## Sammanfattning\n\n| Varv | Straffbox kr\u00e4vs? | Rekommenderad placering |\n|------|-----------------|------------------------|\n| Varv 1 | Ja | Sista ~500\u20131 000 m av varvet, s\u00e4ker rak str\u00e4cka |\n| Varv 2 | Ja | Samma plats (om banan \u00e4r en loop) |\n| Varv 3 | Ja | Samma plats |\n| Varv 4 | Ja | Samma plats, strax innan infl\u00f6det mot T2 |\n\n**Praktiskt r\u00e5d:** Placera en fysisk straffbox p\u00e5 en s\u00e4ker, rak och synlig str\u00e4cka i slutet av loopen \u2014 exempelvis 500\u2013800 m innan varvs-/startlinjen. Alla fyra varven passerar samma punkt, och boxen bemannas kontinuerligt under hela cykelpassagen. Se till att platsen \u00e4r tydligt skyltad och att MC-domarna k\u00e4nner till exakt var den \u00e4r.\n\n---\n\n## Viktigt att t\u00e4nka p\u00e5\n\n- **Motionsklasser**: Om ni har motionsklasser i t\u00e4vlingen g\u00e4ller inga tidsstraff och ingen straffbox kr\u00e4vs f\u00f6r dessa klasser. Straffboxen \u00e4r enbart obligatorisk f\u00f6r t\u00e4vlingsklasserna.\n- **Ignorerat straff = DQ**: En deltagare som inte stannar i straffboxen trots utdelat straff riskerar diskvalificering. Straffboxansvarig ska rapportera s\u00e5dana fall till Huvuddomaren (HD).\n- **Dokumentation**: Straffboxansvarig ska logga varje avtj\u00e4nat straff med startnummer och tid.\n"}], "grading": {"eval_id": 3, "configuration": "with_skill", "expectations": [{"text": "States minimum 1 straffbox per lap (= 4 on a 4-lap course)", "passed": true, "evidence": "States: 'Minimum en straffbox per varv' = 4 boxar on 4-lap course"}, {"text": "States box should be near the END of each lap, before T2 entry", "passed": true, "evidence": "States: 'n\u00e4ra slutet av varvet, precis innan deltagarna k\u00f6r in mot T2'"}, {"text": "Mentions safety requirement - athletes must be able to brake safely", "passed": true, "evidence": "States: 'deltagare m\u00e5ste kunna bromsa och stanna utan att riskera kollision med andra'"}, {"text": "Mentions that each box must be staffed by at least one person", "passed": true, "evidence": "States: 'bemannas av minst en person (domare eller volont\u00e4r)'"}], "pass_rate": 1.0}}, {"id": "eval-3-without_skill", "prompt": "Hur ska vi placera ut straffboxar p\u00e5 cykelbanan? Vi har en 10 km l\u00e5ng bana som deltagarna cyklar fyra varv p\u00e5 (40 km totalt). Var ska boxarna st\u00e5?", "eval_id": 3, "outputs": [{"name": "answer.md", "type": "text", "content": "# Placering av straffboxar p\u00e5 cykelbanan\n\n## Bakgrund\n\nVid triathlon med drafting-regler (t.ex. ITU/World Triathlon-format) anv\u00e4nds straffboxar p\u00e5 cykelbanan f\u00f6r att hantera regelbrott s\u00e5som otill\u00e5ten plogning (drafting), blockerande k\u00f6rning eller andra disciplin\u00f6vertr\u00e4delser. T\u00e4vlingsfunktion\u00e4rer delar ut tidsstraff som l\u00f6ses av genom att cyklisten stannar i en straffbox under en best\u00e4md tid (vanligtvis 10\u201330 sekunder beroende p\u00e5 regelbrott och t\u00e4vlingsformat).\n\n## F\u00f6ruts\u00e4ttningar f\u00f6r denna t\u00e4vling\n\n- Banans l\u00e4ngd: 10 km per varv\n- Antal varv: 4\n- Total cykelstr\u00e4cka: 40 km\n\n## Rekommendationer f\u00f6r placering av straffboxar\n\n### Antal boxar\nF\u00f6r en 10 km-bana med fyra varv rekommenderas **1\u20132 straffboxar** p\u00e5 banan. Vanligtvis r\u00e4cker en v\u00e4lplacerad box p\u00e5 en bana av denna storlek, men en extra box kan \u00f6verv\u00e4gas om banan har ett komplicerat layout.\n\n### Optimal placering\n\n**1. N\u00e4ra start/m\u00e5l-omr\u00e5det (transition-zonen)**\nDen vanligaste och mest praktiska placeringen \u00e4r i anslutning till start/m\u00e5l eller transitionszonen, helst vid passagen f\u00f6r varje varv (lap-point). F\u00f6rdelarna \u00e4r:\n- Enkel \u00f6vervakning av personal\n- Cyklister passerar platsen vid varje varv (4 g\u00e5nger), vilket inneb\u00e4r att straff kan avtj\u00e4nas naturligt i samband med varvpassage\n- Enkel logistik f\u00f6r tidtagning och kontroll\n\n**2. Placering l\u00e4ngs en rak str\u00e4cka**\nOm en box placeras n\u00e5gon annanstans p\u00e5 banan b\u00f6r den ligga:\n- P\u00e5 en rak, \u00f6versiktlig del av banan\n- Utan att st\u00f6ra \u00f6vriga deltagares framfart\n- Med tydlig infart och utfart (markerade med koner och skyltar)\n- Inte i en kurva eller teknisk sektion\n\n### Praktisk layout av boxen\n- Tydlig markering: Skyltar med \"PENALTY BOX\" eller \"STRAFFBOX\" (g\u00e4rna p\u00e5 b\u00e5da spr\u00e5ken)\n- Avsp\u00e4rrning med koner eller band som skapar en ficka vid sidan av banan\n- En funktion\u00e4r (marshal) vid boxen f\u00f6r att hantera tidtagning och kontroll\n- Tidtagning: Funktion\u00e4ren stoppar ur en timer n\u00e4r cyklisten kliver in och signalerar n\u00e4r straffet \u00e4r avtj\u00e4nat\n\n### Kommunikation till t\u00e4vlande\n- Funktion\u00e4rer (marshals) p\u00e5 banan delar ut strafflappar direkt till cyklisten\n- Cyklisten \u00e4r skyldig att stanna i n\u00e4rmast kommande straffbox\n- Cyklisten f\u00e5r inte l\u00e4mna boxen f\u00f6rr\u00e4n funktion\u00e4ren ger klartecken\n\n## Sammanfattning \u2013 rekommenderad l\u00f6sning\n\n| Antal boxar | Placering | Motivering |\n|-------------|-----------|------------|\n| 1 (prim\u00e4r) | Vid start/m\u00e5l/varvpunkt | Enkel kontroll, cyklister passerar 4 g\u00e5nger |\n| 1 (valfri extra) | Ca 5 km in p\u00e5 banan (halvv\u00e4gs) | Minskar v\u00e4ntetid om m\u00e5nga straff utdelas |\n\nF\u00f6r en 10 km-bana med fyra varv \u00e4r **en straffbox placerad vid varvpunkten n\u00e4ra transition** den mest effektiva och vanligast f\u00f6rekommande l\u00f6sningen i enlighet med ITU/World Triathlon-regler. Cyklisten kan d\u00e5 avtj\u00e4na sitt straff senast vid n\u00e4sta varvpassage, vilket minimerar st\u00f6rningen av t\u00e4vlingen och underl\u00e4ttar kontroll och administration.\n"}], "grading": {"eval_id": 3, "configuration": "without_skill", "expectations": [{"text": "States minimum 1 straffbox per lap (= 4 on a 4-lap course)", "passed": false, "evidence": "Says '1-2 straffboxar' total for the whole course, not 1 per lap"}, {"text": "States box should be near the END of each lap, before T2 entry", "passed": false, "evidence": "Places box at start/finish/lap-point area (beginning of lap) rather than near the END"}, {"text": "Mentions safety requirement - athletes must be able to brake safely", "passed": true, "evidence": "Mentions 'rak, \u00f6versiktlig del av banan' and 'inte i en kurva'"}, {"text": "Mentions that each box must be staffed by at least one person", "passed": true, "evidence": "Mentions 'en funktion\u00e4r (marshal) vid boxen'"}], "pass_rate": 0.5}}, {"id": "eval-4-with_skill", "prompt": "Vilka roller beh\u00f6ver vi ha bemannade i T1 (simning \u2192 cykel)? Vi har 8 funktion\u00e4rer tillg\u00e4ngliga f\u00f6r T1. R\u00e4cker det och hur ska vi f\u00f6rdela dem?", "eval_id": 4, "outputs": [{"name": "answer.md", "type": "text", "content": "# T1 (Simning \u2192 Cykel) \u2014 Roller och bemanning\n\n## Obligatoriska roller i T1\n\nEnligt STF:s t\u00e4vlingsreglemente 2026 och World Triathlon-regler ska f\u00f6ljande roller bemannas i T1:\n\n| Roll | Ansvar | Min. antal |\n|------|--------|-----------|\n| **T1 Ansvarig (T1 Lead)** | Leder hela T1-zonen; kommunicerar med t\u00e4vlingsledaren; hanterar incidenter | 1 |\n| **R\u00e4ckansvarig (Rack Marshal)** | Kontrollerar att hj\u00e4lm \u00e4r fastsp\u00e4nd innan cykel tas fr\u00e5n st\u00e4ll; noterar regelbrott | 1\u20132 (beroende p\u00e5 antal rack-sektioner) |\n| **Ing\u00e5ngskontroll (Entry Marshal)** | Kontrollerar T1-ing\u00e5ng fr\u00e5n simuppg\u00e5ng; hindrar obeh\u00f6riga fr\u00e5n att komma in | 1 |\n| **Utg\u00e5ngskontroll (Exit Marshal)** | Kontrollerar T1-cykelutg\u00e5ng mot cykelkursen | 1 |\n| **Mount-marskalk (Mount Line Marshal)** | Vid p\u00e5stigning\u00adslinjen; s\u00e4kerst\u00e4ller att atleten har foten i mark innan uppstigning; har r\u00f6d flagga | 1 |\n| **Incheckning (Check-in Marshal)** | Kontrollerar cykel och hj\u00e4lm vid T1-incheckning *f\u00f6re* t\u00e4vlingen | 1 |\n| **Sjukv\u00e5rdsvolont\u00e4r (Medical Volunteer)** | F\u00f6rstahj\u00e4lpen vid T1; AED-beredskap; rapporterar via radio | 1 |\n\n**STF-krav**: Det m\u00e5ste alltid finnas minst **en domare/official** i T1 n\u00e4r atleter befinner sig i zonen (f\u00f6r att kunna hantera eventuella tidsstraff f\u00f6r simning/start\u00f6vertr\u00e4delser som avtj\u00e4nas i T1).\n\n---\n\n## R\u00e4cker 8 funktion\u00e4rer?\n\n**Ja, 8 funktion\u00e4rer r\u00e4cker f\u00f6r T1** \u2014 f\u00f6rutsatt att evenemanget \u00e4r av normal storlek (upp till ca 500 atleter) och att bemanningen sker smart. Minsta m\u00f6jliga T1-stab \u00e4r 6\u20137 personer; med 8 har ni en person i buffert.\n\n---\n\n## Rekommenderad f\u00f6rdelning av 8 funktion\u00e4rer\n\n| # | Roll | Motivering |\n|---|------|-----------|\n| 1 | **T1 Ansvarig** | Obligatorisk ledarroll; hanterar kommunikation med t\u00e4vlingsledare och incidenter |\n| 2 | **R\u00e4ckansvarig \u2014 sektion A** | T\u00e4cker ena halvan av cykelst\u00e4lLen; kontrollerar hj\u00e4lmsp\u00e4nne |\n| 3 | **R\u00e4ckansvarig \u2014 sektion B** | T\u00e4cker andra halvan; vid f\u00e4rre \u00e4n ~150 starter kan 1 r\u00e4ckansvarig r\u00e4cka |\n| 4 | **Ing\u00e5ngskontroll** | Vid T1-ing\u00e5ng fr\u00e5n simuppg\u00e5ngen; f\u00f6rhindrar obeh\u00f6riga |\n| 5 | **Utg\u00e5ngskontroll** | Vid T1-cykelutg\u00e5ng; bekr\u00e4ftar att atleten l\u00e4mnar korrekt |\n| 6 | **Mount-marskalk** | Vid p\u00e5stigning\u00adslinjen med r\u00f6d flagga; kritisk s\u00e4kerhetsroll |\n| 7 | **Sjukv\u00e5rdsvolont\u00e4r** | F\u00f6rstahj\u00e4lpen; AED-beredskap; cross-sektionell roll men b\u00f6r vara stationerad i T1 |\n| 8 | **Buffert / R\u00e4ckansvarig flytande** | Kan st\u00f6tta r\u00e4ckansvariga, hantera straff\u00adtidtagning (om t\u00e4vlingsklasser), eller t\u00e4cka upp vid toalettpauser |\n\n> **Obs om t\u00e4vlingsklasser (Age Group/competitive):** Om evenemanget inkluderar t\u00e4vlingsklasser (inte bara motionsklass) m\u00e5ste det finnas en person som kan verkst\u00e4lla tidsstraff i T1 f\u00f6r sim\u00f6vertr\u00e4delser. Funktion\u00e4r nr 8 (buffert) eller T1 Ansvarig kan fylla denna roll, men det kr\u00e4ver att personen \u00e4r utsedd som domare av Huvuddomaren.\n\n---\n\n## Viktiga punkter att t\u00e4nka p\u00e5\n\n1. **Hj\u00e4lmkontroll \u00e4r kritisk**: R\u00e4ckmarskalkar m\u00e5ste aktivt kontrollera att hj\u00e4lmen \u00e4r fastsp\u00e4nd *innan* cykeln lyfts fr\u00e5n st\u00e4ll \u2014 detta \u00e4r en vanlig DQ-orsak.\n\n2. **Wetsuit-hantering**: Atleter f\u00e5r dra ned v\u00e5tdr\u00e4kten till midjan innan de n\u00e5r T1, men f\u00e5r inte ta av den helt f\u00f6rr\u00e4n de \u00e4r vid sitt rack. Ing\u00e5ngskontrollen b\u00f6r k\u00e4nna till denna regel.\n\n3. **Straffhantering i T1**: Sim\u00f6vertr\u00e4delser och start\u00f6vertr\u00e4delser avtj\u00e4nas i T1. Om ni har t\u00e4vlingsklasser m\u00e5ste minst en domare/official vara beredd att stoppa och tidta straff.\n\n4. **AED-placering**: STF kr\u00e4ver AED i T1/T2-omr\u00e5det. Sjukv\u00e5rdsvolont\u00e4ren ansvarar f\u00f6r att utrustningen finns p\u00e5 plats och \u00e4r kontrollerad.\n\n5. **Radio**: T1 Ansvarig och sjukv\u00e5rdsvolont\u00e4ren m\u00e5ste ha radio (kanal 1 resp. kanal 2 enligt standardprotokoll).\n\n6. **Motionsklass**: Om alla atleter i T1 tillh\u00f6r motionsklass utf\u00e4rdas inga formella straff \u2014 men rollerna \u00e4r \u00e4nd\u00e5 n\u00f6dv\u00e4ndiga f\u00f6r s\u00e4kerhet och ordning.\n\n---\n\n## Sammanfattning\n\nMed 8 funktion\u00e4rer t\u00e4cker ni alla obligatoriska T1-roller enligt STF 2026. F\u00f6rdelningen ger:\n- Ledarskap och incidenthantering (T1 Ansvarig)\n- Fullst\u00e4ndig rack\u00adbevakning (2 r\u00e4ckmarskalkar)\n- Kontroll av in- och utg\u00e5ngar (2 marskalkar)\n- S\u00e4ker p\u00e5stigning (Mount-marskalk)\n- Medicinsk beredskap (Sjukv\u00e5rdsvolont\u00e4r)\n- En flexibel resurs/buffert\n\nDet \u00e4r en **tillr\u00e4cklig** bemanning f\u00f6r ett standardevenemang. Vid mycket stora evenemang (700+ atleter) med l\u00e5nga rack-sektioner kan fler r\u00e4ckmarskalkar beh\u00f6vas.\n"}], "grading": {"eval_id": 4, "configuration": "with_skill", "expectations": [{"text": "Mentions mount line marshal (p\u00e5stigningslinjen) with red flag", "passed": true, "evidence": "Lists 'Mount-marskalk (Mount Line Marshal)' with role 'har r\u00f6d flagga'"}, {"text": "Mentions rack marshal (r\u00e4ckansvarig) who checks helmets are fastened", "passed": true, "evidence": "Lists 'R\u00e4ckansvarig' with 'Kontrollerar att hj\u00e4lm \u00e4r fastsp\u00e4nd innan cykel tas fr\u00e5n st\u00e4ll'"}, {"text": "Concludes 8 is sufficient (or near sufficient) for T1", "passed": true, "evidence": "States: '8 funktion\u00e4rer r\u00e4cker f\u00f6r T1' with detailed justification"}, {"text": "Notes that at least one person must have domare authority for AG penalty time enforcement", "passed": true, "evidence": "States: 'm\u00e5ste det finnas en person som kan verkst\u00e4lla tidsstraff i T1 f\u00f6r sim\u00f6vertr\u00e4delser' and 'kr\u00e4ver att personen \u00e4r utsedd som domare av Huvuddomaren'"}], "pass_rate": 1.0}}, {"id": "eval-4-without_skill", "prompt": "Vilka roller beh\u00f6ver vi ha bemannade i T1 (simning \u2192 cykel)? Vi har 8 funktion\u00e4rer tillg\u00e4ngliga f\u00f6r T1. R\u00e4cker det och hur ska vi f\u00f6rdela dem?", "eval_id": 4, "outputs": [{"name": "answer.md", "type": "text", "content": "# Roller i T1 (simning \u2192 cykel) vid triathlon\n\n## Vad \u00e4r T1?\n\nT1 \u00e4r den f\u00f6rsta v\u00e4xlingszonen i triathlon, d\u00e4r t\u00e4vlande byter fr\u00e5n simning till cykel. Det \u00e4r ofta den mer komplexa och kaotiska v\u00e4xlingszonen eftersom t\u00e4vlande anl\u00e4nder fr\u00e5n vattnet i stora grupper (s\u00e4rskilt vid masstart), \u00e4r tr\u00f6tta, kalla och beh\u00f6ver hj\u00e4lp att orientera sig.\n\n---\n\n## N\u00f6dv\u00e4ndiga roller i T1\n\nNedan listas de roller som normalt beh\u00f6ver bemannas i T1:\n\n### 1. Ing\u00e5ngskontroll / Strip-linje (Wetsuit Strippers)\n- Hj\u00e4lper t\u00e4vlande att ta av v\u00e5tdr\u00e4kt snabbt\n- Vanligtvis 2\u20134 personer beroende p\u00e5 antal deltagare\n- Placeras precis vid utg\u00e5ngen ur vattnet/l\u00f6pv\u00e4gen in i T1\n\n### 2. Orientering / V\u00e4gvisare i T1\n- Guidar t\u00e4vlande r\u00e4tt genom v\u00e4xlingszonen\n- Pekar ut korrekt rad/plats f\u00f6r cyklar\n- Minst 1\u20132 personer l\u00e4ngs l\u00f6pv\u00e4gen i zonen\n\n### 3. Cykelvakt / Rack-ansvarig\n- Ser till att cyklar h\u00e4nger r\u00e4tt och att inga obeh\u00f6riga r\u00f6r utrustning\n- Hj\u00e4lper till om en cykel fallit ner eller kr\u00e5nglar\n- 1\u20132 personer\n\n### 4. Utg\u00e5ngskontroll (cykelutg\u00e5ng)\n- Kontrollerar att t\u00e4vlande springer/leder cykeln till korrekt monteingslinje\n- Ser till att reglerna f\u00f6ljs (ingen ridning innanf\u00f6r \"mount line\")\n- Kontrollerar att hj\u00e4lm \u00e4r fastsp\u00e4nd innan p\u00e5stigning\n- 1 person\n\n### 5. Tidtagning / Chip-kontroll (valfritt separat)\n- Kan kombineras med annan roll\n- Verifierar att t\u00e4vlande passerar r\u00e4tt chip-matta\n- 1 person (eller kombineras med ing\u00e5ngs-/utg\u00e5ngskontroll)\n\n### 6. S\u00e4kerhet / Medicinsk kontakt\n- H\u00e5ller koll p\u00e5 t\u00e4vlande som verkar i chock, uttr\u00f6ttade eller desorienterade efter simningen\n- Kan larma medicinsk personal vid behov\n- 1 person\n\n### 7. Materialhj\u00e4lp (valfritt)\n- Delar ut vattenflaskor, gel eller handdukar i zonen (om t\u00e4vlingsreglerna till\u00e5ter)\n- Kan kombineras med annan roll i mindre t\u00e4vlingar\n\n---\n\n## F\u00f6rdelning av 8 funktion\u00e4rer i T1\n\n| Roll | Antal | Kommentar |\n|---|---|---|\n| Wetsuit strippers (v\u00e5tdr\u00e4ktshj\u00e4lp) | 2 | Vid T1-ing\u00e5ng fr\u00e5n vattnet |\n| V\u00e4gvisare / orientering i T1 | 2 | L\u00e4ngs l\u00f6pv\u00e4gen i zonen |\n| Cykelvakt / rack-ansvarig | 1 | \u00d6verblick \u00f6ver cykelst\u00e4lningen |\n| Utg\u00e5ngskontroll (mount line) | 1 | Kontroll vid cykelutg\u00e5ng |\n| S\u00e4kerhet / medicinsk kontakt | 1 | Observerar t\u00e4vlande vid ankomst |\n| Flytande roll / backup | 1 | T\u00e4cker upp d\u00e4r det beh\u00f6vs mest |\n| **Totalt** | **8** | |\n\n---\n\n## R\u00e4cker 8 funktion\u00e4rer?\n\n**Ja, 8 funktion\u00e4rer r\u00e4cker f\u00f6r de flesta normala triatlont\u00e4vlingar** (upp till ca 200\u2013400 deltagare), f\u00f6rutsatt att:\n\n- T\u00e4vlande anl\u00e4nder relativt utspritt (t.ex. tidsstart / wave start)\n- T1 \u00e4r logiskt utformad med tydlig skyltning som avlastar funktion\u00e4rerna\n- Funktion\u00e4rerna \u00e4r v\u00e4lbriefade och vet exakt sin position och uppgift\n\n### Vid masstart eller stora f\u00e4lt (400+ deltagare):\n- Wetsuit strippers b\u00f6r ut\u00f6kas till 4 (ta fr\u00e5n flytande roll och en v\u00e4gvisare)\n- \u00d6verv\u00e4g att l\u00e4gga till 1\u20132 extra om m\u00f6jlighet finns\n\n### Viktiga f\u00f6ruts\u00e4ttningar f\u00f6r att 8 ska r\u00e4cka:\n1. Tydlig skyltning minskar behovet av manuell v\u00e4gvisning\n2. God briefing av funktion\u00e4rerna innan start\n3. Den \"flytande\" rollen ger flexibilitet att t\u00e4cka flaskhalsar\n4. Medicinskt team \u00e4r separat och inte inr\u00e4knat i dessa 8\n\n---\n\n## Sammanfattning\n\n8 funktion\u00e4rer \u00e4r en fullt tillr\u00e4cklig bemanning f\u00f6r T1 i en t\u00e4vling av normal storlek. F\u00f6rdela dem enligt tabellen ovan med tyngdpunkt p\u00e5 ing\u00e5ngen fr\u00e5n vattnet (wetsuit strippers + v\u00e4gvisning) och utg\u00e5ngen mot cykeln (mount line-kontroll). H\u00e5ll alltid en flytande roll fri att r\u00f6ra sig dit trycket \u00e4r st\u00f6rst under t\u00e4vlingens g\u00e5ng.\n"}], "grading": {"eval_id": 4, "configuration": "without_skill", "expectations": [{"text": "Mentions mount line marshal (p\u00e5stigningslinjen) with red flag", "passed": false, "evidence": "Mentions 'Utg\u00e5ngskontroll' for mount line but does NOT mention the red flag requirement"}, {"text": "Mentions rack marshal (r\u00e4ckansvarig) who checks helmets are fastened", "passed": true, "evidence": "Mentions 'Utg\u00e5ngskontroll: Kontrollerar att hj\u00e4lm \u00e4r fastsp\u00e4nd innan p\u00e5stigning'"}, {"text": "Concludes 8 is sufficient (or near sufficient) for T1", "passed": true, "evidence": "States: '8 funktion\u00e4rer r\u00e4cker f\u00f6r de flesta normala triatlont\u00e4vlingar'"}, {"text": "Notes that at least one person must have domare authority for AG penalty time enforcement", "passed": false, "evidence": "No mention of domare authority requirement for penalty enforcement in T1"}], "pass_rate": 0.5}}, {"id": "eval-5-with_skill", "prompt": "Vad g\u00e4ller om en t\u00e4vlare tappar sin l\u00f6parsko vid p\u00e5stigningslinjen (mount line) i T1 n\u00e4r hen hoppar p\u00e5 cykeln? Ska vi ge tidsstraff?", "eval_id": 5, "outputs": [{"name": "answer.md", "type": "text", "content": "# Fr\u00e5ga: Tappat l\u00f6parsko vid p\u00e5stigningslinjen i T1 \u2014 tidsstraff?\n\n## Svar: Nej, inget tidsstraff ska ges.\n\n### Regelgrunden\n\nEnligt STF T\u00e4vlingsreglemente 2026 (baserat p\u00e5 World Triathlon-reglerna) finns en uttrycklig regel f\u00f6r just detta scenario:\n\n> **Om en t\u00e4vlare r\u00e5kar tappa utrustning vid p\u00e5stigningslinjen (mount line) \u2192 inget straff utf\u00e4rdas, och t\u00e4vlaren ska inte stanna f\u00f6r att plocka upp utrustningen.**\n\nRegeln \u00e4r formulerad specifikt f\u00f6r att hantera situationer d\u00e4r utrustning (skor, handskar, cykelglas\u00f6gon, etc.) trillar av eller tappas i samband med att t\u00e4vlaren bestiger cykeln vid mount line.\n\n### Bakgrund och syfte\n\nP\u00e5stigningslinjen \u00e4r en hektisk och tr\u00e5ng punkt i loppet. T\u00e4vlare springer med cykeln, ska montera sig, och olycksh\u00e4ndelser med utrustning \u00e4r vanliga och i stor utstr\u00e4ckning utom t\u00e4vlarens kontroll. Regeln finns f\u00f6r att:\n\n1. **Undvika farliga situationer** \u2014 om t\u00e4vlaren stannar f\u00f6r att plocka upp skon skapar det en s\u00e4kerhetsrisk f\u00f6r efterkommande t\u00e4vlare.\n2. **Spegla olyckskarakt\u00e4ren** \u2014 en tappat sko \u00e4r normalt ett misstag, inte ett medvetet regelbrott.\n3. **Harmoniera med T2-regeln** \u2014 samma princip g\u00e4ller vid avmonteringslinjen (dismount line) i T2.\n\n### Vad mount-marskalen ska g\u00f6ra\n\nMount-marskalen (Mount-marskalk) vid p\u00e5stigningslinjen ska:\n- **Inte stoppa t\u00e4vlaren** eller signalera straff.\n- **Informera t\u00e4vlaren** (om m\u00f6jligt och utan att st\u00f6ra fl\u00f6det) att hen inte beh\u00f6ver stanna.\n- **S\u00e4kra skon** \u2014 plocka upp den och l\u00e4gga den \u00e5t sidan s\u00e5 att den inte utg\u00f6r ett hinder f\u00f6r andra t\u00e4vlare.\n- Vid behov notera incident i h\u00e4ndelserapporten, men **ingen straffrapport** skickas vidare till Huvuddomaren (HD).\n\n### Sammanfattning\n\n| Situation | Straff? |\n|-----------|---------|\n| T\u00e4vlare tappar l\u00f6parsko vid mount line (oavsiktligt) | **Nej \u2014 inget straff** |\n| T\u00e4vlare stannar och blockerar mount line f\u00f6r att plocka upp skon | Potentiellt varning f\u00f6r farligt beteende/hindrande |\n| T\u00e4vlare monterar cykeln INNAN foten \u00e4r p\u00e5 marken p\u00e5 exit-sidan av linjen | **Ja \u2014 regelbrott, kan ge tidsstraff** |\n\n### Notering om t\u00e4vlingsklass\n\nObservera att i **motionsklasser** (och f\u00f6r barn) utf\u00e4rdas inga tidsstraff eller diskvalificeringar \u00f6verhuvudtaget \u2014 officials ger i s\u00e5dana fall enbart muntlig v\u00e4gledning. Fr\u00e5gan om straff \u00e4r allts\u00e5 enbart aktuell f\u00f6r t\u00e4vlingsklasser (Age Group och elit).\n\n### Slutsats\n\nGe **inget tidsstraff**. Den tappade l\u00f6parskon vid mount line \u00e4r ett explicit undantag i reglerna. Mount-marskalens uppgift \u00e4r att s\u00e4kra utrustningen och h\u00e5lla fl\u00f6det s\u00e4kert \u2014 inte att bestraffa t\u00e4vlaren.\n"}], "grading": {"eval_id": 5, "configuration": "with_skill", "expectations": [{"text": "Correctly states NO penalty for accidentally dropped equipment at mount line", "passed": true, "evidence": "States: 'Nej, inget tidsstraff ska ges' with explicit reference to STF 2026 rule"}, {"text": "States athlete should NOT stop to retrieve the item (safety hazard)", "passed": true, "evidence": "States: 't\u00e4vlaren ska inte stanna f\u00f6r att plocka upp utrustningen' for safety reasons"}, {"text": "States that a marshal/official should retrieve the dropped item", "passed": true, "evidence": "States: 'Mount-marskalen ska... S\u00e4kra skon \u2014 plocka upp den och l\u00e4gga den \u00e5t sidan'"}, {"text": "References the explicit STF 2026 rule covering this scenario (skill advantage)", "passed": true, "evidence": "States: 'Enligt STF T\u00e4vlingsreglemente 2026... finns en uttrycklig regel f\u00f6r just detta scenario'"}], "pass_rate": 1.0}}, {"id": "eval-5-without_skill", "prompt": "Vad g\u00e4ller om en t\u00e4vlare tappar sin l\u00f6parsko vid p\u00e5stigningslinjen (mount line) i T1 n\u00e4r hen hoppar p\u00e5 cykeln? Ska vi ge tidsstraff?", "eval_id": 5, "outputs": [{"name": "answer.md", "type": "text", "content": "# Fr\u00e5ga: Tappad l\u00f6parsko vid p\u00e5stigningslinjen (mount line) i T1\n\n## Situation\n\nEn t\u00e4vlare tappar sin l\u00f6parsko precis vid mount line n\u00e4r hen hoppar upp p\u00e5 cykeln i T1 (transition 1, dvs. \u00f6verg\u00e5ngen fr\u00e5n simning till cykling).\n\n## Regelm\u00e4ssig bed\u00f6mning\n\n### Enligt World Triathlon (tidigare ITU) t\u00e4vlingsregler\n\nReglerna kring T1 och mount line handlar prim\u00e4rt om f\u00f6ljande:\n\n1. **Mount line-regeln**: T\u00e4vlaren f\u00e5r INTE cykla (sitta p\u00e5 sadeln och trampa) f\u00f6rr\u00e4n hen passerat mount line. T\u00e4vlaren m\u00e5ste ha b\u00e5da f\u00f6tterna p\u00e5 marken eller springa med cykeln fram till mount line.\n\n2. **Utrustning som tappas**: Om en t\u00e4vlare tappar utrustning (t.ex. en sko) finns det ingen regel som *automatiskt* utf\u00e4rdar tidsstraff f\u00f6r detta. Att tappa utrustning \u00e4r i sig inte ett regelbrott.\n\n3. **Viktiga \u00f6verv\u00e4ganden**:\n   - Tappade skon **innan** mount line: T\u00e4vlaren har r\u00e4tt att plocka upp skon och forts\u00e4tta \u2013 inget regelbrott.\n   - Tappade skon **vid eller precis vid** mount line: Ingen regel f\u00f6rbjuder att utrustning trillar av. T\u00e4vlaren kan v\u00e4lja att forts\u00e4tta utan skon (cykla barfota eller med en sko), eller stanna och plocka upp den.\n   - **Hindrar skon andra t\u00e4vlare?** Om skon hamnar i v\u00e4gen och utg\u00f6r en fara eller hindrar andra t\u00e4vlare kan detta potentiellt ses som ett problem, men det \u00e4r inte ett direkt straffbart regelbrott f\u00f6r t\u00e4vlaren som tappade den.\n\n### Ska tidsstraff utf\u00e4rdas?\n\n**Nej, normalt sett ska inget tidsstraff ges** f\u00f6r att en t\u00e4vlare tappar sin l\u00f6parsko vid mount line, eftersom:\n\n- Det finns inget specifikt f\u00f6rbud mot att tappa utrustning.\n- Att tappa en sko \u00e4r inte en *avsiktlig* regel\u00f6vertr\u00e4delse.\n- World Triathlon Competition Rules listar specifika regelbrott som ger tidsstraff (t.ex. osportsligt beteende, drafting, felaktig hj\u00e4lmutrustning, cykling f\u00f6re mount line, etc.) \u2013 tappande av utrustning finns inte p\u00e5 denna lista.\n\n### N\u00e4r KAN straff bli aktuellt?\n\nStraff kan bli aktuellt om:\n\n- T\u00e4vlaren **cyklar f\u00f6re mount line** (t.ex. s\u00e4tter sig p\u00e5 sadeln och trampar innan linjen) \u2013 detta ger tidsstraff enligt reglerna.\n- T\u00e4vlaren medvetet l\u00e4mnar utrustning som **skapar en farlig situation** f\u00f6r andra och domaren bed\u00f6mer det som osportsligt beteende (osannolikt vid en oavsiktlig tappning).\n- T\u00e4vlaren bryter mot **hj\u00e4lmregler** (t.ex. sp\u00e4nner loss hj\u00e4lmen f\u00f6re cykelns avmontering) \u2013 men det g\u00e4ller hj\u00e4lmen, inte skon.\n\n## Praktisk rekommendation f\u00f6r t\u00e4vlingsledningen\n\n1. **Utf\u00e4rda inget tidsstraff** f\u00f6r den tappade skon i sig.\n2. Om skon ligger kvar och utg\u00f6r en fara p\u00e5 banan, b\u00f6r **t\u00e4vlingsfunktion\u00e4rer snabbt ta bort den** fr\u00e5n banan f\u00f6r att undvika olyckor.\n3. Dokumentera h\u00e4ndelsen om det uppst\u00e5r fr\u00e5gor i efterhand.\n4. Kontrollera att t\u00e4vlaren inte begick n\u00e5got *annat* regelbrott i samband med situationen (t.ex. cyklade f\u00f6re mount line i panik).\n\n## Sammanfattning\n\nAtt tappa en l\u00f6parsko vid mount line \u00e4r **inte ett regelbrott och ger inget tidsstraff**. Det \u00e4r en olycklig h\u00e4ndelse f\u00f6r t\u00e4vlaren men inte n\u00e5got domarna beh\u00f6ver agera p\u00e5 disciplin\u00e4rt, annat \u00e4n eventuellt att s\u00e4kerst\u00e4lla att skon tas bort fr\u00e5n banan.\n"}], "grading": {"eval_id": 5, "configuration": "without_skill", "expectations": [{"text": "Correctly states NO penalty for accidentally dropped equipment at mount line", "passed": true, "evidence": "States: 'Nej, normalt sett ska inget tidsstraff ges'"}, {"text": "States athlete should NOT stop to retrieve the item (safety hazard)", "passed": false, "evidence": "Says 'T\u00e4vlaren kan v\u00e4lja att forts\u00e4tta utan skon... eller stanna och plocka upp den' \u2014 does not say they should NOT stop"}, {"text": "States that a marshal/official should retrieve the dropped item", "passed": true, "evidence": "States: 't\u00e4vlingsfunktion\u00e4rer snabbt ta bort den fr\u00e5n banan'"}, {"text": "References the explicit STF 2026 rule covering this scenario (skill advantage)", "passed": false, "evidence": "No reference to STF 2026 explicit rule \u2014 relies on general World Triathlon knowledge"}], "pass_rate": 0.5}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "triathlon-rules", "skill_path": "/sessions/determined-charming-planck/triathlon-rules", "executor_model": "claude-sonnet-4-6", "analyzer_model": "claude-sonnet-4-6", "timestamp": "2026-04-18T15:35:44Z", "evals_run": [1, 2, 3, 4, 5], "runs_per_configuration": 1}, "runs": [{"eval_id": 1, "question": "En t\u00e4vling har 120 anm\u00e4lda idrottare p\u00e5 cykelstreckan. Hur m\u00e5nga MC-domare kr\u00e4vs enligt STF 2026, och m\u00e5ste MC-f\u00f6raren och domaren vara olika personer?", "with_skill": {"pass_rate": 1.0, "assertions": [{"text": "States minimum 3 MC units are needed (120/50 = 2.4, rounded up to 3)", "passed": true}, {"text": "Correctly states MC driver and referee MUST be 2 separate people", "passed": true}, {"text": "References STF 2026 rule (1 per 50 athletes)", "passed": true}, {"text": "States total of 6 people needed (3 drivers + 3 referees)", "passed": true}]}, "without_skill": {"pass_rate": 0.5, "assertions": [{"text": "States minimum 3 MC units are needed (120/50 = 2.4, rounded up to 3)", "passed": true}, {"text": "Correctly states MC driver and referee MUST be 2 separate people", "passed": false}, {"text": "References STF 2026 rule (1 per 50 athletes)", "passed": false}, {"text": "States total of 6 people needed (3 drivers + 3 referees)", "passed": true}]}}, {"eval_id": 2, "question": "En idrottare i motionsklassen cyklar t\u00e4tt efter en annan idrottare i 20 sekunder. Vad ska domaren g\u00f6ra?", "with_skill": {"pass_rate": 1.0, "assertions": [{"text": "Correctly states NO penalty applies in motionsklassen", "passed": true}, {"text": "States the athlete should NOT be sent to a penalty box", "passed": true}, {"text": "Explains motionsklassen is exempt from time penalties and DQ", "passed": true}, {"text": "References STF 2026 distinction between competitive and recreational classes", "passed": true}]}, "without_skill": {"pass_rate": 0.0, "assertions": [{"text": "Correctly states NO penalty applies in motionsklassen", "passed": false}, {"text": "States the athlete should NOT be sent to a penalty box", "passed": false}, {"text": "Explains motionsklassen is exempt from time penalties and DQ", "passed": false}, {"text": "References STF 2026 distinction between competitive and recreational classes", "passed": false}]}}, {"eval_id": 3, "question": "En cykelrunda \u00e4r 15 km l\u00e5ng och t\u00e4vlingen har 3 varv. Var ska straffboxen placeras och hur m\u00e5nga straffboxar beh\u00f6vs totalt?", "with_skill": {"pass_rate": 1.0, "assertions": [{"text": "States 3 penalty boxes are needed (one per lap)", "passed": true}, {"text": "States each box must be near the END of each lap", "passed": true}, {"text": "States placement must be before the start/finish line", "passed": true}, {"text": "References STF 2026 rule about per-lap placement", "passed": true}]}, "without_skill": {"pass_rate": 0.5, "assertions": [{"text": "States 3 penalty boxes are needed (one per lap)", "passed": true}, {"text": "States each box must be near the END of each lap", "passed": false}, {"text": "States placement must be before the start/finish line", "passed": true}, {"text": "References STF 2026 rule about per-lap placement", "passed": false}]}}, {"eval_id": 4, "question": "Hur m\u00e5nga funktion\u00e4rer beh\u00f6vs i T1 f\u00f6r en triatlont\u00e4vling med 80 idrottare, och vilka roller ska de ha?", "with_skill": {"pass_rate": 1.0, "assertions": [{"text": "Mentions mount line marshal (p\u00e5stigningslinjen) with red flag", "passed": true}, {"text": "Mentions rack marshal (r\u00e4ckansvarig) who checks helmets are fastened", "passed": true}, {"text": "Concludes 8 is sufficient (or near sufficient) for T1", "passed": true}, {"text": "Notes that at least one person must have domare authority for AG penalty time enforcement", "passed": true}]}, "without_skill": {"pass_rate": 0.5, "assertions": [{"text": "Mentions mount line marshal (p\u00e5stigningslinjen) with red flag", "passed": false}, {"text": "Mentions rack marshal (r\u00e4ckansvarig) who checks helmets are fastened", "passed": true}, {"text": "Concludes 8 is sufficient (or near sufficient) for T1", "passed": true}, {"text": "Notes that at least one person must have domare authority for AG penalty time enforcement", "passed": false}]}}, {"eval_id": 5, "question": "En idrottare tappar sin sko vid p\u00e5stigningslinjen (mount line). Ska ett tidsstraff ges? Vad ska idrottaren g\u00f6ra, och vad ska funktion\u00e4ren g\u00f6ra?", "with_skill": {"pass_rate": 1.0, "assertions": [{"text": "Correctly states NO penalty for accidentally dropped equipment at mount line", "passed": true}, {"text": "States athlete should NOT stop to retrieve the item (safety hazard)", "passed": true}, {"text": "States that a marshal/official should retrieve the dropped item", "passed": true}, {"text": "References the explicit STF 2026 rule covering this scenario (skill advantage)", "passed": true}]}, "without_skill": {"pass_rate": 0.5, "assertions": [{"text": "Correctly states NO penalty for accidentally dropped equipment at mount line", "passed": true}, {"text": "States athlete should NOT stop to retrieve the item (safety hazard)", "passed": false}, {"text": "States that a marshal/official should retrieve the dropped item", "passed": true}, {"text": "References the explicit STF 2026 rule covering this scenario (skill advantage)", "passed": false}]}}], "run_summary": {"with_skill": {"pass_rate": 1.0, "pass_rate_std": 0.0}, "without_skill": {"pass_rate": 0.4, "pass_rate_std": 0.2}, "delta": {"pass_rate": "+0.60", "time_seconds": "N/A", "tokens": "N/A"}}, "notes": ["Eval 2 (motionsklassen drafting) is the most critical finding: without_skill gave 0% correct (incorrectly advised sending athlete to straffbox with 5-minute penalty). The skill correctly identifies motionsklassen as exempt from all penalties.", "With skill achieves 100% pass rate across all 5 evals (20/20 assertions passed).", "Without skill achieves 40% average pass rate (8/20 assertions passed)."]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

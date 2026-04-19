@@ -1,0 +1,14 @@
+# Miljövariabler — innehåller hemliga nycklar, ska ALDRIG pushas till GitHub
+.env.local
+.env
+
+# Next.js
+.next/
+out/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
