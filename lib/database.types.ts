@@ -81,6 +81,26 @@ export interface OtilldeladFunktionar {
   updated_at: string
 }
 
+export interface Inbjudan {
+  id: string
+  email: string
+  skickad_av: string | null
+  skickad_at: string
+  status: 'skickad' | 'accepterad' | 'fel'
+  felmeddelande: string | null
+}
+
+export interface SMSInbjudan {
+  id: string
+  telefon: string
+  token: string
+  skickad_av: string | null
+  skickad_at: string
+  email_inkommen: string | null
+  email_inkommen_at: string | null
+  status: 'skickad' | 'email_inkommen' | 'inbjudan_skickad'
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -103,6 +123,16 @@ export type Database = {
         Row: Tilldelning
         Insert: Omit<Tilldelning, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Tilldelning, 'id' | 'created_at'>>
+      }
+      inbjudningar: {
+        Row: Inbjudan
+        Insert: Omit<Inbjudan, 'id' | 'skickad_at'>
+        Update: Partial<Omit<Inbjudan, 'id'>>
+      }
+      sms_inbjudningar: {
+        Row: SMSInbjudan
+        Insert: Omit<SMSInbjudan, 'id' | 'skickad_at' | 'token'>
+        Update: Partial<Omit<SMSInbjudan, 'id'>>
       }
     }
     Views: {
