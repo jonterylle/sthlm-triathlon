@@ -2,16 +2,26 @@ export type UserRole = 'tl' | 'sektionsledare' | 'funktionar'
 export type TilldelningStatus = 'bekraftad' | 'avbokad' | 'standby'
 export type SektionStatus = 'full' | 'delvis' | 'tom'
 
-export interface Profile {
+// ── Tabelltyper (type alias, inte interface — krävs för Supabase SDK:s conditional types) ──
+
+export type Profile = {
   id: string
   email: string
   full_name: string | null
   role: UserRole
+  telefon: string | null
+  klubb: string | null
+  sektion_preferens: string | null
+  pass_preferens: string | null
+  kompetenser: string[] | null
+  erfarenhet: string | null
+  specialkost: string | null
+  registrerad_at: string | null
   created_at: string
   updated_at: string
 }
 
-export interface Sektion {
+export type Sektion = {
   id: string
   namn: string
   beskrivning: string | null
@@ -25,7 +35,7 @@ export interface Sektion {
   updated_at: string
 }
 
-export interface Pass {
+export type Pass = {
   id: string
   sektion_id: string
   namn: string
@@ -35,7 +45,7 @@ export interface Pass {
   created_at: string
 }
 
-export interface Tilldelning {
+export type Tilldelning = {
   id: string
   profil_id: string
   pass_id: string
@@ -46,8 +56,29 @@ export interface Tilldelning {
   updated_at: string
 }
 
-// Views
-export interface SektionBemanningsgrad {
+export type Inbjudan = {
+  id: string
+  email: string
+  skickad_av: string | null
+  skickad_at: string
+  status: 'skickad' | 'accepterad' | 'fel'
+  felmeddelande: string | null
+}
+
+export type SMSInbjudan = {
+  id: string
+  telefon: string
+  token: string
+  skickad_av: string | null
+  skickad_at: string
+  email_inkommen: string | null
+  email_inkommen_at: string | null
+  status: 'skickad' | 'email_inkommen' | 'inbjudan_skickad'
+}
+
+// ── Vytyper ──────────────────────────────────────────────────────
+
+export type SektionBemanningsgrad = {
   id: string
   namn: string
   beskrivning: string | null
@@ -61,7 +92,7 @@ export interface SektionBemanningsgrad {
   status: SektionStatus
 }
 
-export interface PassBemanningsgrad {
+export type PassBemanningsgrad = {
   pass_id: string
   sektion_id: string
   pass_namn: string
@@ -72,7 +103,7 @@ export interface PassBemanningsgrad {
   saknas: number
 }
 
-export interface OtilldeladFunktionar {
+export type OtilldeladFunktionar = {
   id: string
   email: string
   full_name: string | null
@@ -81,25 +112,7 @@ export interface OtilldeladFunktionar {
   updated_at: string
 }
 
-export interface Inbjudan {
-  id: string
-  email: string
-  skickad_av: string | null
-  skickad_at: string
-  status: 'skickad' | 'accepterad' | 'fel'
-  felmeddelande: string | null
-}
-
-export interface SMSInbjudan {
-  id: string
-  telefon: string
-  token: string
-  skickad_av: string | null
-  skickad_at: string
-  email_inkommen: string | null
-  email_inkommen_at: string | null
-  status: 'skickad' | 'email_inkommen' | 'inbjudan_skickad'
-}
+// ── Database-typ för Supabase-klienten ───────────────────────────
 
 export type Database = {
   public: {
@@ -108,39 +121,50 @@ export type Database = {
         Row: Profile
         Insert: Omit<Profile, 'created_at' | 'updated_at'>
         Update: Partial<Omit<Profile, 'id' | 'created_at'>>
+        Relationships: []
       }
       sektioner: {
         Row: Sektion
         Insert: Omit<Sektion, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Sektion, 'id' | 'created_at'>>
+        Relationships: []
       }
       pass: {
         Row: Pass
         Insert: Omit<Pass, 'id' | 'created_at'>
         Update: Partial<Omit<Pass, 'id' | 'created_at'>>
+        Relationships: []
       }
       tilldelningar: {
         Row: Tilldelning
         Insert: Omit<Tilldelning, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Tilldelning, 'id' | 'created_at'>>
+        Relationships: []
       }
       inbjudningar: {
         Row: Inbjudan
         Insert: Omit<Inbjudan, 'id' | 'skickad_at'>
         Update: Partial<Omit<Inbjudan, 'id'>>
+        Relationships: []
       }
       sms_inbjudningar: {
         Row: SMSInbjudan
         Insert: Omit<SMSInbjudan, 'id' | 'skickad_at' | 'token'>
         Update: Partial<Omit<SMSInbjudan, 'id'>>
+        Relationships: []
       }
     }
     Views: {
-      sektion_bemanningsgrad: { Row: SektionBemanningsgrad }
-      pass_bemanningsgrad: { Row: PassBemanningsgrad }
-      otilldelade_funktionarer: { Row: OtilldeladFunktionar }
+      sektion_bemanningsgrad: { Row: SektionBemanningsgrad; Relationships: [] }
+      pass_bemanningsgrad: { Row: PassBemanningsgrad; Relationships: [] }
+      otilldelade_funktionarer: { Row: OtilldeladFunktionar; Relationships: [] }
     }
-    Functions: Record<string, never>
+    Functions: {
+      get_otilldelade_funktionarer: {
+        Args: Record<string, never>
+        Returns: OtilldeladFunktionar[]
+      }
+    }
     Enums: {
       user_role: UserRole
     }

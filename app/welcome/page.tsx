@@ -17,7 +17,7 @@ const passPreferensLabel: Record<string, string> = {
 export default async function WelcomePage({ searchParams }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) return redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -25,8 +25,8 @@ export default async function WelcomePage({ searchParams }: Props) {
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/login')
-  if (profile.role === 'tl' || profile.role === 'sektionsledare') redirect('/dashboard')
+  if (!profile) return redirect('/login')
+  if (profile.role === 'tl' || profile.role === 'sektionsledare') return redirect('/dashboard')
 
   // Hämta sektionspreferensens namn om satt
   let sektionNamn: string | null = null

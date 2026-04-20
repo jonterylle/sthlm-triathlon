@@ -12,7 +12,7 @@ export default async function DashboardPage() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) return redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     .single()
 
   if (!profile || (profile.role !== 'tl' && profile.role !== 'sektionsledare')) {
-    redirect('/welcome')
+    return redirect('/welcome')
   }
 
   const [sektionerRes, passRes, otilldeladeRes, emailInbjRes, smsInbjRes] = await Promise.all([

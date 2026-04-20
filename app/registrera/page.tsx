@@ -9,7 +9,7 @@ interface Props {
 export default async function RegistreraPage({ searchParams }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) return redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -18,7 +18,7 @@ export default async function RegistreraPage({ searchParams }: Props) {
     .single()
 
   if (!profile || (profile.role !== 'funktionar' && profile.role !== 'sektionsledare')) {
-    redirect('/dashboard')
+    return redirect('/dashboard')
   }
 
   // Hämta sektioner för dropdown
