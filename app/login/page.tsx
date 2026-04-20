@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 // Map Supabase error messages → user-friendly Swedish text
@@ -11,6 +12,16 @@ const ERROR_MESSAGES: Record<string, string> = {
     "Din e-postadress är inte registrerad. Kontakta tävlingsledningen.",
   "Invalid email":
     "Ange en giltig e-postadress.",
+};
+
+// Map URL error params → Swedish text
+const URL_ERRORS: Record<string, string> = {
+  inte_inbjuden:
+    "Din e-postadress är inte inbjuden. Kontakta tävlingsledningen för att få en inbjudan.",
+  auth_failed:
+    "Inloggningslänken är ogiltig eller har gått ut. Begär en ny länk.",
+  missing_code:
+    "Något gick fel med inloggningslänken. Försök igen.",
 };
 
 function getFriendlyError(msg: string): string {
@@ -24,14 +35,22 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const searchParams = useSearchParams();
 
-  const supabase = createClient();
+  useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError && URL_ERRORS[urlError]) {
+      setStatus("error");
+      setErrorMsg(URL_ERRORS[urlError]);
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("loading");
     setErrorMsg("");
 
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {

@@ -8,17 +8,17 @@ export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) return redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("*")
     .eq("id", user.id)
     .single();
 
   if (profile?.role === "tl" || profile?.role === "sektionsledare") {
-    redirect("/dashboard");
+    return redirect("/dashboard");
   }
 
-  redirect("/welcome");
+  return redirect("/welcome");
 }
