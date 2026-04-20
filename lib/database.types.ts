@@ -76,6 +76,15 @@ export type SMSInbjudan = {
   status: 'skickad' | 'email_inkommen' | 'inbjudan_skickad'
 }
 
+// ── RPC-returtyper ───────────────────────────────────────────────
+
+export type SMSInbjudanPublik = {
+  id: string
+  email_inkommen: string | null
+  status: string
+  expires_at: string
+}
+
 // ── Vytyper ──────────────────────────────────────────────────────
 
 export type SektionBemanningsgrad = {
@@ -143,13 +152,17 @@ export type Database = {
       }
       inbjudningar: {
         Row: Inbjudan
-        Insert: Omit<Inbjudan, 'id' | 'skickad_at'>
+        Insert: Omit<Inbjudan, 'id' | 'skickad_at' | 'felmeddelande'> & { felmeddelande?: string | null }
         Update: Partial<Omit<Inbjudan, 'id'>>
         Relationships: []
       }
       sms_inbjudningar: {
         Row: SMSInbjudan
-        Insert: Omit<SMSInbjudan, 'id' | 'skickad_at' | 'token'>
+        Insert: Omit<SMSInbjudan, 'id' | 'skickad_at' | 'token' | 'status' | 'email_inkommen' | 'email_inkommen_at'> & {
+          status?: SMSInbjudan['status']
+          email_inkommen?: string | null
+          email_inkommen_at?: string | null
+        }
         Update: Partial<Omit<SMSInbjudan, 'id'>>
         Relationships: []
       }
@@ -163,6 +176,14 @@ export type Database = {
       get_otilldelade_funktionarer: {
         Args: Record<string, never>
         Returns: OtilldeladFunktionar[]
+      }
+      hamta_sms_inbjudan: {
+        Args: { p_token: string }
+        Returns: SMSInbjudanPublik[]
+      }
+      registrera_email_for_sms_inbjudan: {
+        Args: { p_token: string; p_email: string }
+        Returns: string  // 'ok' | 'ogiltig_token' | 'redan_registrerad' | 'utgangen'
       }
     }
     Enums: {

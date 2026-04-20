@@ -20,7 +20,7 @@ export async function sparaRegistrering(formData: FormData) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) return redirect('/login')
 
   // Hämta, sanera och trunkera formulärdata
   const full_name   = String(formData.get('full_name')  ?? '').trim().slice(0, 100)
@@ -58,7 +58,7 @@ export async function sparaRegistrering(formData: FormData) {
 
   // Validering
   if (!full_name) {
-    redirect('/registrera?error=namn_saknas')
+    return redirect('/registrera?error=namn_saknas')
   }
 
   const { error } = await supabase
@@ -78,8 +78,8 @@ export async function sparaRegistrering(formData: FormData) {
 
   if (error) {
     console.error('[registrera] update error:', error.message)
-    redirect('/registrera?error=spara_misslyckades')
+    return redirect('/registrera?error=spara_misslyckades')
   }
 
-  redirect('/welcome?registrerad=1')
+  return redirect('/welcome?registrerad=1')
 }
