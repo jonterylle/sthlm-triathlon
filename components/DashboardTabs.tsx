@@ -2,11 +2,27 @@
 
 import { useState } from 'react'
 import SektionKarta from '@/components/SektionKarta'
+import BjudInFlik from '@/components/BjudInFlik'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
   OtilldeladFunktionar,
 } from '@/lib/database.types'
+
+interface SMSRad {
+  id: string
+  telefon: string
+  skickad_at: string
+  email_inkommen: string | null
+  status: string
+}
+
+interface EmailRad {
+  id: string
+  email: string
+  skickad_at: string
+  status: string
+}
 
 interface Props {
   sektioner: SektionBemanningsgrad[]
@@ -16,6 +32,8 @@ interface Props {
   totalTilldelade: number
   totalSaknas: number
   bemanningsgrad: number
+  smsInbjudningar: SMSRad[]
+  emailInbjudningar: EmailRad[]
 }
 
 export default function DashboardTabs({
@@ -26,8 +44,10 @@ export default function DashboardTabs({
   totalTilldelade,
   totalSaknas,
   bemanningsgrad,
+  smsInbjudningar,
+  emailInbjudningar,
 }: Props) {
-  const [aktiv, setAktiv] = useState<'oversikt' | 'karta'>('oversikt')
+  const [aktiv, setAktiv] = useState<'oversikt' | 'karta' | 'bjudin'>('oversikt')
 
   return (
     <div>
@@ -35,6 +55,7 @@ export default function DashboardTabs({
       <div className="flex gap-1 border-b border-gray-200 mb-6">
         <TabKnapp aktiv={aktiv === 'oversikt'} onClick={() => setAktiv('oversikt')} label="Översikt" />
         <TabKnapp aktiv={aktiv === 'karta'} onClick={() => setAktiv('karta')} label="Karta" />
+        <TabKnapp aktiv={aktiv === 'bjudin'} onClick={() => setAktiv('bjudin')} label="Bjud in" />
       </div>
 
       {/* Översikt — alltid i DOM, visas/döljs med CSS */}
@@ -111,6 +132,14 @@ export default function DashboardTabs({
           </h2>
           <SektionKarta sektioner={sektioner} />
         </section>
+      </div>
+
+      {/* Bjud in — alltid i DOM, visas/döljs med CSS */}
+      <div className={aktiv === 'bjudin' ? 'block' : 'hidden'}>
+        <BjudInFlik
+          smsInbjudningar={smsInbjudningar}
+          emailInbjudningar={emailInbjudningar}
+        />
       </div>
 
     </div>
