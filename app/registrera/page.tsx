@@ -1,3 +1,5 @@
+// Sprint 4: Profilformuläret har flyttats till /welcome (Profil-tabben i FunktionarApp).
+// Denna sida redirectar dit för bakåtkompatibilitet med gamla bokmärken och magic links.
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { sparaRegistrering } from './actions'

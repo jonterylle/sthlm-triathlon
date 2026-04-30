@@ -81,5 +81,5 @@ export async function sparaRegistrering(formData: FormData) {
     return redirect('/registrera?error=spara_misslyckades')
   }
 
-  return redirect('/welcome?registrerad=1')
+  return redirect('/welcome')
 }
