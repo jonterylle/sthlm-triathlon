@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       .from('inbjudningar')
       .select('id')
       .eq('email', user.email ?? '')
-      .single()
+      .maybeSingle()
 
     if (!inbjudan) {
       // Inte inbjuden — logga ut och visa felmeddelande
