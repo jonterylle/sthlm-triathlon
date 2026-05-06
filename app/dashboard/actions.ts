@@ -94,9 +94,12 @@ export async function bjudIn(
       continue
     }
 
-    await supabase.from('inbjudningar').insert({
+    const { error: insertError } = await supabase.from('inbjudningar').insert({
       email, skickad_av: user.id, status: 'skickad',
     })
+    if (insertError) {
+      console.error(`[bjudIn] INSERT fel för ${email}:`, insertError.message, insertError.code)
+    }
     resultat.push({ email, status: 'skickad' })
   }
 
