@@ -38,43 +38,56 @@ function LoginForm() {
 
   // Handle implicit flow from invite emails (#access_token in URL hash)
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!window.location.hash.includes("access_token")) return;
+    const hash = window.location.hash;
+    if (!hash.includes("access_token")) return;
 
     setStatus("loading");
-    const supabase = createClient();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
-          subscription.unsubscribe();
+    async function handleInviteToken() {
+      const params = new URLSearchParams(hash.substring(1));
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      if (!access_token || !refresh_token) return;
 
-          // Uppdatera inbjudningsstatus till accepterad
-          if (session.user.email) {
-            await supabase
-              .from("inbjudningar")
-              .update({ status: "accepterad" })
-              .eq("email", session.user.email)
-              .eq("status", "skickad");
-          }
+      const supabase = createClient();
 
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", session.user.id)
-            .single();
+      // Sätt session explicit från hash-token
+      const { data: { session }, error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
 
-          const role = profile?.role;
-          if (role === "tl" || role === "sektionsledare") {
-            window.location.replace("/dashboard");
-          } else {
-            window.location.replace("/welcome");
-          }
-        }
+      if (error || !session) {
+        setStatus("error");
+        setErrorMsg("Inbjudningslänken är ogiltig eller har gått ut. Begär en ny inbjudan.");
+        return;
       }
-    );
 
-    return () => subscription.unsubscribe();
+      // Uppdatera inbjudningsstatus till accepterad
+      if (session.user.email) {
+        await supabase
+          .from("inbjudningar")
+          .update({ status: "accepterad" })
+          .eq("email", session.user.email)
+          .eq("status", "skickad");
+      }
+
+      // Hämta profil och redirecta baserat på roll
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
+
+      const role = profile?.role;
+      if (role === "tl" || role === "sektionsledare") {
+        window.location.replace("/dashboard");
+      } else {
+        window.location.replace("/welcome");
+      }
+    }
+
+    handleInviteToken();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
