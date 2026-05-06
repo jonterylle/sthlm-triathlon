@@ -36,6 +36,47 @@ function LoginForm() {
     }
   }, [searchParams]);
 
+  // Handle implicit flow from invite emails (#access_token in URL hash)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.location.hash.includes("access_token")) return;
+
+    setStatus("loading");
+    const supabase = createClient();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session) {
+          subscription.unsubscribe();
+
+          // Uppdatera inbjudningsstatus till accepterad
+          if (session.user.email) {
+            await supabase
+              .from("inbjudningar")
+              .update({ status: "accepterad" })
+              .eq("email", session.user.email)
+              .eq("status", "skickad");
+          }
+
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", session.user.id)
+            .single();
+
+          const role = profile?.role;
+          if (role === "tl" || role === "sektionsledare") {
+            window.location.replace("/dashboard");
+          } else {
+            window.location.replace("/welcome");
+          }
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("loading");
