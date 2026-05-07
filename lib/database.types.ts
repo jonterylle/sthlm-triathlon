@@ -52,8 +52,36 @@ export type Tilldelning = {
   status: TilldelningStatus
   notering: string | null
   tilldelad_av: string | null
+  mat_utdelad: boolean
   created_at: string
   updated_at: string
+}
+
+export type MinSektionRad = {
+  sektion_id: string
+  sektion_namn: string
+  sektion_farg: string
+  pass_id: string
+  pass_namn: string
+  starttid: string
+  sluttid: string
+  behovs_antal: number
+  tilldelning_id: string | null
+  profil_id: string | null
+  full_name: string | null
+  email: string | null
+  telefon: string | null
+  kompetenser: string[] | null
+  notering: string | null
+  mat_utdelad: boolean | null
+}
+
+export type SektionsledareInfo = {
+  id: string
+  full_name: string | null
+  email: string
+  sektion_preferens: string | null
+  sektion_namn: string | null
 }
 
 export type Inbjudan = {
@@ -179,7 +207,7 @@ export type Database = {
       }
       tilldelningar: {
         Row: Tilldelning
-        Insert: Omit<Tilldelning, 'id' | 'created_at' | 'updated_at'>
+        Insert: Omit<Tilldelning, 'id' | 'created_at' | 'updated_at' | 'mat_utdelad'> & { mat_utdelad?: boolean }
         Update: Partial<Omit<Tilldelning, 'id' | 'created_at'>>
         Relationships: []
       }
@@ -217,6 +245,14 @@ export type Database = {
       get_tilldelade_per_pass: {
         Args: Record<string, never>
         Returns: TilldeladPerPass[]
+      }
+      get_min_sektion_data: {
+        Args: Record<string, never>
+        Returns: MinSektionRad[]
+      }
+      get_sektionsledare: {
+        Args: Record<string, never>
+        Returns: SektionsledareInfo[]
       }
       hamta_sms_inbjudan: {
         Args: { p_token: string }

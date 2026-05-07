@@ -2,11 +2,14 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import SignOutButton from '@/components/SignOutButton'
 import DashboardTabs from '@/components/DashboardTabs'
+import SektionsledareApp from '@/components/SektionsledareApp'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
   OtilldeladFunktionar,
   PassMedSektion,
+  MinSektionRad,
+  SektionsledareInfo,
 } from '@/lib/database.types'
 
 export default async function DashboardPage() {
@@ -25,28 +28,70 @@ export default async function DashboardPage() {
     return redirect('/welcome')
   }
 
-  const [sektionerRes, passRes, otilldeladeRes, passMedSektionerRes, emailInbjRes, smsInbjRes] = await Promise.all([
+  const roleLabel = profile.role === 'tl' ? 'Tävlingsledare' : 'Sektionsledare'
+
+  // ── Sektionsledarvy ────────────────────────────────────────
+  if (profile.role === 'sektionsledare') {
+    const { data: minSektionData } = await supabase.rpc('get_min_sektion_data')
+    const rader: MinSektionRad[] = minSektionData ?? []
+
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#0066CC] flex items-center justify-center">
+                <span className="text-white text-xs font-bold">ST</span>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">
+                  STHLM <span className="text-[#FF6B35]">Triathlon</span> 2026
+                </h1>
+                <p className="text-xs text-gray-500">9 aug · Stora Skuggan</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:block text-xs bg-blue-50 text-[#0066CC] px-2 py-1 rounded-full font-medium">
+                {roleLabel}
+              </span>
+              <SignOutButton />
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-3xl mx-auto px-4 py-6">
+          <SektionsledareApp
+            rader={rader}
+            slNamn={profile.full_name ?? profile.email}
+          />
+        </main>
+      </div>
+    )
+  }
+
+  // ── TL-vy ──────────────────────────────────────────────────
+  const [sektionerRes, passRes, otilldeladeRes, passMedSektionerRes, slRes, emailInbjRes, smsInbjRes] = await Promise.all([
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
     supabase.from('pass_bemanningsgrad').select('*'),
     supabase.rpc('get_otilldelade_funktionarer'),
     supabase.rpc('get_pass_med_sektioner'),
+    supabase.rpc('get_sektionsledare'),
     supabase.from('inbjudningar').select('id, email, skickad_at, status').order('skickad_at', { ascending: false }),
     supabase.from('sms_inbjudningar').select('id, telefon, skickad_at, email_inkommen, status').order('skickad_at', { ascending: false }),
   ])
 
-  const sektioner: SektionBemanningsgrad[] = sektionerRes.data ?? []
-  const pass: PassBemanningsgrad[] = passRes.data ?? []
-  const otilldelade: OtilldeladFunktionar[] = otilldeladeRes.data ?? []
-  const passMedSektioner: PassMedSektion[] = passMedSektionerRes.data ?? []
-  const emailInbjudningar = emailInbjRes.data ?? []
-  const smsInbjudningar = smsInbjRes.data ?? []
+  const sektioner: SektionBemanningsgrad[]     = sektionerRes.data ?? []
+  const pass: PassBemanningsgrad[]             = passRes.data ?? []
+  const otilldelade: OtilldeladFunktionar[]    = otilldeladeRes.data ?? []
+  const passMedSektioner: PassMedSektion[]     = passMedSektionerRes.data ?? []
+  const sektionsledare: SektionsledareInfo[]   = slRes.data ?? []
+  const emailInbjudningar                      = emailInbjRes.data ?? []
+  const smsInbjudningar                        = smsInbjRes.data ?? []
 
-  const totalBehövs = sektioner.reduce((s, x) => s + (x.behovs_totalt ?? 0), 0)
+  const totalBehövs     = sektioner.reduce((s, x) => s + (x.behovs_totalt ?? 0), 0)
   const totalTilldelade = sektioner.reduce((s, x) => s + (x.tilldelade_totalt ?? 0), 0)
-  const totalSaknas = totalBehövs - totalTilldelade
-  const bemanningsgrad = totalBehövs > 0 ? Math.round((totalTilldelade / totalBehövs) * 100) : 0
-
-  const roleLabel = profile.role === 'tl' ? 'Tävlingsledare' : 'Sektionsledare'
+  const totalSaknas     = totalBehövs - totalTilldelade
+  const bemanningsgrad  = totalBehövs > 0 ? Math.round((totalTilldelade / totalBehövs) * 100) : 0
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -87,6 +132,7 @@ export default async function DashboardPage() {
           bemanningsgrad={bemanningsgrad}
           emailInbjudningar={emailInbjudningar}
           smsInbjudningar={smsInbjudningar}
+          sektionsledare={sektionsledare}
         />
       </main>
     </div>

@@ -4,11 +4,13 @@ import { useState } from 'react'
 import SektionKarta from '@/components/SektionKarta'
 import BjudInFlik from '@/components/BjudInFlik'
 import TilldelningsModal from '@/components/TilldelningsModal'
+import SektionsledareFlik from '@/components/SektionsledareFlik'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
   OtilldeladFunktionar,
   PassMedSektion,
+  SektionsledareInfo,
 } from '@/lib/database.types'
 
 interface SMSRad {
@@ -37,6 +39,7 @@ interface Props {
   bemanningsgrad: number
   smsInbjudningar: SMSRad[]
   emailInbjudningar: EmailRad[]
+  sektionsledare: SektionsledareInfo[]
 }
 
 type ModalLäge =
@@ -55,8 +58,9 @@ export default function DashboardTabs({
   bemanningsgrad,
   smsInbjudningar,
   emailInbjudningar,
+  sektionsledare,
 }: Props) {
-  const [aktiv, setAktiv] = useState<'oversikt' | 'karta' | 'bjudin'>('oversikt')
+  const [aktiv, setAktiv] = useState<'oversikt' | 'karta' | 'bjudin' | 'sl'>('oversikt')
   const [modal, setModal] = useState<ModalLäge>(null)
 
   // Lokal state för otilldelade + pass så att UI:t uppdateras direkt efter tilldelning
@@ -80,9 +84,10 @@ export default function DashboardTabs({
   return (
     <div>
       {/* Flikar */}
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
+      <div className="flex gap-1 border-b border-gray-200 mb-6 flex-wrap">
         <TabKnapp aktiv={aktiv === 'oversikt'} onClick={() => setAktiv('oversikt')} label="Översikt" />
         <TabKnapp aktiv={aktiv === 'karta'} onClick={() => setAktiv('karta')} label="Karta" />
+        <TabKnapp aktiv={aktiv === 'sl'} onClick={() => setAktiv('sl')} label="Sektionsledare" />
         <TabKnapp aktiv={aktiv === 'bjudin'} onClick={() => setAktiv('bjudin')} label="Bjud in" />
       </div>
 
@@ -171,6 +176,16 @@ export default function DashboardTabs({
             Tävlingsområde – Stora Skuggan, Norra Djurgården
           </h2>
           <SektionKarta sektioner={sektioner} />
+        </section>
+      </div>
+
+      {/* Sektionsledare */}
+      <div className={aktiv === 'sl' ? 'block' : 'hidden'}>
+        <section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Sektionsledare ({sektionsledare.length})
+          </h2>
+          <SektionsledareFlik sektionsledare={sektionsledare} sektioner={sektioner} />
         </section>
       </div>
 
