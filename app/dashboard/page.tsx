@@ -6,6 +6,7 @@ import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
   OtilldeladFunktionar,
+  PassMedSektion,
 } from '@/lib/database.types'
 
 export default async function DashboardPage() {
@@ -24,10 +25,11 @@ export default async function DashboardPage() {
     return redirect('/welcome')
   }
 
-  const [sektionerRes, passRes, otilldeladeRes, emailInbjRes, smsInbjRes] = await Promise.all([
+  const [sektionerRes, passRes, otilldeladeRes, passMedSektionerRes, emailInbjRes, smsInbjRes] = await Promise.all([
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
     supabase.from('pass_bemanningsgrad').select('*'),
     supabase.rpc('get_otilldelade_funktionarer'),
+    supabase.rpc('get_pass_med_sektioner'),
     supabase.from('inbjudningar').select('id, email, skickad_at, status').order('skickad_at', { ascending: false }),
     supabase.from('sms_inbjudningar').select('id, telefon, skickad_at, email_inkommen, status').order('skickad_at', { ascending: false }),
   ])
@@ -35,6 +37,7 @@ export default async function DashboardPage() {
   const sektioner: SektionBemanningsgrad[] = sektionerRes.data ?? []
   const pass: PassBemanningsgrad[] = passRes.data ?? []
   const otilldelade: OtilldeladFunktionar[] = otilldeladeRes.data ?? []
+  const passMedSektioner: PassMedSektion[] = passMedSektionerRes.data ?? []
   const emailInbjudningar = emailInbjRes.data ?? []
   const smsInbjudningar = smsInbjRes.data ?? []
 
@@ -76,6 +79,7 @@ export default async function DashboardPage() {
         <DashboardTabs
           sektioner={sektioner}
           pass={pass}
+          passMedSektioner={passMedSektioner}
           otilldelade={otilldelade}
           totalBehövs={totalBehövs}
           totalTilldelade={totalTilldelade}

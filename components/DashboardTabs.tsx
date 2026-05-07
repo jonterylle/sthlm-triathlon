@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import SektionKarta from '@/components/SektionKarta'
 import BjudInFlik from '@/components/BjudInFlik'
+import TilldelningsModal from '@/components/TilldelningsModal'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
   OtilldeladFunktionar,
+  PassMedSektion,
 } from '@/lib/database.types'
 
 interface SMSRad {
@@ -27,6 +29,7 @@ interface EmailRad {
 interface Props {
   sektioner: SektionBemanningsgrad[]
   pass: PassBemanningsgrad[]
+  passMedSektioner: PassMedSektion[]
   otilldelade: OtilldeladFunktionar[]
   totalBehövs: number
   totalTilldelade: number
@@ -36,9 +39,15 @@ interface Props {
   emailInbjudningar: EmailRad[]
 }
 
+type ModalLäge =
+  | { typ: 'fran-funktionar'; funktionar: OtilldeladFunktionar }
+  | { typ: 'fran-pass'; passId: string }
+  | null
+
 export default function DashboardTabs({
   sektioner,
   pass,
+  passMedSektioner,
   otilldelade,
   totalBehövs,
   totalTilldelade,
@@ -48,6 +57,25 @@ export default function DashboardTabs({
   emailInbjudningar,
 }: Props) {
   const [aktiv, setAktiv] = useState<'oversikt' | 'karta' | 'bjudin'>('oversikt')
+  const [modal, setModal] = useState<ModalLäge>(null)
+
+  // Lokal state för otilldelade + pass så att UI:t uppdateras direkt efter tilldelning
+  const [lokalaOtilldelade, setLokalaOtilldelade] = useState(otilldelade)
+  const [lokalaPasser, setLokalaPasser] = useState(passMedSektioner)
+
+  function hanteraFramgång(profilId: string, passId: string) {
+    // Ta bort funktionären från lokala listan
+    setLokalaOtilldelade((prev) => prev.filter((f) => f.id !== profilId))
+    // Öka "tilldelade" på aktuellt pass
+    setLokalaPasser((prev) =>
+      prev.map((p) =>
+        p.pass_id === passId
+          ? { ...p, tilldelade: p.tilldelade + 1, saknas: Math.max(0, p.saknas - 1) }
+          : p
+      )
+    )
+    setModal(null)
+  }
 
   return (
     <div>
@@ -58,7 +86,7 @@ export default function DashboardTabs({
         <TabKnapp aktiv={aktiv === 'bjudin'} onClick={() => setAktiv('bjudin')} label="Bjud in" />
       </div>
 
-      {/* Översikt — alltid i DOM, visas/döljs med CSS */}
+      {/* Översikt */}
       <div className={aktiv === 'oversikt' ? 'space-y-8' : 'hidden'}>
 
         <section>
@@ -79,9 +107,9 @@ export default function DashboardTabs({
             />
             <StatKort
               label="Ej tilldelade"
-              value={String(otilldelade.length)}
+              value={String(lokalaOtilldelade.length)}
               sub="funktionärer"
-              farg={otilldelade.length === 0 ? 'green' : 'amber'}
+              farg={lokalaOtilldelade.length === 0 ? 'green' : 'amber'}
             />
           </div>
         </section>
@@ -97,25 +125,37 @@ export default function DashboardTabs({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {sektioner.map((s) => (
-                <SektionKort key={s.id} sektion={s} pass={pass.filter((p) => p.sektion_id === s.id)} />
+                <SektionKort
+                  key={s.id}
+                  sektion={s}
+                  pass={lokalaPasser.filter((p) => p.sektion_id === s.id)}
+                  onTilldelaPass={(passId) => setModal({ typ: 'fran-pass', passId })}
+                />
               ))}
             </div>
           )}
         </section>
 
-        {otilldelade.length > 0 && (
+        {lokalaOtilldelade.length > 0 && (
           <section>
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Funktionärer utan tilldelning ({otilldelade.length})
+              Funktionärer utan tilldelning ({lokalaOtilldelade.length})
             </h2>
             <div className="bg-white rounded-xl border border-amber-200 divide-y divide-gray-100">
-              {otilldelade.map((f) => (
-                <div key={f.id} className="px-4 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{f.full_name ?? '(inget namn)'}</p>
-                    <p className="text-xs text-gray-500">{f.email}</p>
+              {lokalaOtilldelade.map((f) => (
+                <div key={f.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {f.full_name ?? '(inget namn)'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{f.email}</p>
                   </div>
-                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Ej tilldelad</span>
+                  <button
+                    onClick={() => setModal({ typ: 'fran-funktionar', funktionar: f })}
+                    className="flex-shrink-0 text-xs bg-[#0066CC] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    Tilldela
+                  </button>
                 </div>
               ))}
             </div>
@@ -124,7 +164,7 @@ export default function DashboardTabs({
 
       </div>
 
-      {/* Karta — alltid i DOM, visas/döljs med CSS */}
+      {/* Karta */}
       <div className={aktiv === 'karta' ? 'block' : 'hidden'}>
         <section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -134,7 +174,7 @@ export default function DashboardTabs({
         </section>
       </div>
 
-      {/* Bjud in — alltid i DOM, visas/döljs med CSS */}
+      {/* Bjud in */}
       <div className={aktiv === 'bjudin' ? 'block' : 'hidden'}>
         <BjudInFlik
           smsInbjudningar={smsInbjudningar}
@@ -142,6 +182,17 @@ export default function DashboardTabs({
         />
       </div>
 
+      {/* Tilldelningsmodal */}
+      {modal && (
+        <TilldelningsModal
+          valtFunktionar={modal.typ === 'fran-funktionar' ? modal.funktionar : undefined}
+          valtPassId={modal.typ === 'fran-pass' ? modal.passId : undefined}
+          allPass={lokalaPasser}
+          otilldelade={lokalaOtilldelade}
+          onClose={() => setModal(null)}
+          onSuccess={hanteraFramgång}
+        />
+      )}
     </div>
   )
 }
@@ -170,8 +221,8 @@ function StatKort({
 }) {
   const colors = {
     green: 'bg-green-50 text-green-700',
-    blue: 'bg-blue-50 text-[#0066CC]',
-    red: 'bg-red-50 text-red-700',
+    blue:  'bg-blue-50 text-[#0066CC]',
+    red:   'bg-red-50 text-red-700',
     amber: 'bg-amber-50 text-amber-700',
   }
   return (
@@ -183,23 +234,31 @@ function StatKort({
   )
 }
 
-function SektionKort({ sektion, pass }: { sektion: SektionBemanningsgrad; pass: PassBemanningsgrad[] }) {
+function SektionKort({
+  sektion,
+  pass,
+  onTilldelaPass,
+}: {
+  sektion: SektionBemanningsgrad
+  pass: PassMedSektion[]
+  onTilldelaPass: (passId: string) => void
+}) {
   const procent = sektion.behovs_totalt > 0
     ? Math.round((sektion.tilldelade_totalt / sektion.behovs_totalt) * 100)
     : 0
 
   const statusBadge =
-    sektion.status === 'full' ? 'bg-green-100 text-green-700'
+    sektion.status === 'full'   ? 'bg-green-100 text-green-700'
     : sektion.status === 'delvis' ? 'bg-amber-100 text-amber-700'
     : 'bg-red-100 text-red-700'
 
   const statusText =
-    sektion.status === 'full' ? 'Fullbemannad'
+    sektion.status === 'full'   ? 'Fullbemannad'
     : sektion.status === 'delvis' ? 'Delvis'
     : 'Ej bemannad'
 
   const barColor =
-    sektion.status === 'full' ? '#16A34A'
+    sektion.status === 'full'   ? '#16A34A'
     : sektion.status === 'delvis' ? '#F59E0B'
     : '#DC2626'
 
@@ -231,15 +290,25 @@ function SektionKort({ sektion, pass }: { sektion: SektionBemanningsgrad; pass: 
       </div>
 
       {pass.length > 0 && (
-        <div className="space-y-1.5 pt-2 border-t border-gray-100">
+        <div className="space-y-1 pt-2 border-t border-gray-100">
           {pass.map((p) => (
-            <div key={p.pass_id} className="flex items-center justify-between text-xs">
+            <div key={p.pass_id} className="flex items-center justify-between text-xs group">
               <span className="text-gray-600">
                 {p.pass_namn} <span className="text-gray-400">{p.starttid}–{p.sluttid}</span>
               </span>
-              <span className={`font-semibold ${p.saknas === 0 ? 'text-green-600' : 'text-red-500'}`}>
-                {p.tilldelade}/{p.behovs_antal}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`font-semibold ${p.saknas <= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {p.tilldelade}/{p.behovs_antal}
+                </span>
+                {p.saknas > 0 && (
+                  <button
+                    onClick={() => onTilldelaPass(p.pass_id)}
+                    className="text-[10px] bg-blue-50 text-[#0066CC] border border-blue-200 px-2 py-0.5 rounded-full hover:bg-blue-100 transition"
+                  >
+                    + Tilldela
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

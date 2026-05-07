@@ -117,8 +117,41 @@ export type OtilldeladFunktionar = {
   email: string
   full_name: string | null
   role: UserRole
+  telefon: string | null
+  kompetenser: string[] | null
+  sektion_preferens: string | null
+  pass_preferens: string | null
+  registrerad_at: string | null
   created_at: string
   updated_at: string
+}
+
+export type PassMedSektion = {
+  pass_id: string
+  pass_namn: string
+  starttid: string
+  sluttid: string
+  behovs_antal: number
+  tilldelade: number
+  saknas: number
+  sektion_id: string
+  sektion_namn: string
+  sektion_farg: string
+}
+
+export type TilldeladPerPass = {
+  tilldelning_id: string
+  profil_id: string
+  full_name: string | null
+  email: string
+  telefon: string | null
+  kompetenser: string[] | null
+  pass_id: string
+  pass_namn: string
+  starttid: string
+  sluttid: string
+  sektion_id: string
+  notering: string | null
 }
 
 // ── Database-typ för Supabase-klienten ───────────────────────────
@@ -176,6 +209,14 @@ export type Database = {
       get_otilldelade_funktionarer: {
         Args: Record<string, never>
         Returns: OtilldeladFunktionar[]
+      }
+      get_pass_med_sektioner: {
+        Args: Record<string, never>
+        Returns: PassMedSektion[]
+      }
+      get_tilldelade_per_pass: {
+        Args: Record<string, never>
+        Returns: TilldeladPerPass[]
       }
       hamta_sms_inbjudan: {
         Args: { p_token: string }
