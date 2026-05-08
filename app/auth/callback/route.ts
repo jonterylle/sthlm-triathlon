@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
  * Supabase Auth callback — exchanges the auth code for a session,
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
   if (role === 'funktionar') {
     const { data: inbjudan } = await supabase
       .from('inbjudningar')
-      .select('id')
+      .select('id, roll')
       .eq('email', user.email ?? '')
       .maybeSingle()
 
@@ -76,6 +77,12 @@ export async function GET(request: NextRequest) {
       .update({ status: 'accepterad' })
       .eq('email', user.email ?? '')
       .eq('status', 'skickad')
+
+    // Om inbjudan är för sektionsledare eller tl — uppdatera profilen
+    if (inbjudan.roll === 'sektionsledare' || inbjudan.roll === 'tl') {
+      const admin = createAdminClient()
+      await admin.from('profiles').update({ role: inbjudan.roll }).eq('id', user.id)
+    }
   }
   // ───────────────────────────────────────────────────────────
 

@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { tillämpInbjudanRoll } from "@/app/login/actions";
 
 // Map Supabase error messages → Swedish text
 const ERROR_MESSAGES: Record<string, string> = {
@@ -72,15 +73,10 @@ function LoginForm() {
           .eq("status", "skickad");
       }
 
-      // Hämta profil och redirecta baserat på roll
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .single();
+      // Tillämpa rollen från inbjudan (sätter sektionsledare-rollen på profilen om det gäller)
+      const roll = await tillämpInbjudanRoll();
 
-      const role = profile?.role;
-      if (role === "tl" || role === "sektionsledare") {
+      if (roll === "tl" || roll === "sektionsledare") {
         window.location.replace("/dashboard");
       } else {
         window.location.replace("/welcome");

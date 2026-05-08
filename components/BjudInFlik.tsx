@@ -47,13 +47,17 @@ export default function BjudInFlik({ smsInbjudningar, emailInbjudningar }: Props
 
 // ── E-postsektion ─────────────────────────────────────────────
 
+type Roll = 'funktionar' | 'sektionsledare' | 'tl'
+
 function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) {
   const [resultat, setResultat] = useState<InbjudanResultat[]>([])
   const [isPending, startTransition] = useTransition()
+  const [valdRoll, setValdRoll] = useState<Roll>('funktionar')
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    fd.set('roll', valdRoll)
     startTransition(async () => {
       const res = await bjudIn(fd)
       setResultat(res.resultat)
@@ -71,6 +75,31 @@ function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) 
           Ange en eller flera e-postadresser (komma- eller radbrytningsseparerade). Varje person får ett magic link-mail.
         </p>
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Roll-väljare */}
+          <div>
+            <p className="text-xs font-medium text-gray-600 mb-2">Roll vid registrering</p>
+            <div className="flex gap-2">
+              <RollKnapp
+                aktiv={valdRoll === 'funktionar'}
+                onClick={() => setValdRoll('funktionar')}
+                label="Funktionär"
+                beskrivning="Ser sin tilldelning"
+              />
+              <RollKnapp
+                aktiv={valdRoll === 'sektionsledare'}
+                onClick={() => setValdRoll('sektionsledare')}
+                label="Sektionsledare"
+                beskrivning="Hanterar sin sektion"
+              />
+              <RollKnapp
+                aktiv={valdRoll === 'tl'}
+                onClick={() => setValdRoll('tl')}
+                label="Tävlingsledare"
+                beskrivning="Fullständig åtkomst"
+              />
+            </div>
+          </div>
+
           <textarea
             name="emails"
             rows={4}
@@ -82,7 +111,11 @@ function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) 
             disabled={isPending}
             className="bg-[#0066CC] hover:bg-[#0052a3] disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
           >
-            {isPending ? 'Skickar…' : 'Skicka inbjudningar'}
+            {isPending ? 'Skickar…' : `Skicka inbjudningar som ${
+              valdRoll === 'sektionsledare' ? 'sektionsledare'
+              : valdRoll === 'tl' ? 'tävlingsledare'
+              : 'funktionär'
+            }`}
           </button>
         </form>
 
@@ -252,6 +285,33 @@ function SMSSektion({ smsInbjudningar }: { smsInbjudningar: SMSRad[] }) {
 }
 
 // ── Hjälpfunktioner ───────────────────────────────────────────
+
+function RollKnapp({
+  aktiv,
+  onClick,
+  label,
+  beskrivning,
+}: {
+  aktiv: boolean
+  onClick: () => void
+  label: string
+  beskrivning: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+        aktiv
+          ? 'border-[#0066CC] bg-blue-50 text-[#0066CC]'
+          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+      }`}
+    >
+      <p className="text-sm font-semibold leading-tight">{label}</p>
+      <p className={`text-xs mt-0.5 ${aktiv ? 'text-blue-500' : 'text-gray-400'}`}>{beskrivning}</p>
+    </button>
+  )
+}
 
 function SektionKnapp({ aktiv, onClick, label }: { aktiv: boolean; onClick: () => void; label: string }) {
   return (

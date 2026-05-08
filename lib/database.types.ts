@@ -91,6 +91,7 @@ export type Inbjudan = {
   skickad_at: string
   status: 'skickad' | 'accepterad' | 'fel'
   felmeddelande: string | null
+  roll: UserRole
 }
 
 export type SMSInbjudan = {
@@ -213,7 +214,7 @@ export type Database = {
       }
       inbjudningar: {
         Row: Inbjudan
-        Insert: Omit<Inbjudan, 'id' | 'skickad_at' | 'felmeddelande'> & { felmeddelande?: string | null }
+        Insert: Omit<Inbjudan, 'id' | 'skickad_at' | 'felmeddelande'> & { felmeddelande?: string | null; roll?: UserRole }
         Update: Partial<Omit<Inbjudan, 'id'>>
         Relationships: []
       }

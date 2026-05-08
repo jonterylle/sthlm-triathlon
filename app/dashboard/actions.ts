@@ -43,6 +43,12 @@ export async function bjudIn(
   const { supabase, user } = ctx
 
   const raw = String(formData.get('emails') ?? '')
+  const rawRoll = String(formData.get('roll') ?? 'funktionar')
+  const roll: 'funktionar' | 'sektionsledare' | 'tl' =
+    rawRoll === 'sektionsledare' ? 'sektionsledare'
+    : rawRoll === 'tl' ? 'tl'
+    : 'funktionar'
+
   const emails = raw
     .split(/[\n,]+/)
     .map((e) => e.trim().toLowerCase())
@@ -87,7 +93,7 @@ export async function bjudIn(
     if (error) {
       console.error(`[bjudIn] fel för ${email}:`, error.message)
       await supabase.from('inbjudningar').insert({
-        email, skickad_av: user.id, status: 'fel', felmeddelande: error.message,
+        email, skickad_av: user.id, status: 'fel', felmeddelande: error.message, roll,
       })
       // Returnera generiskt fel till klienten — logga detaljer server-side
       resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan. Försök igen.' })
@@ -95,7 +101,7 @@ export async function bjudIn(
     }
 
     const { error: insertError } = await supabase.from('inbjudningar').insert({
-      email, skickad_av: user.id, status: 'skickad',
+      email, skickad_av: user.id, status: 'skickad', roll,
     })
     if (insertError) {
       console.error(`[bjudIn] INSERT fel för ${email}:`, insertError.message, insertError.code)
@@ -217,9 +223,9 @@ export async function bjudInFranSMS(smsId: string): Promise<{ ok: boolean; medde
   const admin = createAdminClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
-  // Skapa inbjudningsrad
+  // Skapa inbjudningsrad (SMS-inbjudningar är alltid funktionärer)
   await supabase.from('inbjudningar').upsert({
-    email, skickad_av: user.id, status: 'skickad',
+    email, skickad_av: user.id, status: 'skickad', roll: 'funktionar',
   })
 
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
