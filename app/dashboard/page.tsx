@@ -59,7 +59,7 @@ export default async function DashboardPage() {
           </div>
         </header>
 
-        <main className="max-w-3xl mx-auto px-4 py-6">
+        <main className="max-w-lg mx-auto px-4 py-6">
           <SektionsledareApp
             rader={rader}
             slNamn={profile.full_name ?? profile.email}

@@ -111,7 +111,7 @@ export default function SektionKarta({ sektioner }: Props) {
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
       />
-      <div ref={mapRef} className="w-full h-[450px] rounded-xl border border-gray-200 z-0" />
+      <div ref={mapRef} className="w-full h-[280px] sm:h-[420px] rounded-xl border border-gray-200 z-0" />
       <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-md p-3 z-[1000] text-xs space-y-1">
         <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-green-600 inline-block" /> Fullbemannad</div>
         <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block" /> Delvis bemannad</div>

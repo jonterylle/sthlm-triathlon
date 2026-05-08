@@ -64,7 +64,7 @@ export default function SektionsledareFlik({ sektionsledare, sektioner }: Props)
                 value={sl.sektion_preferens ?? ''}
                 onChange={(e) => hanteraKoppling(sl.id, e.target.value)}
                 disabled={pending && pendingId === sl.id}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0066CC] disabled:opacity-50 flex-1 sm:w-48"
+                className="rounded-lg border border-gray-300 px-3 py-3 text-base bg-white focus:outline-none focus:ring-2 focus:ring-[#0066CC] disabled:opacity-50 flex-1 sm:w-48"
               >
                 <option value="">Ingen sektion</option>
                 {sektioner.map((s) => (

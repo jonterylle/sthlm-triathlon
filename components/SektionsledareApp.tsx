@@ -229,7 +229,7 @@ export default function SektionsledareApp({ rader, slNamn }: Props) {
                     <button
                       onClick={() => hanteraMatToggle(f.tilldelning_id, f.mat_utdelad)}
                       disabled={pending && pendingId === f.tilldelning_id}
-                      className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition ${
+                      className={`flex-shrink-0 w-11 h-11 rounded-full border-2 flex items-center justify-center transition text-base ${
                         f.mat_utdelad
                           ? 'bg-green-500 border-green-500 text-white'
                           : 'bg-white border-gray-300 text-gray-300 hover:border-green-400'
@@ -338,7 +338,7 @@ function TabKnapp({ aktiv, onClick, label }: { aktiv: boolean; onClick: () => vo
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+      className={`px-4 py-3 min-h-[44px] text-sm font-medium border-b-2 transition-colors ${
         aktiv
           ? 'border-[#0066CC] text-[#0066CC]'
           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

@@ -142,7 +142,7 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="din@epost.se"
-                className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-base
                            focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue
                            transition"
               />

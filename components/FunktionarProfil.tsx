@@ -62,7 +62,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
               defaultValue={profil.full_name ?? ''}
               required
               placeholder="För- och efternamn"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
             />
           </div>
 
@@ -72,7 +72,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
               type="email"
               value={profil.email}
               disabled
-              className="w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-400 cursor-not-allowed"
+              className="w-full rounded-xl border border-gray-200 bg-gray-100 px-3 py-3 text-base text-gray-400 cursor-not-allowed"
             />
           </div>
 
@@ -83,7 +83,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
               name="telefon"
               defaultValue={profil.telefon ?? ''}
               placeholder="07X-XXX XX XX"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
             />
           </div>
 
@@ -94,7 +94,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
               name="klubb"
               defaultValue={profil.klubb ?? ''}
               placeholder="T.ex. Stockholms Triallsällskap"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
             />
           </div>
         </div>
@@ -108,7 +108,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
             <select
               name="sektion_preferens"
               defaultValue={profil.sektion_preferens ?? ''}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
             >
               <option value="">Ingen preferens</option>
               {sektionVal.map((s) => (
@@ -121,7 +121,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
             <label className="block text-xs text-gray-500 mb-2">Önskat pass</label>
             <div className="space-y-1.5">
               {PASS_PREFERENSER.map((opt) => (
-                <label key={opt.value} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5 cursor-pointer">
+                <label key={opt.value} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-3 min-h-[44px] cursor-pointer">
                   <input
                     type="radio"
                     name="pass_preferens"
@@ -147,7 +147,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Kompetenser</p>
           <div className="grid grid-cols-2 gap-2">
             {TILLÅTNA_KOMPETENSER.map((k) => (
-              <label key={k.value} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5 cursor-pointer">
+              <label key={k.value} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-3 min-h-[44px] cursor-pointer">
                 <input
                   type="checkbox"
                   name="kompetenser"
@@ -172,7 +172,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
               defaultValue={profil.erfarenhet ?? ''}
               rows={3}
               placeholder="Tidigare erfarenhet av tävlingsarrangemang..."
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent resize-none"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent resize-none"
             />
           </div>
 
@@ -183,7 +183,7 @@ export default function FunktionarProfil({ profil, sektionVal }: Props) {
               name="specialkost"
               defaultValue={profil.specialkost ?? ''}
               placeholder="Lämna tomt om inga"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#0066CC] focus:border-transparent"
             />
           </div>
         </div>
