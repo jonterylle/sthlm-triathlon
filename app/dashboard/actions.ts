@@ -243,3 +243,61 @@ export async function bjudInFranSMS(smsId: string): Promise<{ ok: boolean; medde
 
   return { ok: true }
 }
+
+// ── Skicka om e-postinbjudan ──────────────────────────────────
+export async function skickaOmInbjudan(
+  inbjudanId: string,
+  email: string,
+): Promise<{ ok: boolean; meddelande?: string }> {
+  const ctx = await verifieraTL()
+  if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
+  const { supabase } = ctx
+
+  const admin = createAdminClient()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+
+  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${siteUrl}/auth/callback?next=/welcome`,
+  })
+
+  if (error) {
+    console.error('[skickaOmInbjudan] fel:', error.message)
+    return { ok: false, meddelande: 'Kunde inte skicka om inbjudan. Försök igen.' }
+  }
+
+  // Återställ status till 'skickad' om det tidigare var 'fel'
+  await supabase
+    .from('inbjudningar')
+    .update({ status: 'skickad', felmeddelande: null })
+    .eq('id', inbjudanId)
+
+  return { ok: true }
+}
+
+// ── Ta bort inbjudan och auth-konto ──────────────────────────
+export async function taBortInbjudan(
+  inbjudanId: string,
+  email: string,
+): Promise<{ ok: boolean; meddelande?: string }> {
+  const ctx = await verifieraTL()
+  if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
+  const { supabase } = ctx
+
+  // Ta bort rad i inbjudningar
+  await supabase.from('inbjudningar').delete().eq('id', inbjudanId)
+
+  // Ta bort auth-kontot om det finns (kaskaderar till profiles)
+  const admin = createAdminClient()
+  const { data: users } = await admin.auth.admin.listUsers()
+  const authUser = users?.users?.find((u) => u.email === email)
+
+  if (authUser) {
+    const { error } = await admin.auth.admin.deleteUser(authUser.id)
+    if (error) {
+      console.error('[taBortInbjudan] kunde inte ta bort auth-konto:', error.message)
+      // Inbjudan är borttagen — returnerar ok ändå
+    }
+  }
+
+  return { ok: true }
+}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { bjudIn, skickaSMSInbjudan, bjudInFranSMS } from '@/app/dashboard/actions'
+import { bjudIn, skickaSMSInbjudan, bjudInFranSMS, skickaOmInbjudan, taBortInbjudan } from '@/app/dashboard/actions'
 import type { InbjudanResultat, SMSResultat } from '@/app/dashboard/actions'
 
 interface SMSRad {
@@ -17,6 +17,7 @@ interface EmailRad {
   email: string
   skickad_at: string
   status: string
+  roll?: string
 }
 
 interface Props {
@@ -54,6 +55,20 @@ function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) 
   const [isPending, startTransition] = useTransition()
   const [valdRoll, setValdRoll] = useState<Roll>('funktionar')
 
+  // Lokal kopia av listan så att borttagningar och om-skickningar syns direkt
+  const [lokalaInbjudningar, setLokalaInbjudningar] = useState(emailInbjudningar)
+
+  // Vilken underflik visas i listan
+  const [listaFlik, setListaFlik] = useState<'inväntar' | 'alla'>('inväntar')
+
+  // Vilken rad är i gång med en åtgärd
+  const [åtgärdId, setÅtgärdId] = useState<string | null>(null)
+  const [åtgärdFel, setÅtgärdFel] = useState<Record<string, string>>({})
+
+  const visadeRader = lokalaInbjudningar.filter((r) =>
+    listaFlik === 'inväntar' ? r.status === 'skickad' || r.status === 'fel' : true
+  )
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
@@ -62,13 +77,58 @@ function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) 
       const res = await bjudIn(fd)
       setResultat(res.resultat)
       if (res.resultat.some(r => r.status === 'skickad')) {
+        // Lägg till nya rader lokalt
+        const nyaRader: EmailRad[] = res.resultat
+          .filter(r => r.status === 'skickad')
+          .map(r => ({
+            id: crypto.randomUUID(),
+            email: r.email,
+            skickad_at: new Date().toISOString(),
+            status: 'skickad',
+            roll: valdRoll,
+          }))
+        setLokalaInbjudningar(prev => [...nyaRader, ...prev])
         ;(e.target as HTMLFormElement).reset()
       }
     })
   }
 
+  function handleSkickaOm(rad: EmailRad) {
+    setÅtgärdId(rad.id)
+    setÅtgärdFel(prev => ({ ...prev, [rad.id]: '' }))
+    startTransition(async () => {
+      const res = await skickaOmInbjudan(rad.id, rad.email)
+      if (res.ok) {
+        setLokalaInbjudningar(prev =>
+          prev.map(r => r.id === rad.id ? { ...r, status: 'skickad' } : r)
+        )
+      } else {
+        setÅtgärdFel(prev => ({ ...prev, [rad.id]: res.meddelande ?? 'Fel' }))
+      }
+      setÅtgärdId(null)
+    })
+  }
+
+  function handleTaBort(rad: EmailRad) {
+    if (!confirm(`Ta bort inbjudan för ${rad.email}?\n\nOm personen har ett konto tas det också bort.`)) return
+    setÅtgärdId(rad.id)
+    startTransition(async () => {
+      const res = await taBortInbjudan(rad.id, rad.email)
+      if (res.ok) {
+        setLokalaInbjudningar(prev => prev.filter(r => r.id !== rad.id))
+      } else {
+        setÅtgärdFel(prev => ({ ...prev, [rad.id]: res.meddelande ?? 'Fel' }))
+      }
+      setÅtgärdId(null)
+    })
+  }
+
+  const inväntar = lokalaInbjudningar.filter(r => r.status === 'skickad' || r.status === 'fel').length
+  const accepterade = lokalaInbjudningar.filter(r => r.status === 'accepterad').length
+
   return (
     <div className="space-y-6">
+      {/* Skicka ny inbjudan */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h3 className="text-sm font-semibold text-gray-700 mb-1">Skicka e-postinbjudan</h3>
         <p className="text-xs text-gray-500 mb-4">
@@ -79,24 +139,9 @@ function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) 
           <div>
             <p className="text-xs font-medium text-gray-600 mb-2">Roll vid registrering</p>
             <div className="flex gap-2">
-              <RollKnapp
-                aktiv={valdRoll === 'funktionar'}
-                onClick={() => setValdRoll('funktionar')}
-                label="Funktionär"
-                beskrivning="Ser sin tilldelning"
-              />
-              <RollKnapp
-                aktiv={valdRoll === 'sektionsledare'}
-                onClick={() => setValdRoll('sektionsledare')}
-                label="Sektionsledare"
-                beskrivning="Hanterar sin sektion"
-              />
-              <RollKnapp
-                aktiv={valdRoll === 'tl'}
-                onClick={() => setValdRoll('tl')}
-                label="Tävlingsledare"
-                beskrivning="Fullständig åtkomst"
-              />
+              <RollKnapp aktiv={valdRoll === 'funktionar'} onClick={() => setValdRoll('funktionar')} label="Funktionär" beskrivning="Ser sin tilldelning" />
+              <RollKnapp aktiv={valdRoll === 'sektionsledare'} onClick={() => setValdRoll('sektionsledare')} label="Sektionsledare" beskrivning="Hanterar sin sektion" />
+              <RollKnapp aktiv={valdRoll === 'tl'} onClick={() => setValdRoll('tl')} label="Tävlingsledare" beskrivning="Fullständig åtkomst" />
             </div>
           </div>
 
@@ -132,21 +177,75 @@ function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) 
         )}
       </div>
 
-      {emailInbjudningar.length > 0 && (
+      {/* Skickade inbjudningar */}
+      {lokalaInbjudningar.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Skickade inbjudningar ({emailInbjudningar.length})
-          </h3>
-          <div className="divide-y divide-gray-100">
-            {emailInbjudningar.map((r) => (
-              <div key={r.id} className="py-2 flex items-center justify-between text-xs">
-                <span className="font-mono text-gray-700">{r.email}</span>
-                <span className={`px-2 py-0.5 rounded-full ${statusBadgeFarg(r.status)}`}>
-                  {r.status === 'skickad' ? 'Inväntar svar' : r.status === 'accepterad' ? 'Accepterad' : 'Fel'}
-                </span>
-              </div>
-            ))}
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Skickade inbjudningar</h3>
+
+          {/* Underflikar */}
+          <div className="flex gap-1 border-b border-gray-200 mb-3">
+            <ListaFlikKnapp
+              aktiv={listaFlik === 'inväntar'}
+              onClick={() => setListaFlik('inväntar')}
+              label="Inväntar svar"
+              antal={inväntar}
+            />
+            <ListaFlikKnapp
+              aktiv={listaFlik === 'alla'}
+              onClick={() => setListaFlik('alla')}
+              label="Alla"
+              antal={lokalaInbjudningar.length}
+            />
           </div>
+
+          {visadeRader.length === 0 ? (
+            <p className="text-xs text-gray-400 py-4 text-center">
+              {listaFlik === 'inväntar' ? 'Inga inbjudningar inväntar svar.' : 'Inga inbjudningar ännu.'}
+            </p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {visadeRader.map((r) => (
+                <div key={r.id} className="py-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-mono text-gray-800 truncate">{r.email}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadgeFarg(r.status)}`}>
+                          {r.status === 'skickad' ? 'Inväntar svar' : r.status === 'accepterad' ? 'Accepterad' : 'Fel'}
+                        </span>
+                        {r.roll && r.roll !== 'funktionar' && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">
+                            {r.roll === 'sektionsledare' ? 'Sektionsledare' : 'Tävlingsledare'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {r.status !== 'accepterad' && (
+                        <button
+                          onClick={() => handleSkickaOm(r)}
+                          disabled={åtgärdId === r.id}
+                          className="text-xs text-[#0066CC] hover:underline disabled:opacity-50"
+                        >
+                          {åtgärdId === r.id ? '…' : 'Skicka om'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleTaBort(r)}
+                        disabled={åtgärdId === r.id}
+                        className="text-xs text-red-500 hover:underline disabled:opacity-50"
+                      >
+                        {åtgärdId === r.id ? '…' : 'Ta bort'}
+                      </button>
+                    </div>
+                  </div>
+                  {åtgärdFel[r.id] && (
+                    <p className="text-xs text-red-600 mt-1">{åtgärdFel[r.id]}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -285,6 +384,36 @@ function SMSSektion({ smsInbjudningar }: { smsInbjudningar: SMSRad[] }) {
 }
 
 // ── Hjälpfunktioner ───────────────────────────────────────────
+
+function ListaFlikKnapp({
+  aktiv,
+  onClick,
+  label,
+  antal,
+}: {
+  aktiv: boolean
+  onClick: () => void
+  label: string
+  antal: number
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+        aktiv
+          ? 'border-[#0066CC] text-[#0066CC]'
+          : 'border-transparent text-gray-500 hover:text-gray-700'
+      }`}
+    >
+      {label}
+      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+        aktiv ? 'bg-blue-100 text-[#0066CC]' : 'bg-gray-100 text-gray-500'
+      }`}>
+        {antal}
+      </span>
+    </button>
+  )
+}
 
 function RollKnapp({
   aktiv,

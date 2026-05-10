@@ -76,7 +76,7 @@ export default async function DashboardPage() {
     supabase.rpc('get_otilldelade_funktionarer'),
     supabase.rpc('get_pass_med_sektioner'),
     supabase.rpc('get_sektionsledare'),
-    supabase.from('inbjudningar').select('id, email, skickad_at, status').order('skickad_at', { ascending: false }),
+    supabase.from('inbjudningar').select('id, email, skickad_at, status, roll').order('skickad_at', { ascending: false }),
     supabase.from('sms_inbjudningar').select('id, telefon, skickad_at, email_inkommen, status').order('skickad_at', { ascending: false }),
   ])
 
