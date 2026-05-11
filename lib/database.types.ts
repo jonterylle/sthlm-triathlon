@@ -1,6 +1,7 @@
 export type UserRole = 'tl' | 'sektionsledare' | 'funktionar'
 export type TilldelningStatus = 'bekraftad' | 'avbokad' | 'standby'
 export type SektionStatus = 'full' | 'delvis' | 'tom'
+export type SektionOmrade = 'simning' | 't1' | 'cykling' | 'lopning' | 'arena_t2' | 'ovrigt'
 
 // ── Tabelltyper (type alias, inte interface — krävs för Supabase SDK:s conditional types) ──
 
@@ -124,6 +125,7 @@ export type SektionBemanningsgrad = {
   lat: number | null
   lng: number | null
   sortorder: number
+  omrade: SektionOmrade
   behovs_totalt: number
   tilldelade_totalt: number
   saknas_totalt: number
@@ -266,6 +268,7 @@ export type Database = {
     }
     Enums: {
       user_role: UserRole
+      sektion_omrade: SektionOmrade
     }
   }
 }

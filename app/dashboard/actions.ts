@@ -338,6 +338,113 @@ export async function uppdateraFunktionar(
   return { ok: true }
 }
 
+// ── Bulk-import från Excel ────────────────────────────────────
+export async function importeraFunktionarer(
+  formData: FormData,
+): Promise<{ resultat: InbjudanResultat[] }> {
+  const ctx = await verifieraTL()
+  if (!ctx) return { resultat: [] }
+  const { supabase, user } = ctx
+
+  let rader: Array<{
+    namn: string
+    email: string
+    telefon: string
+    klubb: string
+    kompetenser: string[]
+  }>
+
+  try {
+    rader = JSON.parse(String(formData.get('rader') ?? '[]'))
+  } catch {
+    return { resultat: [] }
+  }
+
+  if (!Array.isArray(rader) || rader.length === 0) return { resultat: [] }
+
+  // Max 200 rader per import
+  const begransade = rader.slice(0, 200)
+
+  const admin      = createAdminClient()
+  const siteUrl    = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  const redirectTo = `${siteUrl}/auth/callback?next=/welcome`
+  const resultat: InbjudanResultat[] = []
+
+  // Giltiga kompetenser (whitelist — skyddar mot godtycklig data i databasen)
+  const GILTIGA_KOMPETENSER = new Set([
+    'sjukvard', 'korkort', 'triathlon_erfarenhet', 'simning', 'cykel_teknik', 'engelska',
+  ])
+
+  // Hämta auth-användare en gång för hela importen (inte per rad)
+  const { data: authUsersData } = await admin.auth.admin.listUsers()
+  const authUserMap = new Map(authUsersData?.users?.map(u => [u.email ?? '', u]) ?? [])
+
+  for (const rad of begransade) {
+    const email = String(rad.email ?? '').trim().toLowerCase()
+    if (!EMAIL_RE.test(email)) {
+      resultat.push({ email, status: 'fel', meddelande: 'Ogiltig e-post' })
+      continue
+    }
+
+    // Redan inbjuden?
+    const { data: befintligInbjudan } = await supabase
+      .from('inbjudningar').select('status').eq('email', email).single()
+    if (befintligInbjudan) {
+      resultat.push({ email, status: 'redan_inbjuden' })
+      continue
+    }
+
+    // Redan registrerad?
+    const { data: befintligProfil } = await supabase
+      .from('profiles').select('id').eq('email', email).single()
+    if (befintligProfil) {
+      resultat.push({ email, status: 'redan_registrerad' })
+      continue
+    }
+
+    // Skicka inbjudan via Supabase Auth
+    const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+    if (inviteError) {
+      console.error(`[importeraFunktionarer] fel för ${email}:`, inviteError.message)
+      await supabase.from('inbjudningar').insert({
+        email, skickad_av: user.id, status: 'fel',
+        felmeddelande: inviteError.message, roll: 'funktionar',
+      })
+      resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan.' })
+      continue
+    }
+
+    await supabase.from('inbjudningar').insert({
+      email, skickad_av: user.id, status: 'skickad', roll: 'funktionar',
+    })
+
+    // Förifyll profil — validerade och längdbegränsade fält
+    const namn        = (String(rad.namn    ?? '').trim() || null)?.slice(0, 200) ?? null
+    const telefon     = (String(rad.telefon ?? '').trim() || null)?.slice(0, 30)  ?? null
+    const klubb       = (String(rad.klubb   ?? '').trim() || null)?.slice(0, 100) ?? null
+    // Whitelist-filtrera kompetenser mot kända värden
+    const kompetenser = Array.isArray(rad.kompetenser)
+      ? rad.kompetenser.filter(k => typeof k === 'string' && GILTIGA_KOMPETENSER.has(k))
+      : []
+
+    if (namn || telefon || klubb || kompetenser.length > 0) {
+      const authUser = authUserMap.get(email)
+      if (authUser) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from('profiles') as any).upsert({
+          id: authUser.id, email, full_name: namn, telefon, klubb,
+          kompetenser: kompetenser.length > 0 ? kompetenser : null,
+          role: 'funktionar',
+        }, { onConflict: 'id' })
+      }
+    }
+
+    resultat.push({ email, status: 'skickad' })
+  }
+
+  return { resultat }
+}
+
 // ── Ta bort en funktionär helt (profil + auth-konto) ─────────
 export async function taBortFunktionar(
   profilId: string,

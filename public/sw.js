@@ -1,10 +1,11 @@
 const CACHE = 'sthlm-tri-v1'
 
 // Static assets to pre-cache on install
+// /login utelämnas medvetet — hämtas alltid från nätverket
+// för att säkerhetsfixar i auth-flödet alltid ska gälla direkt.
 const PRECACHE = [
   '/',
   '/welcome',
-  '/login',
 ]
 
 self.addEventListener('install', (event) => {

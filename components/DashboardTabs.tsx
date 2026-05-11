@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import SektionKarta from '@/components/SektionKarta'
 import BjudInFlik from '@/components/BjudInFlik'
+import ExcelImportFlik from '@/components/ExcelImportFlik'
 import TilldelningsModal from '@/components/TilldelningsModal'
 import SektionsledareFlik from '@/components/SektionsledareFlik'
 import FunktionarRedigeraModal from '@/components/FunktionarRedigeraModal'
@@ -12,8 +13,20 @@ import type {
   OtilldeladFunktionar,
   PassMedSektion,
   SektionsledareInfo,
+  SektionOmrade,
   Profile,
 } from '@/lib/database.types'
+
+const OMRADE_CONFIG: Record<SektionOmrade, { label: string; emoji: string }> = {
+  simning:   { label: 'Simning',    emoji: '🏊' },
+  t1:        { label: 'T1',         emoji: '🔄' },
+  cykling:   { label: 'Cykling',    emoji: '🚴' },
+  lopning:   { label: 'Löpning',    emoji: '🏃' },
+  arena_t2:  { label: 'Arena / T2', emoji: '🏁' },
+  ovrigt:    { label: 'Övrigt',     emoji: '📋' },
+}
+
+const OMRADE_ORDNING: SektionOmrade[] = ['simning', 't1', 'cykling', 'lopning', 'arena_t2', 'ovrigt']
 
 const KOMPETENS_LABELS: Record<string, string> = {
   sjukvard:             'Sjukvård/HLR',
@@ -74,7 +87,7 @@ export default function DashboardTabs({
   emailInbjudningar,
   sektionsledare,
 }: Props) {
-  const [aktiv, setAktiv] = useState<'oversikt' | 'funktionarer' | 'karta' | 'bjudin' | 'sl'>('oversikt')
+  const [aktiv, setAktiv] = useState<'oversikt' | 'funktionarer' | 'karta' | 'bjudin' | 'sl' | 'import'>('oversikt')
   const [modal, setModal] = useState<ModalLäge>(null)
 
   // Lokal state för otilldelade + pass + alla funktionärer
@@ -139,6 +152,7 @@ export default function DashboardTabs({
         <TabKnapp aktiv={aktiv === 'karta'} onClick={() => setAktiv('karta')} label="Karta" />
         <TabKnapp aktiv={aktiv === 'sl'} onClick={() => setAktiv('sl')} label="Sektionsledare" />
         <TabKnapp aktiv={aktiv === 'bjudin'} onClick={() => setAktiv('bjudin')} label="Bjud in" />
+        <TabKnapp aktiv={aktiv === 'import'} onClick={() => setAktiv('import')} label="Importera" />
       </div>
 
       {/* Översikt */}
@@ -178,15 +192,36 @@ export default function DashboardTabs({
               Inga sektioner ännu. Kör SQL-migrationen för att lägga in seed-data.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sektioner.map((s) => (
-                <SektionKort
-                  key={s.id}
-                  sektion={s}
-                  pass={lokalaPasser.filter((p) => p.sektion_id === s.id)}
-                  onTilldelaPass={(passId) => setModal({ typ: 'fran-pass', passId })}
-                />
-              ))}
+            <div className="space-y-6">
+              {OMRADE_ORDNING.map((omrade) => {
+                const grupp = sektioner.filter((s) => s.omrade === omrade)
+                if (grupp.length === 0) return null
+                const cfg = OMRADE_CONFIG[omrade]
+                const gruppTilldelade = grupp.reduce((s, x) => s + (x.tilldelade_totalt ?? 0), 0)
+                const gruppBehövs    = grupp.reduce((s, x) => s + (x.behovs_totalt ?? 0), 0)
+                const gruppProcent   = gruppBehövs > 0 ? Math.round((gruppTilldelade / gruppBehövs) * 100) : 0
+                return (
+                  <div key={omrade}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-base">{cfg.emoji}</span>
+                      <h3 className="text-sm font-semibold text-gray-700">{cfg.label}</h3>
+                      <span className="text-xs text-gray-400 ml-auto">
+                        {gruppTilldelade}/{gruppBehövs} ({gruppProcent}%)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {grupp.map((s) => (
+                        <SektionKort
+                          key={s.id}
+                          sektion={s}
+                          pass={lokalaPasser.filter((p) => p.sektion_id === s.id)}
+                          onTilldelaPass={(passId) => setModal({ typ: 'fran-pass', passId })}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </section>
@@ -323,6 +358,11 @@ export default function DashboardTabs({
           smsInbjudningar={smsInbjudningar}
           emailInbjudningar={emailInbjudningar}
         />
+      </div>
+
+      {/* Importera */}
+      <div className={aktiv === 'import' ? 'block' : 'hidden'}>
+        <ExcelImportFlik />
       </div>
 
       {/* Tilldelningsmodal */}
