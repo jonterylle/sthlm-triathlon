@@ -1,17 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import SektionKarta from '@/components/SektionKarta'
 import BjudInFlik from '@/components/BjudInFlik'
 import TilldelningsModal from '@/components/TilldelningsModal'
 import SektionsledareFlik from '@/components/SektionsledareFlik'
+import FunktionarRedigeraModal from '@/components/FunktionarRedigeraModal'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
   OtilldeladFunktionar,
   PassMedSektion,
   SektionsledareInfo,
+  Profile,
 } from '@/lib/database.types'
+
+const KOMPETENS_LABELS: Record<string, string> = {
+  sjukvard:             'Sjukvård/HLR',
+  korkort:              'Körkort',
+  triathlon_erfarenhet: 'Triathlon',
+  simning:              'Simkunnig',
+  cykel_teknik:         'Cykelmekanik',
+  engelska:             'Engelska',
+}
 
 interface SMSRad {
   id: string
@@ -33,6 +44,7 @@ interface Props {
   pass: PassBemanningsgrad[]
   passMedSektioner: PassMedSektion[]
   otilldelade: OtilldeladFunktionar[]
+  allaFunktionärer: Profile[]
   totalBehövs: number
   totalTilldelade: number
   totalSaknas: number
@@ -45,6 +57,7 @@ interface Props {
 type ModalLäge =
   | { typ: 'fran-funktionar'; funktionar: OtilldeladFunktionar }
   | { typ: 'fran-pass'; passId: string }
+  | { typ: 'redigera'; funktionar: Profile }
   | null
 
 export default function DashboardTabs({
@@ -52,6 +65,7 @@ export default function DashboardTabs({
   pass,
   passMedSektioner,
   otilldelade,
+  allaFunktionärer,
   totalBehövs,
   totalTilldelade,
   totalSaknas,
@@ -60,17 +74,41 @@ export default function DashboardTabs({
   emailInbjudningar,
   sektionsledare,
 }: Props) {
-  const [aktiv, setAktiv] = useState<'oversikt' | 'karta' | 'bjudin' | 'sl'>('oversikt')
+  const [aktiv, setAktiv] = useState<'oversikt' | 'funktionarer' | 'karta' | 'bjudin' | 'sl'>('oversikt')
   const [modal, setModal] = useState<ModalLäge>(null)
 
-  // Lokal state för otilldelade + pass så att UI:t uppdateras direkt efter tilldelning
+  // Lokal state för otilldelade + pass + alla funktionärer
   const [lokalaOtilldelade, setLokalaOtilldelade] = useState(otilldelade)
   const [lokalaPasser, setLokalaPasser] = useState(passMedSektioner)
+  const [lokalaAlla, setLokalaAlla] = useState(allaFunktionärer)
+
+  // Sök och filter
+  const [sök, setSök] = useState('')
+  const [aktivaKompetenser, setAktivaKompetenser] = useState<string[]>([])
+
+  function toggleKompetensFilter(k: string) {
+    setAktivaKompetenser(prev =>
+      prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]
+    )
+  }
+
+  const filtrerade = useMemo(() => {
+    const q = sök.toLowerCase()
+    return lokalaAlla.filter(f => {
+      const matchText =
+        !q ||
+        (f.full_name ?? '').toLowerCase().includes(q) ||
+        f.email.toLowerCase().includes(q) ||
+        (f.klubb ?? '').toLowerCase().includes(q)
+      const matchKomp =
+        aktivaKompetenser.length === 0 ||
+        aktivaKompetenser.every(k => (f.kompetenser ?? []).includes(k))
+      return matchText && matchKomp
+    })
+  }, [lokalaAlla, sök, aktivaKompetenser])
 
   function hanteraFramgång(profilId: string, passId: string) {
-    // Ta bort funktionären från lokala listan
     setLokalaOtilldelade((prev) => prev.filter((f) => f.id !== profilId))
-    // Öka "tilldelade" på aktuellt pass
     setLokalaPasser((prev) =>
       prev.map((p) =>
         p.pass_id === passId
@@ -81,11 +119,23 @@ export default function DashboardTabs({
     setModal(null)
   }
 
+  function hanteraSparat(uppdaterad: Profile) {
+    setLokalaAlla(prev => prev.map(f => f.id === uppdaterad.id ? uppdaterad : f))
+    setModal(null)
+  }
+
+  function hanteraBorttagen(profilId: string) {
+    setLokalaAlla(prev => prev.filter(f => f.id !== profilId))
+    setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
+    setModal(null)
+  }
+
   return (
     <div>
       {/* Flikar */}
       <div className="flex gap-1 border-b border-gray-200 mb-6 flex-wrap">
         <TabKnapp aktiv={aktiv === 'oversikt'} onClick={() => setAktiv('oversikt')} label="Översikt" />
+        <TabKnapp aktiv={aktiv === 'funktionarer'} onClick={() => setAktiv('funktionarer')} label={`Funktionärer (${lokalaAlla.length})`} />
         <TabKnapp aktiv={aktiv === 'karta'} onClick={() => setAktiv('karta')} label="Karta" />
         <TabKnapp aktiv={aktiv === 'sl'} onClick={() => setAktiv('sl')} label="Sektionsledare" />
         <TabKnapp aktiv={aktiv === 'bjudin'} onClick={() => setAktiv('bjudin')} label="Bjud in" />
@@ -169,6 +219,84 @@ export default function DashboardTabs({
 
       </div>
 
+      {/* Funktionärer */}
+      <div className={aktiv === 'funktionarer' ? 'block space-y-4' : 'hidden'}>
+        {/* Sök */}
+        <div className="flex gap-2">
+          <input
+            type="search"
+            value={sök}
+            onChange={e => setSök(e.target.value)}
+            placeholder="Sök namn, e-post eller klubb…"
+            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
+          />
+        </div>
+
+        {/* Kompetensfilter */}
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(KOMPETENS_LABELS).map(([k, label]) => (
+            <button
+              key={k}
+              onClick={() => toggleKompetensFilter(k)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                aktivaKompetenser.includes(k)
+                  ? 'bg-[#0066CC] text-white border-[#0066CC]'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          {aktivaKompetenser.length > 0 && (
+            <button
+              onClick={() => setAktivaKompetenser([])}
+              className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Rensa filter ×
+            </button>
+          )}
+        </div>
+
+        {/* Lista */}
+        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+          {filtrerade.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-gray-400">
+              Inga funktionärer matchar sökningen.
+            </p>
+          ) : (
+            filtrerade.map(f => (
+              <div key={f.id} className="px-4 py-3 flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {f.full_name ?? '(inget namn)'}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{f.email}</p>
+                  {f.klubb && (
+                    <p className="text-xs text-gray-400 truncate">{f.klubb}</p>
+                  )}
+                  {(f.kompetenser ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {(f.kompetenser ?? []).map(k => (
+                        <span key={k} className="text-[10px] bg-blue-50 text-[#0066CC] px-1.5 py-0.5 rounded-full">
+                          {KOMPETENS_LABELS[k] ?? k}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setModal({ typ: 'redigera', funktionar: f })}
+                  className="flex-shrink-0 text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition font-medium"
+                >
+                  Redigera
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+        <p className="text-xs text-gray-400 text-right">{filtrerade.length} av {lokalaAlla.length} funktionärer</p>
+      </div>
+
       {/* Karta */}
       <div className={aktiv === 'karta' ? 'block' : 'hidden'}>
         <section>
@@ -198,7 +326,7 @@ export default function DashboardTabs({
       </div>
 
       {/* Tilldelningsmodal */}
-      {modal && (
+      {modal && modal.typ !== 'redigera' && (
         <TilldelningsModal
           valtFunktionar={modal.typ === 'fran-funktionar' ? modal.funktionar : undefined}
           valtPassId={modal.typ === 'fran-pass' ? modal.passId : undefined}
@@ -206,6 +334,16 @@ export default function DashboardTabs({
           otilldelade={lokalaOtilldelade}
           onClose={() => setModal(null)}
           onSuccess={hanteraFramgång}
+        />
+      )}
+
+      {/* Redigera funktionär-modal */}
+      {modal?.typ === 'redigera' && (
+        <FunktionarRedigeraModal
+          funktionar={modal.funktionar}
+          onClose={() => setModal(null)}
+          onSparat={hanteraSparat}
+          onBorttagen={hanteraBorttagen}
         />
       )}
     </div>

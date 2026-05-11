@@ -70,7 +70,7 @@ export default async function DashboardPage() {
   }
 
   // ── TL-vy ──────────────────────────────────────────────────
-  const [sektionerRes, passRes, otilldeladeRes, passMedSektionerRes, slRes, emailInbjRes, smsInbjRes] = await Promise.all([
+  const [sektionerRes, passRes, otilldeladeRes, passMedSektionerRes, slRes, emailInbjRes, smsInbjRes, allaFunktionärerRes] = await Promise.all([
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
     supabase.from('pass_bemanningsgrad').select('*'),
     supabase.rpc('get_otilldelade_funktionarer'),
@@ -78,6 +78,7 @@ export default async function DashboardPage() {
     supabase.rpc('get_sektionsledare'),
     supabase.from('inbjudningar').select('id, email, skickad_at, status, roll').order('skickad_at', { ascending: false }),
     supabase.from('sms_inbjudningar').select('id, telefon, skickad_at, email_inkommen, status').order('skickad_at', { ascending: false }),
+    supabase.from('profiles').select('*').eq('role', 'funktionar').order('full_name'),
   ])
 
   const sektioner: SektionBemanningsgrad[]     = sektionerRes.data ?? []
@@ -87,6 +88,7 @@ export default async function DashboardPage() {
   const sektionsledare: SektionsledareInfo[]   = slRes.data ?? []
   const emailInbjudningar                      = emailInbjRes.data ?? []
   const smsInbjudningar                        = smsInbjRes.data ?? []
+  const allaFunktionärer                       = allaFunktionärerRes.data ?? []
 
   const totalBehövs     = sektioner.reduce((s, x) => s + (x.behovs_totalt ?? 0), 0)
   const totalTilldelade = sektioner.reduce((s, x) => s + (x.tilldelade_totalt ?? 0), 0)
@@ -126,6 +128,7 @@ export default async function DashboardPage() {
           pass={pass}
           passMedSektioner={passMedSektioner}
           otilldelade={otilldelade}
+          allaFunktionärer={allaFunktionärer}
           totalBehövs={totalBehövs}
           totalTilldelade={totalTilldelade}
           totalSaknas={totalSaknas}

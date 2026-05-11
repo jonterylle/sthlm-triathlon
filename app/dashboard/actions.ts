@@ -301,3 +301,66 @@ export async function taBortInbjudan(
 
   return { ok: true }
 }
+
+// ── Uppdatera en funktionärs profil ──────────────────────────
+export async function uppdateraFunktionar(
+  profilId: string,
+  data: {
+    full_name: string | null
+    telefon: string | null
+    klubb: string | null
+    kompetenser: string[]
+    erfarenhet: string | null
+    specialkost: string | null
+  },
+): Promise<{ ok: boolean; meddelande?: string }> {
+  const ctx = await verifieraTL()
+  if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
+  const { supabase } = ctx
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      full_name:   data.full_name   || null,
+      telefon:     data.telefon     || null,
+      klubb:       data.klubb       || null,
+      kompetenser: data.kompetenser,
+      erfarenhet:  data.erfarenhet  || null,
+      specialkost: data.specialkost || null,
+    })
+    .eq('id', profilId)
+
+  if (error) {
+    console.error('[uppdateraFunktionar] fel:', error.message)
+    return { ok: false, meddelande: 'Kunde inte spara. Försök igen.' }
+  }
+
+  return { ok: true }
+}
+
+// ── Ta bort en funktionär helt (profil + auth-konto) ─────────
+export async function taBortFunktionar(
+  profilId: string,
+  email: string,
+): Promise<{ ok: boolean; meddelande?: string }> {
+  const ctx = await verifieraTL()
+  if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
+
+  const admin = createAdminClient()
+  const { data: users } = await admin.auth.admin.listUsers()
+  const authUser = users?.users?.find((u) => u.email === email)
+
+  if (authUser) {
+    const { error } = await admin.auth.admin.deleteUser(authUser.id)
+    if (error) {
+      console.error('[taBortFunktionar] fel:', error.message)
+      return { ok: false, meddelande: 'Kunde inte ta bort kontot. Försök igen.' }
+    }
+  } else {
+    // Inget auth-konto — ta bort profilen direkt
+    const { supabase } = ctx
+    await supabase.from('profiles').delete().eq('id', profilId)
+  }
+
+  return { ok: true }
+}
