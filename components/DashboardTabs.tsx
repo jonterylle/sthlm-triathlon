@@ -28,6 +28,8 @@ const OMRADE_CONFIG: Record<SektionOmrade, { label: string; emoji: string }> = {
   ovrigt:    { label: 'Övrigt',     emoji: '📋' },
 }
 
+const OMRADE_ORDNING: SektionOmrade[] = ['simning', 't1', 'cykling', 'lopning', 'arena_t2', 'ovrigt']
+
 const KOMPETENS_LABELS: Record<string, string> = {
   sjukvard:             'Sjukvård',
   korkort:              'Körkort',
@@ -86,9 +88,9 @@ export default function DashboardTabs({
   emailInbjudningar,
   sektionsledare,
 }: Props) {
-  // Aktiv flik: sektions-id eller admin-flik
-  const förstaSektion = sektioner[0]?.id ?? ''
-  const [aktivSektion, setAktivSektion] = useState<string>(förstaSektion)
+  // Aktiv flik: område eller admin-flik
+  const förstaOmrade = OMRADE_ORDNING.find(o => sektioner.some(s => s.omrade === o)) ?? 'simning'
+  const [aktivOmrade, setAktivOmrade] = useState<SektionOmrade>(förstaOmrade)
   const [aktivAdmin, setAktivAdmin] = useState<AdminFlik | null>(null)
   const [modal, setModal] = useState<ModalLäge>(null)
 
@@ -160,7 +162,7 @@ export default function DashboardTabs({
     setModal(null)
   }
 
-  const valtSektionObj = sektioner.find(s => s.id === aktivSektion)
+  const sektionerIOmrade = sektioner.filter(s => s.omrade === aktivOmrade)
 
   return (
     <div className="space-y-0">
@@ -188,29 +190,34 @@ export default function DashboardTabs({
         />
       </div>
 
-      {/* ── Sektionsflikar (scrollbar) ─────────────────────────── */}
-      <div className="border-b border-gray-200 mb-0">
-        <div className="flex overflow-x-auto gap-0 scrollbar-hide -mb-px">
-          {sektioner.map(s => {
-            const procent = s.behovs_totalt > 0
-              ? Math.round((s.tilldelade_totalt / s.behovs_totalt) * 100)
-              : 0
-            const isAktiv = aktivSektion === s.id && aktivAdmin === null
+      {/* ── Områdesflikar ─────────────────────────────────────── */}
+      <div className="border-b border-gray-200">
+        <div className="flex overflow-x-auto scrollbar-hide -mb-px">
+          {OMRADE_ORDNING.map(omrade => {
+            const grupp = sektioner.filter(s => s.omrade === omrade)
+            if (grupp.length === 0) return null
+            const cfg = OMRADE_CONFIG[omrade]
+            const tilldelade = grupp.reduce((s, x) => s + x.tilldelade_totalt, 0)
+            const behövs     = grupp.reduce((s, x) => s + x.behovs_totalt, 0)
+            const procent    = behövs > 0 ? Math.round((tilldelade / behövs) * 100) : 0
+            const allaFulla  = grupp.every(s => s.status === 'full')
+            const någraFulla = grupp.some(s => s.status === 'full' || s.status === 'delvis')
+            const isAktiv    = aktivOmrade === omrade && aktivAdmin === null
             return (
               <button
-                key={s.id}
-                onClick={() => { setAktivSektion(s.id); setAktivAdmin(null) }}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                key={omrade}
+                onClick={() => { setAktivOmrade(omrade); setAktivAdmin(null) }}
+                className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   isAktiv
-                    ? 'border-[#0066CC] text-[#0066CC] bg-blue-50/40'
+                    ? 'border-[#0066CC] text-[#0066CC]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.farg }} />
-                <span>{s.namn}</span>
+                <span>{cfg.emoji}</span>
+                <span>{cfg.label}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                  s.status === 'full'   ? 'bg-green-100 text-green-700'
-                  : s.status === 'delvis' ? 'bg-amber-100 text-amber-700'
+                  allaFulla   ? 'bg-green-100 text-green-700'
+                  : någraFulla ? 'bg-amber-100 text-amber-700'
                   : 'bg-red-100 text-red-700'
                 }`}>
                   {procent}%
@@ -245,18 +252,27 @@ export default function DashboardTabs({
         </div>
       </div>
 
-      {/* ── Sektionsinnehåll ───────────────────────────────────── */}
-      {aktivAdmin === null && valtSektionObj && (
-        <SektionsFlik
-          sektion={valtSektionObj}
-          passer={lokalaPasser.filter(p => p.sektion_id === valtSektionObj.id)}
-          tilldelade={lokalaTilldelade.filter(t => t.sektion_id === valtSektionObj.id)}
-          otilldelade={lokalaOtilldelade}
-          onTilldelaPass={passId => setModal({ typ: 'fran-pass', passId })}
-          onRedigeraPass={p => setModal({ typ: 'pass-redigera', pass: p, sektionNamn: valtSektionObj.namn })}
-          onNyttPass={() => setModal({ typ: 'pass-nytt', sektionId: valtSektionObj.id, sektionNamn: valtSektionObj.namn })}
-          onTilldelaFunktionar={f => setModal({ typ: 'fran-funktionar', funktionar: f })}
-        />
+      {/* ── Områdesinnehåll ────────────────────────────────────── */}
+      {aktivAdmin === null && (
+        <div className="pt-5 space-y-8">
+          {sektionerIOmrade.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-12">Inga sektioner i det här området.</p>
+          ) : (
+            sektionerIOmrade.map(sektion => (
+              <SektionsFlik
+                key={sektion.id}
+                sektion={sektion}
+                passer={lokalaPasser.filter(p => p.sektion_id === sektion.id)}
+                tilldelade={lokalaTilldelade.filter(t => t.sektion_id === sektion.id)}
+                otilldelade={lokalaOtilldelade}
+                onTilldelaPass={passId => setModal({ typ: 'fran-pass', passId })}
+                onRedigeraPass={p => setModal({ typ: 'pass-redigera', pass: p, sektionNamn: sektion.namn })}
+                onNyttPass={() => setModal({ typ: 'pass-nytt', sektionId: sektion.id, sektionNamn: sektion.namn })}
+                onTilldelaFunktionar={f => setModal({ typ: 'fran-funktionar', funktionar: f })}
+              />
+            ))
+          )}
+        </div>
       )}
 
       {/* ── Admin-flikar ───────────────────────────────────────── */}
