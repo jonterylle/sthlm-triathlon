@@ -13,6 +13,7 @@ import type {
   PassBemanningsgrad,
   OtilldeladFunktionar,
   PassMedSektion,
+  TilldeladPerPass,
   SektionsledareInfo,
   SektionOmrade,
   Profile,
@@ -27,10 +28,8 @@ const OMRADE_CONFIG: Record<SektionOmrade, { label: string; emoji: string }> = {
   ovrigt:    { label: 'Övrigt',     emoji: '📋' },
 }
 
-const OMRADE_ORDNING: SektionOmrade[] = ['simning', 't1', 'cykling', 'lopning', 'arena_t2', 'ovrigt']
-
 const KOMPETENS_LABELS: Record<string, string> = {
-  sjukvard:             'Sjukvård/HLR',
+  sjukvard:             'Sjukvård',
   korkort:              'Körkort',
   triathlon_erfarenhet: 'Triathlon',
   simning:              'Simkunnig',
@@ -38,25 +37,21 @@ const KOMPETENS_LABELS: Record<string, string> = {
   engelska:             'Engelska',
 }
 
-interface SMSRad {
-  id: string
-  telefon: string
-  skickad_at: string
-  email_inkommen: string | null
-  status: string
-}
+type AdminFlik = 'funktionarer' | 'karta' | 'bjudin' | 'sl' | 'import'
 
+interface SMSRad {
+  id: string; telefon: string; skickad_at: string
+  email_inkommen: string | null; status: string
+}
 interface EmailRad {
-  id: string
-  email: string
-  skickad_at: string
-  status: string
+  id: string; email: string; skickad_at: string; status: string
 }
 
 interface Props {
   sektioner: SektionBemanningsgrad[]
   pass: PassBemanningsgrad[]
   passMedSektioner: PassMedSektion[]
+  tilldeladePerPass: TilldeladPerPass[]
   otilldelade: OtilldeladFunktionar[]
   allaFunktionärer: Profile[]
   totalBehövs: number
@@ -78,8 +73,9 @@ type ModalLäge =
 
 export default function DashboardTabs({
   sektioner,
-  pass,
+  pass: _pass,
   passMedSektioner,
+  tilldeladePerPass,
   otilldelade,
   allaFunktionärer,
   totalBehövs,
@@ -90,16 +86,19 @@ export default function DashboardTabs({
   emailInbjudningar,
   sektionsledare,
 }: Props) {
-  const [aktiv, setAktiv] = useState<'oversikt' | 'funktionarer' | 'karta' | 'bjudin' | 'sl' | 'import'>('oversikt')
+  // Aktiv flik: sektions-id eller admin-flik
+  const förstaSektion = sektioner[0]?.id ?? ''
+  const [aktivSektion, setAktivSektion] = useState<string>(förstaSektion)
+  const [aktivAdmin, setAktivAdmin] = useState<AdminFlik | null>(null)
   const [modal, setModal] = useState<ModalLäge>(null)
 
-  // Lokal state för otilldelade + pass + alla funktionärer
   const [lokalaOtilldelade, setLokalaOtilldelade] = useState(otilldelade)
-  const [lokalaPasser, setLokalaPasser] = useState(passMedSektioner)
-  const [lokalaAlla, setLokalaAlla] = useState(allaFunktionärer)
+  const [lokalaPasser, setLokalaPasser]           = useState(passMedSektioner)
+  const [lokalaTilldelade, setLokalaTilldelade]   = useState(tilldeladePerPass)
+  const [lokalaAlla, setLokalaAlla]               = useState(allaFunktionärer)
 
-  // Sök och filter
-  const [sök, setSök] = useState('')
+  // Sök och filter (funktionärsflik)
+  const [sök, setSök]                             = useState('')
   const [aktivaKompetenser, setAktivaKompetenser] = useState<string[]>([])
 
   function toggleKompetensFilter(k: string) {
@@ -124,9 +123,9 @@ export default function DashboardTabs({
   }, [lokalaAlla, sök, aktivaKompetenser])
 
   function hanteraFramgång(profilId: string, passId: string) {
-    setLokalaOtilldelade((prev) => prev.filter((f) => f.id !== profilId))
-    setLokalaPasser((prev) =>
-      prev.map((p) =>
+    setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
+    setLokalaPasser(prev =>
+      prev.map(p =>
         p.pass_id === passId
           ? { ...p, tilldelade: p.tilldelade + 1, saknas: Math.max(0, p.saknas - 1) }
           : p
@@ -157,234 +156,234 @@ export default function DashboardTabs({
 
   function hanteraPassBorttagen(passId: string) {
     setLokalaPasser(prev => prev.filter(p => p.pass_id !== passId))
+    setLokalaTilldelade(prev => prev.filter(t => t.pass_id !== passId))
     setModal(null)
   }
 
+  const valtSektionObj = sektioner.find(s => s.id === aktivSektion)
+
   return (
-    <div>
-      {/* Flikar */}
-      <div className="flex gap-1 border-b border-gray-200 mb-6 flex-wrap">
-        <TabKnapp aktiv={aktiv === 'oversikt'} onClick={() => setAktiv('oversikt')} label="Översikt" />
-        <TabKnapp aktiv={aktiv === 'funktionarer'} onClick={() => setAktiv('funktionarer')} label={`Funktionärer (${lokalaAlla.length})`} />
-        <TabKnapp aktiv={aktiv === 'karta'} onClick={() => setAktiv('karta')} label="Karta" />
-        <TabKnapp aktiv={aktiv === 'sl'} onClick={() => setAktiv('sl')} label="Sektionsledare" />
-        <TabKnapp aktiv={aktiv === 'bjudin'} onClick={() => setAktiv('bjudin')} label="Bjud in" />
-        <TabKnapp aktiv={aktiv === 'import'} onClick={() => setAktiv('import')} label="Importera" />
+    <div className="space-y-0">
+
+      {/* ── Summering ─────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <StatKort
+          label="Bemanningsgrad"
+          value={`${bemanningsgrad}%`}
+          sub={`${totalTilldelade} av ${totalBehövs}`}
+          farg={bemanningsgrad >= 80 ? 'green' : bemanningsgrad >= 50 ? 'amber' : 'red'}
+        />
+        <StatKort label="Tilldelade" value={String(totalTilldelade)} sub="bekräftade pass" farg="blue" />
+        <StatKort
+          label="Platser kvar"
+          value={String(totalSaknas)}
+          sub="att fylla"
+          farg={totalSaknas === 0 ? 'green' : 'red'}
+        />
+        <StatKort
+          label="Ej tilldelade"
+          value={String(lokalaOtilldelade.length)}
+          sub="funktionärer"
+          farg={lokalaOtilldelade.length === 0 ? 'green' : 'amber'}
+        />
       </div>
 
-      {/* Översikt */}
-      <div className={aktiv === 'oversikt' ? 'space-y-8' : 'hidden'}>
+      {/* ── Sektionsflikar (scrollbar) ─────────────────────────── */}
+      <div className="border-b border-gray-200 mb-0">
+        <div className="flex overflow-x-auto gap-0 scrollbar-hide -mb-px">
+          {sektioner.map(s => {
+            const procent = s.behovs_totalt > 0
+              ? Math.round((s.tilldelade_totalt / s.behovs_totalt) * 100)
+              : 0
+            const isAktiv = aktivSektion === s.id && aktivAdmin === null
+            return (
+              <button
+                key={s.id}
+                onClick={() => { setAktivSektion(s.id); setAktivAdmin(null) }}
+                className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  isAktiv
+                    ? 'border-[#0066CC] text-[#0066CC] bg-blue-50/40'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.farg }} />
+                <span>{s.namn}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                  s.status === 'full'   ? 'bg-green-100 text-green-700'
+                  : s.status === 'delvis' ? 'bg-amber-100 text-amber-700'
+                  : 'bg-red-100 text-red-700'
+                }`}>
+                  {procent}%
+                </span>
+              </button>
+            )
+          })}
 
-        <section>
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Summering</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatKort
-              label="Bemanningsgrad"
-              value={`${bemanningsgrad}%`}
-              sub={`${totalTilldelade} av ${totalBehövs} pass`}
-              farg={bemanningsgrad >= 80 ? 'green' : bemanningsgrad >= 50 ? 'amber' : 'red'}
-            />
-            <StatKort label="Tilldelade" value={String(totalTilldelade)} sub="bekräftade pass" farg="blue" />
-            <StatKort
-              label="Platser kvar"
-              value={String(totalSaknas)}
-              sub="att fylla"
-              farg={totalSaknas === 0 ? 'green' : 'red'}
-            />
-            <StatKort
-              label="Ej tilldelade"
-              value={String(lokalaOtilldelade.length)}
-              sub="funktionärer"
-              farg={lokalaOtilldelade.length === 0 ? 'green' : 'amber'}
-            />
-          </div>
-        </section>
+          {/* Separator */}
+          <div className="flex-shrink-0 w-px bg-gray-200 my-2 mx-1" />
 
-        <section>
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Sektioner ({sektioner.length})
-          </h2>
-          {sektioner.length === 0 ? (
-            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-400 text-sm">
-              Inga sektioner ännu. Kör SQL-migrationen för att lägga in seed-data.
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {OMRADE_ORDNING.map((omrade) => {
-                const grupp = sektioner.filter((s) => s.omrade === omrade)
-                if (grupp.length === 0) return null
-                const cfg = OMRADE_CONFIG[omrade]
-                const gruppTilldelade = grupp.reduce((s, x) => s + (x.tilldelade_totalt ?? 0), 0)
-                const gruppBehövs    = grupp.reduce((s, x) => s + (x.behovs_totalt ?? 0), 0)
-                const gruppProcent   = gruppBehövs > 0 ? Math.round((gruppTilldelade / gruppBehövs) * 100) : 0
-                return (
-                  <div key={omrade}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-base">{cfg.emoji}</span>
-                      <h3 className="text-sm font-semibold text-gray-700">{cfg.label}</h3>
-                      <span className="text-xs text-gray-400 ml-auto">
-                        {gruppTilldelade}/{gruppBehövs} ({gruppProcent}%)
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {grupp.map((s) => (
-                        <SektionKort
-                          key={s.id}
-                          sektion={s}
-                          pass={lokalaPasser.filter((p) => p.sektion_id === s.id)}
-                          onTilldelaPass={(passId) => setModal({ typ: 'fran-pass', passId })}
-                          onRedigeraPass={(p) => setModal({ typ: 'pass-redigera', pass: p, sektionNamn: s.namn })}
-                          onNyttPass={() => setModal({ typ: 'pass-nytt', sektionId: s.id, sektionNamn: s.namn })}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
-
-        {lokalaOtilldelade.length > 0 && (
-          <section>
-            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Funktionärer utan tilldelning ({lokalaOtilldelade.length})
-            </h2>
-            <div className="bg-white rounded-xl border border-amber-200 divide-y divide-gray-100">
-              {lokalaOtilldelade.map((f) => (
-                <div key={f.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {f.full_name ?? '(inget namn)'}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">{f.email}</p>
-                  </div>
-                  <button
-                    onClick={() => setModal({ typ: 'fran-funktionar', funktionar: f })}
-                    className="flex-shrink-0 text-xs bg-[#0066CC] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition font-medium"
-                  >
-                    Tilldela
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-      </div>
-
-      {/* Funktionärer */}
-      <div className={aktiv === 'funktionarer' ? 'block space-y-4' : 'hidden'}>
-        {/* Sök */}
-        <div className="flex gap-2">
-          <input
-            type="search"
-            value={sök}
-            onChange={e => setSök(e.target.value)}
-            placeholder="Sök namn, e-post eller klubb…"
-            className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
-          />
-        </div>
-
-        {/* Kompetensfilter */}
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(KOMPETENS_LABELS).map(([k, label]) => (
+          {/* Admin-flikar */}
+          {([
+            ['funktionarer', `Funktionärer (${lokalaAlla.length})`],
+            ['karta', 'Karta'],
+            ['sl', 'Sektionsledare'],
+            ['bjudin', 'Bjud in'],
+            ['import', 'Importera'],
+          ] as [AdminFlik, string][]).map(([id, label]) => (
             <button
-              key={k}
-              onClick={() => toggleKompetensFilter(k)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                aktivaKompetenser.includes(k)
-                  ? 'bg-[#0066CC] text-white border-[#0066CC]'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+              key={id}
+              onClick={() => setAktivAdmin(id)}
+              className={`flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                aktivAdmin === id
+                  ? 'border-[#0066CC] text-[#0066CC]'
+                  : 'border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300'
               }`}
             >
               {label}
             </button>
           ))}
-          {aktivaKompetenser.length > 0 && (
-            <button
-              onClick={() => setAktivaKompetenser([])}
-              className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              Rensa filter ×
-            </button>
-          )}
         </div>
-
-        {/* Lista */}
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-          {filtrerade.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-gray-400">
-              Inga funktionärer matchar sökningen.
-            </p>
-          ) : (
-            filtrerade.map(f => (
-              <div key={f.id} className="px-4 py-3 flex items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {f.full_name ?? '(inget namn)'}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{f.email}</p>
-                  {f.klubb && (
-                    <p className="text-xs text-gray-400 truncate">{f.klubb}</p>
-                  )}
-                  {(f.kompetenser ?? []).length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {(f.kompetenser ?? []).map(k => (
-                        <span key={k} className="text-[10px] bg-blue-50 text-[#0066CC] px-1.5 py-0.5 rounded-full">
-                          {KOMPETENS_LABELS[k] ?? k}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => setModal({ typ: 'redigera', funktionar: f })}
-                  className="flex-shrink-0 text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition font-medium"
-                >
-                  Redigera
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-        <p className="text-xs text-gray-400 text-right">{filtrerade.length} av {lokalaAlla.length} funktionärer</p>
       </div>
 
-      {/* Karta */}
-      <div className={aktiv === 'karta' ? 'block' : 'hidden'}>
-        <section>
+      {/* ── Sektionsinnehåll ───────────────────────────────────── */}
+      {aktivAdmin === null && valtSektionObj && (
+        <SektionsFlik
+          sektion={valtSektionObj}
+          passer={lokalaPasser.filter(p => p.sektion_id === valtSektionObj.id)}
+          tilldelade={lokalaTilldelade.filter(t => t.sektion_id === valtSektionObj.id)}
+          otilldelade={lokalaOtilldelade}
+          onTilldelaPass={passId => setModal({ typ: 'fran-pass', passId })}
+          onRedigeraPass={p => setModal({ typ: 'pass-redigera', pass: p, sektionNamn: valtSektionObj.namn })}
+          onNyttPass={() => setModal({ typ: 'pass-nytt', sektionId: valtSektionObj.id, sektionNamn: valtSektionObj.namn })}
+          onTilldelaFunktionar={f => setModal({ typ: 'fran-funktionar', funktionar: f })}
+        />
+      )}
+
+      {/* ── Admin-flikar ───────────────────────────────────────── */}
+      {aktivAdmin === 'funktionarer' && (
+        <div className="pt-6 space-y-4">
+          <div className="flex gap-2">
+            <input
+              type="search"
+              value={sök}
+              onChange={e => setSök(e.target.value)}
+              placeholder="Sök namn, e-post eller klubb…"
+              className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(KOMPETENS_LABELS).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => toggleKompetensFilter(k)}
+                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  aktivaKompetenser.includes(k)
+                    ? 'bg-[#0066CC] text-white border-[#0066CC]'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            {aktivaKompetenser.length > 0 && (
+              <button
+                onClick={() => setAktivaKompetenser([])}
+                className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:text-gray-600"
+              >
+                Rensa ×
+              </button>
+            )}
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+            {filtrerade.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-gray-400">Inga funktionärer matchar sökningen.</p>
+            ) : (
+              filtrerade.map(f => (
+                <div key={f.id} className="px-4 py-3 flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{f.full_name ?? '(inget namn)'}</p>
+                    <p className="text-xs text-gray-500 truncate">{f.email}</p>
+                    {f.klubb && <p className="text-xs text-gray-400 truncate">{f.klubb}</p>}
+                    {(f.kompetenser ?? []).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {(f.kompetenser ?? []).map(k => (
+                          <span key={k} className="text-[10px] bg-blue-50 text-[#0066CC] px-1.5 py-0.5 rounded-full">
+                            {KOMPETENS_LABELS[k] ?? k}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setModal({ typ: 'redigera', funktionar: f })}
+                    className="flex-shrink-0 text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition font-medium"
+                  >
+                    Redigera
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+          <p className="text-xs text-gray-400 text-right">{filtrerade.length} av {lokalaAlla.length} funktionärer</p>
+        </div>
+      )}
+
+      {aktivAdmin === 'karta' && (
+        <div className="pt-6">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
             Tävlingsområde – Stora Skuggan, Norra Djurgården
           </h2>
           <SektionKarta sektioner={sektioner} />
-        </section>
-      </div>
+        </div>
+      )}
 
-      {/* Sektionsledare */}
-      <div className={aktiv === 'sl' ? 'block' : 'hidden'}>
-        <section>
+      {aktivAdmin === 'sl' && (
+        <div className="pt-6">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
             Sektionsledare ({sektionsledare.length})
           </h2>
           <SektionsledareFlik sektionsledare={sektionsledare} sektioner={sektioner} />
-        </section>
-      </div>
+        </div>
+      )}
 
-      {/* Bjud in */}
-      <div className={aktiv === 'bjudin' ? 'block' : 'hidden'}>
-        <BjudInFlik
-          smsInbjudningar={smsInbjudningar}
-          emailInbjudningar={emailInbjudningar}
-        />
-      </div>
+      {aktivAdmin === 'bjudin' && (
+        <div className="pt-6">
+          <BjudInFlik smsInbjudningar={smsInbjudningar} emailInbjudningar={emailInbjudningar} />
+        </div>
+      )}
 
-      {/* Importera */}
-      <div className={aktiv === 'import' ? 'block' : 'hidden'}>
-        <ExcelImportFlik />
-      </div>
+      {aktivAdmin === 'import' && (
+        <div className="pt-6">
+          <ExcelImportFlik />
+        </div>
+      )}
 
-      {/* Tilldelningsmodal */}
+      {/* ── Otilldelade (visas alltid under sektionsvyn) ────────── */}
+      {aktivAdmin === null && lokalaOtilldelade.length > 0 && (
+        <div className="pt-6">
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Funktionärer utan tilldelning ({lokalaOtilldelade.length})
+          </h2>
+          <div className="bg-white rounded-xl border border-amber-200 divide-y divide-gray-100">
+            {lokalaOtilldelade.map(f => (
+              <div key={f.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{f.full_name ?? '(inget namn)'}</p>
+                  <p className="text-xs text-gray-500 truncate">{f.email}</p>
+                </div>
+                <button
+                  onClick={() => setModal({ typ: 'fran-funktionar', funktionar: f })}
+                  className="flex-shrink-0 text-xs bg-[#0066CC] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  Tilldela
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modaler ────────────────────────────────────────────── */}
       {modal && (modal.typ === 'fran-funktionar' || modal.typ === 'fran-pass') && (
         <TilldelningsModal
           valtFunktionar={modal.typ === 'fran-funktionar' ? modal.funktionar : undefined}
@@ -396,7 +395,6 @@ export default function DashboardTabs({
         />
       )}
 
-      {/* Redigera funktionär-modal */}
       {modal?.typ === 'redigera' && (
         <FunktionarRedigeraModal
           funktionar={modal.funktionar}
@@ -406,7 +404,6 @@ export default function DashboardTabs({
         />
       )}
 
-      {/* Pass-modal (redigera) */}
       {modal?.typ === 'pass-redigera' && (
         <PassModal
           sektionId={modal.pass.sektion_id}
@@ -418,7 +415,6 @@ export default function DashboardTabs({
         />
       )}
 
-      {/* Pass-modal (nytt) */}
       {modal?.typ === 'pass-nytt' && (
         <PassModal
           sektionId={modal.sektionId}
@@ -432,22 +428,239 @@ export default function DashboardTabs({
   )
 }
 
-// ── Hjälpkomponenter ──────────────────────────────────────────
+// ── SektionsFlik ─────────────────────────────────────────────
 
-function TabKnapp({ aktiv, onClick, label }: { aktiv: boolean; onClick: () => void; label: string }) {
+function SektionsFlik({
+  sektion,
+  passer,
+  tilldelade,
+  otilldelade,
+  onTilldelaPass,
+  onRedigeraPass,
+  onNyttPass,
+  onTilldelaFunktionar,
+}: {
+  sektion: SektionBemanningsgrad
+  passer: PassMedSektion[]
+  tilldelade: TilldeladPerPass[]
+  otilldelade: OtilldeladFunktionar[]
+  onTilldelaPass: (passId: string) => void
+  onRedigeraPass: (pass: PassMedSektion) => void
+  onNyttPass: () => void
+  onTilldelaFunktionar: (f: OtilldeladFunktionar) => void
+}) {
+  void otilldelade
+  void onTilldelaFunktionar
+
+  const procent = sektion.behovs_totalt > 0
+    ? Math.round((sektion.tilldelade_totalt / sektion.behovs_totalt) * 100)
+    : 0
+
+  const barColor =
+    sektion.status === 'full'   ? '#16A34A'
+    : sektion.status === 'delvis' ? '#F59E0B'
+    : '#DC2626'
+
+  const omradeCfg = OMRADE_CONFIG[sektion.omrade]
+
+  const sortedePasser = [...passer].sort((a, b) => a.starttid.localeCompare(b.starttid))
+
   return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-        aktiv
-          ? 'border-[#0066CC] text-[#0066CC]'
-          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-      }`}
-    >
-      {label}
-    </button>
+    <div className="pt-5 space-y-5">
+      {/* Sektionshuvud */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: sektion.farg }} />
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">{sektion.namn}</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {omradeCfg.emoji} {omradeCfg.label}
+              </p>
+            </div>
+          </div>
+          <div className="text-right flex-shrink-0">
+            <p className="text-2xl font-bold" style={{ color: barColor }}>{procent}%</p>
+            <p className="text-xs text-gray-400">{sektion.tilldelade_totalt} / {sektion.behovs_totalt} platser</p>
+          </div>
+        </div>
+
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(procent, 100)}%`, backgroundColor: barColor }}
+          />
+        </div>
+
+        {sektion.beskrivning && (
+          <p className="text-sm text-gray-500 mt-3">{sektion.beskrivning}</p>
+        )}
+      </div>
+
+      {/* Pass-lista */}
+      <div className="space-y-3">
+        {sortedePasser.length === 0 ? (
+          <div className="bg-white rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
+            Inga pass ännu för den här sektionen.
+          </div>
+        ) : (
+          sortedePasser.map(pass => {
+            const passDeltagare = tilldelade.filter(t => t.pass_id === pass.pass_id)
+            const saknas = Math.max(0, pass.behovs_antal - passDeltagare.length)
+            return (
+              <PassKort
+                key={pass.pass_id}
+                pass={pass}
+                tilldelade={passDeltagare}
+                saknas={saknas}
+                onTilldela={() => onTilldelaPass(pass.pass_id)}
+                onRedigera={() => onRedigeraPass(pass)}
+              />
+            )
+          })
+        )}
+
+        <button
+          onClick={onNyttPass}
+          className="w-full text-sm text-gray-400 hover:text-[#0066CC] hover:bg-blue-50 border border-dashed border-gray-200 hover:border-blue-200 rounded-xl py-3 transition-colors flex items-center justify-center gap-1"
+        >
+          <span className="text-base leading-none">+</span> Nytt pass
+        </button>
+      </div>
+    </div>
   )
 }
+
+// ── PassKort ─────────────────────────────────────────────────
+
+function PassKort({
+  pass,
+  tilldelade,
+  saknas,
+  onTilldela,
+  onRedigera,
+}: {
+  pass: PassMedSektion
+  tilldelade: TilldeladPerPass[]
+  saknas: number
+  onTilldela: () => void
+  onRedigera: () => void
+}) {
+  const [expanderad, setExpanderad] = useState(true)
+
+  const statusColor =
+    saknas === 0 ? 'text-green-600'
+    : saknas <= 2 ? 'text-amber-600'
+    : 'text-red-500'
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Pass-rubrik */}
+      <div className="px-4 py-3 flex items-center gap-3">
+        <button
+          onClick={() => setExpanderad(e => !e)}
+          className="flex-1 flex items-center gap-3 text-left min-w-0"
+        >
+          <span className={`text-xs transition-transform ${expanderad ? 'rotate-90' : ''}`}>▶</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">{pass.pass_namn}</p>
+            <p className="text-xs text-gray-400">{pass.starttid} – {pass.sluttid}</p>
+          </div>
+        </button>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={`text-sm font-bold ${statusColor}`}>
+            {tilldelade.length}/{pass.behovs_antal}
+          </span>
+          {saknas > 0 && (
+            <button
+              onClick={onTilldela}
+              className="text-xs bg-[#0066CC] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition font-medium"
+            >
+              + Tilldela
+            </button>
+          )}
+          <button
+            onClick={onRedigera}
+            className="text-gray-400 hover:text-gray-600 transition p-1"
+            title="Redigera pass"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Expanderat — lista med tilldelade */}
+      {expanderad && (
+        <div className="border-t border-gray-100">
+          {tilldelade.length === 0 ? (
+            <div className="px-4 py-4 text-center">
+              <p className="text-xs text-gray-400">Inga funktionärer tilldelade ännu.</p>
+              {saknas > 0 && (
+                <button
+                  onClick={onTilldela}
+                  className="mt-2 text-xs text-[#0066CC] hover:underline"
+                >
+                  Tilldela {saknas} platse{saknas === 1 ? 'r' : 'r'} →
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {tilldelade.map(t => (
+                <div key={t.tilldelning_id} className="px-4 py-2.5 flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[11px] font-bold text-[#0066CC]">
+                      {(t.full_name ?? t.email).charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {t.full_name ?? t.email}
+                    </p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      {t.telefon && (
+                        <a href={`tel:${t.telefon}`} className="text-xs text-gray-400 hover:text-[#0066CC] transition-colors">
+                          {t.telefon}
+                        </a>
+                      )}
+                      {(t.kompetenser ?? []).length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {(t.kompetenser ?? []).map(k => (
+                            <span key={k} className="text-[10px] bg-blue-50 text-[#0066CC] px-1.5 py-0.5 rounded-full">
+                              {KOMPETENS_LABELS[k] ?? k}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {t.notering && (
+                      <p className="text-[11px] text-gray-400 mt-0.5 italic">{t.notering}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {saknas > 0 && (
+                <div className="px-4 py-2 bg-gray-50">
+                  <button
+                    onClick={onTilldela}
+                    className="text-xs text-[#0066CC] hover:underline"
+                  >
+                    + Tilldela {saknas} till{saknas === 1 ? ' plats' : ' platser'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Hjälpkomponenter ─────────────────────────────────────────
 
 function StatKort({
   label, value, sub, farg,
@@ -465,100 +678,6 @@ function StatKort({
       <p className="text-xs font-medium opacity-70 mb-1">{label}</p>
       <p className="text-3xl font-bold">{value}</p>
       <p className="text-xs opacity-70 mt-1">{sub}</p>
-    </div>
-  )
-}
-
-function SektionKort({
-  sektion,
-  pass,
-  onTilldelaPass,
-  onRedigeraPass,
-  onNyttPass,
-}: {
-  sektion: SektionBemanningsgrad
-  pass: PassMedSektion[]
-  onTilldelaPass: (passId: string) => void
-  onRedigeraPass: (pass: PassMedSektion) => void
-  onNyttPass: () => void
-}) {
-  const procent = sektion.behovs_totalt > 0
-    ? Math.round((sektion.tilldelade_totalt / sektion.behovs_totalt) * 100)
-    : 0
-
-  const statusBadge =
-    sektion.status === 'full'   ? 'bg-green-100 text-green-700'
-    : sektion.status === 'delvis' ? 'bg-amber-100 text-amber-700'
-    : 'bg-red-100 text-red-700'
-
-  const statusText =
-    sektion.status === 'full'   ? 'Fullbemannad'
-    : sektion.status === 'delvis' ? 'Delvis'
-    : 'Ej bemannad'
-
-  const barColor =
-    sektion.status === 'full'   ? '#16A34A'
-    : sektion.status === 'delvis' ? '#F59E0B'
-    : '#DC2626'
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: sektion.farg }} />
-          <h3 className="text-sm font-semibold text-gray-900">{sektion.namn}</h3>
-        </div>
-        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${statusBadge}`}>{statusText}</span>
-      </div>
-
-      {sektion.beskrivning && (
-        <p className="text-xs text-gray-500 leading-relaxed">{sektion.beskrivning}</p>
-      )}
-
-      <div>
-        <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>{sektion.tilldelade_totalt} tilldelade</span>
-          <span>{sektion.behovs_totalt} behövs</span>
-        </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${Math.min(procent, 100)}%`, backgroundColor: barColor }}
-          />
-        </div>
-      </div>
-
-      <div className="pt-2 border-t border-gray-100 space-y-1">
-        {pass.map((p) => (
-          <div key={p.pass_id} className="flex items-center justify-between text-xs group">
-            <button
-              onClick={() => onRedigeraPass(p)}
-              className="text-left text-gray-600 hover:text-[#0066CC] transition-colors truncate"
-            >
-              {p.pass_namn} <span className="text-gray-400">{p.starttid}–{p.sluttid}</span>
-            </button>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              <span className={`font-semibold ${p.saknas <= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                {p.tilldelade}/{p.behovs_antal}
-              </span>
-              {p.saknas > 0 && (
-                <button
-                  onClick={() => onTilldelaPass(p.pass_id)}
-                  className="text-[10px] bg-blue-50 text-[#0066CC] border border-blue-200 px-2 py-0.5 rounded-full hover:bg-blue-100 transition"
-                >
-                  + Tilldela
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-        <button
-          onClick={onNyttPass}
-          className="w-full text-[10px] text-gray-400 hover:text-[#0066CC] hover:bg-blue-50 border border-dashed border-gray-200 hover:border-blue-200 rounded-lg py-1.5 transition-colors mt-1"
-        >
-          + Nytt pass
-        </button>
-      </div>
     </div>
   )
 }
