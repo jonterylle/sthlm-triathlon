@@ -7,6 +7,7 @@ import ExcelImportFlik from '@/components/ExcelImportFlik'
 import TilldelningsModal from '@/components/TilldelningsModal'
 import SektionsledareFlik from '@/components/SektionsledareFlik'
 import FunktionarRedigeraModal from '@/components/FunktionarRedigeraModal'
+import PassModal from '@/components/PassModal'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
@@ -71,6 +72,8 @@ type ModalLäge =
   | { typ: 'fran-funktionar'; funktionar: OtilldeladFunktionar }
   | { typ: 'fran-pass'; passId: string }
   | { typ: 'redigera'; funktionar: Profile }
+  | { typ: 'pass-redigera'; pass: PassMedSektion; sektionNamn: string }
+  | { typ: 'pass-nytt'; sektionId: string; sektionNamn: string }
   | null
 
 export default function DashboardTabs({
@@ -140,6 +143,20 @@ export default function DashboardTabs({
   function hanteraBorttagen(profilId: string) {
     setLokalaAlla(prev => prev.filter(f => f.id !== profilId))
     setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
+    setModal(null)
+  }
+
+  function hanteraPassSparat(uppdaterat: PassMedSektion, nyskapad: boolean) {
+    if (nyskapad) {
+      setLokalaPasser(prev => [...prev, uppdaterat])
+    } else {
+      setLokalaPasser(prev => prev.map(p => p.pass_id === uppdaterat.pass_id ? uppdaterat : p))
+    }
+    setModal(null)
+  }
+
+  function hanteraPassBorttagen(passId: string) {
+    setLokalaPasser(prev => prev.filter(p => p.pass_id !== passId))
     setModal(null)
   }
 
@@ -216,6 +233,8 @@ export default function DashboardTabs({
                           sektion={s}
                           pass={lokalaPasser.filter((p) => p.sektion_id === s.id)}
                           onTilldelaPass={(passId) => setModal({ typ: 'fran-pass', passId })}
+                          onRedigeraPass={(p) => setModal({ typ: 'pass-redigera', pass: p, sektionNamn: s.namn })}
+                          onNyttPass={() => setModal({ typ: 'pass-nytt', sektionId: s.id, sektionNamn: s.namn })}
                         />
                       ))}
                     </div>
@@ -366,7 +385,7 @@ export default function DashboardTabs({
       </div>
 
       {/* Tilldelningsmodal */}
-      {modal && modal.typ !== 'redigera' && (
+      {modal && (modal.typ === 'fran-funktionar' || modal.typ === 'fran-pass') && (
         <TilldelningsModal
           valtFunktionar={modal.typ === 'fran-funktionar' ? modal.funktionar : undefined}
           valtPassId={modal.typ === 'fran-pass' ? modal.passId : undefined}
@@ -384,6 +403,29 @@ export default function DashboardTabs({
           onClose={() => setModal(null)}
           onSparat={hanteraSparat}
           onBorttagen={hanteraBorttagen}
+        />
+      )}
+
+      {/* Pass-modal (redigera) */}
+      {modal?.typ === 'pass-redigera' && (
+        <PassModal
+          sektionId={modal.pass.sektion_id}
+          sektionNamn={modal.sektionNamn}
+          pass={modal.pass}
+          onClose={() => setModal(null)}
+          onSparat={hanteraPassSparat}
+          onBorttagen={hanteraPassBorttagen}
+        />
+      )}
+
+      {/* Pass-modal (nytt) */}
+      {modal?.typ === 'pass-nytt' && (
+        <PassModal
+          sektionId={modal.sektionId}
+          sektionNamn={modal.sektionNamn}
+          onClose={() => setModal(null)}
+          onSparat={hanteraPassSparat}
+          onBorttagen={hanteraPassBorttagen}
         />
       )}
     </div>
@@ -431,10 +473,14 @@ function SektionKort({
   sektion,
   pass,
   onTilldelaPass,
+  onRedigeraPass,
+  onNyttPass,
 }: {
   sektion: SektionBemanningsgrad
   pass: PassMedSektion[]
   onTilldelaPass: (passId: string) => void
+  onRedigeraPass: (pass: PassMedSektion) => void
+  onNyttPass: () => void
 }) {
   const procent = sektion.behovs_totalt > 0
     ? Math.round((sektion.tilldelade_totalt / sektion.behovs_totalt) * 100)
@@ -482,30 +528,37 @@ function SektionKort({
         </div>
       </div>
 
-      {pass.length > 0 && (
-        <div className="space-y-1 pt-2 border-t border-gray-100">
-          {pass.map((p) => (
-            <div key={p.pass_id} className="flex items-center justify-between text-xs group">
-              <span className="text-gray-600">
-                {p.pass_namn} <span className="text-gray-400">{p.starttid}–{p.sluttid}</span>
+      <div className="pt-2 border-t border-gray-100 space-y-1">
+        {pass.map((p) => (
+          <div key={p.pass_id} className="flex items-center justify-between text-xs group">
+            <button
+              onClick={() => onRedigeraPass(p)}
+              className="text-left text-gray-600 hover:text-[#0066CC] transition-colors truncate"
+            >
+              {p.pass_namn} <span className="text-gray-400">{p.starttid}–{p.sluttid}</span>
+            </button>
+            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              <span className={`font-semibold ${p.saknas <= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                {p.tilldelade}/{p.behovs_antal}
               </span>
-              <div className="flex items-center gap-2">
-                <span className={`font-semibold ${p.saknas <= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                  {p.tilldelade}/{p.behovs_antal}
-                </span>
-                {p.saknas > 0 && (
-                  <button
-                    onClick={() => onTilldelaPass(p.pass_id)}
-                    className="text-[10px] bg-blue-50 text-[#0066CC] border border-blue-200 px-2 py-0.5 rounded-full hover:bg-blue-100 transition"
-                  >
-                    + Tilldela
-                  </button>
-                )}
-              </div>
+              {p.saknas > 0 && (
+                <button
+                  onClick={() => onTilldelaPass(p.pass_id)}
+                  className="text-[10px] bg-blue-50 text-[#0066CC] border border-blue-200 px-2 py-0.5 rounded-full hover:bg-blue-100 transition"
+                >
+                  + Tilldela
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+        <button
+          onClick={onNyttPass}
+          className="w-full text-[10px] text-gray-400 hover:text-[#0066CC] hover:bg-blue-50 border border-dashed border-gray-200 hover:border-blue-200 rounded-lg py-1.5 transition-colors mt-1"
+        >
+          + Nytt pass
+        </button>
+      </div>
     </div>
   )
 }

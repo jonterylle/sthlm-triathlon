@@ -5,6 +5,7 @@ import type { SektionBemanningsgrad } from '@/lib/database.types'
 import SektionKarta from '@/components/SektionKarta'
 import FunktionarHem from '@/components/FunktionarHem'
 import FunktionarProfil from '@/components/FunktionarProfil'
+import PushPrompt from '@/components/PushPrompt'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -93,11 +94,16 @@ export default function FunktionarApp({
       {/* Innehåll */}
       <main className="flex-1 overflow-y-auto pb-20">
         {aktivFlik === 'hem' && (
-          <FunktionarHem
-            profil={profil}
-            tilldelning={tilldelning}
-            onGåTillProfil={() => setAktivFlik('profil')}
-          />
+          <>
+            <div className="px-4 pt-4">
+              <PushPrompt />
+            </div>
+            <FunktionarHem
+              profil={profil}
+              tilldelning={tilldelning}
+              onGåTillProfil={() => setAktivFlik('profil')}
+            />
+          </>
         )}
         {aktivFlik === 'profil' && (
           <FunktionarProfil

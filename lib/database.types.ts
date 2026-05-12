@@ -3,6 +3,15 @@ export type TilldelningStatus = 'bekraftad' | 'avbokad' | 'standby'
 export type SektionStatus = 'full' | 'delvis' | 'tom'
 export type SektionOmrade = 'simning' | 't1' | 'cykling' | 'lopning' | 'arena_t2' | 'ovrigt'
 
+export type PushSubscription = {
+  id: string
+  profil_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  created_at: string
+}
+
 // ── Tabelltyper (type alias, inte interface — krävs för Supabase SDK:s conditional types) ──
 
 export type Profile = {
@@ -228,6 +237,12 @@ export type Database = {
           email_inkommen_at?: string | null
         }
         Update: Partial<Omit<SMSInbjudan, 'id'>>
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: PushSubscription
+        Insert: Omit<PushSubscription, 'id' | 'created_at'>
+        Update: Partial<Omit<PushSubscription, 'id'>>
         Relationships: []
       }
     }

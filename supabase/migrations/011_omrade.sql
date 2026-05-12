@@ -27,7 +27,9 @@ UPDATE public.sektioner SET omrade = 'arena_t2'  WHERE namn ILIKE 'Målgång%';
 -- Parkering, Medicin, Information → ovrigt (DEFAULT, inget UPDATE behövs)
 
 -- 4. Uppdatera vyn sektion_bemanningsgrad så att omrade ingår
-CREATE OR REPLACE VIEW public.sektion_bemanningsgrad AS
+-- CREATE OR REPLACE tillåter inte kolumner att byta position — dropp och återskapa istället
+DROP VIEW IF EXISTS public.sektion_bemanningsgrad;
+CREATE VIEW public.sektion_bemanningsgrad AS
 SELECT
   s.id,
   s.namn,
