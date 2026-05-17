@@ -1,11 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import SektionKarta from '@/components/SektionKarta'
-import BjudInFlik from '@/components/BjudInFlik'
-import ExcelImportFlik from '@/components/ExcelImportFlik'
 import TilldelningsModal from '@/components/TilldelningsModal'
-import SektionsledareFlik from '@/components/SektionsledareFlik'
 import FunktionarRedigeraModal from '@/components/FunktionarRedigeraModal'
 import PassModal from '@/components/PassModal'
 import type {
@@ -39,30 +35,16 @@ const KOMPETENS_LABELS: Record<string, string> = {
   engelska:             'Engelska',
 }
 
-type AdminFlik = 'funktionarer' | 'karta' | 'bjudin' | 'sl' | 'import'
-
-interface SMSRad {
-  id: string; telefon: string; skickad_at: string
-  email_inkommen: string | null; status: string
-}
-interface EmailRad {
-  id: string; email: string; skickad_at: string; status: string
-}
-
 interface Props {
   sektioner: SektionBemanningsgrad[]
   pass: PassBemanningsgrad[]
   passMedSektioner: PassMedSektion[]
   tilldeladePerPass: TilldeladPerPass[]
   otilldelade: OtilldeladFunktionar[]
-  allaFunktionärer: Profile[]
   totalBehövs: number
   totalTilldelade: number
   totalSaknas: number
   bemanningsgrad: number
-  smsInbjudningar: SMSRad[]
-  emailInbjudningar: EmailRad[]
-  sektionsledare: SektionsledareInfo[]
 }
 
 type ModalLäge =
@@ -79,50 +61,18 @@ export default function DashboardTabs({
   passMedSektioner,
   tilldeladePerPass,
   otilldelade,
-  allaFunktionärer,
   totalBehövs,
   totalTilldelade,
   totalSaknas,
   bemanningsgrad,
-  smsInbjudningar,
-  emailInbjudningar,
-  sektionsledare,
 }: Props) {
-  // Aktiv flik: område eller admin-flik
   const förstaOmrade = OMRADE_ORDNING.find(o => sektioner.some(s => s.omrade === o)) ?? 'simning'
   const [aktivOmrade, setAktivOmrade] = useState<SektionOmrade>(förstaOmrade)
-  const [aktivAdmin, setAktivAdmin] = useState<AdminFlik | null>(null)
   const [modal, setModal] = useState<ModalLäge>(null)
 
   const [lokalaOtilldelade, setLokalaOtilldelade] = useState(otilldelade)
   const [lokalaPasser, setLokalaPasser]           = useState(passMedSektioner)
   const [lokalaTilldelade, setLokalaTilldelade]   = useState(tilldeladePerPass)
-  const [lokalaAlla, setLokalaAlla]               = useState(allaFunktionärer)
-
-  // Sök och filter (funktionärsflik)
-  const [sök, setSök]                             = useState('')
-  const [aktivaKompetenser, setAktivaKompetenser] = useState<string[]>([])
-
-  function toggleKompetensFilter(k: string) {
-    setAktivaKompetenser(prev =>
-      prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]
-    )
-  }
-
-  const filtrerade = useMemo(() => {
-    const q = sök.toLowerCase()
-    return lokalaAlla.filter(f => {
-      const matchText =
-        !q ||
-        (f.full_name ?? '').toLowerCase().includes(q) ||
-        f.email.toLowerCase().includes(q) ||
-        (f.klubb ?? '').toLowerCase().includes(q)
-      const matchKomp =
-        aktivaKompetenser.length === 0 ||
-        aktivaKompetenser.every(k => (f.kompetenser ?? []).includes(k))
-      return matchText && matchKomp
-    })
-  }, [lokalaAlla, sök, aktivaKompetenser])
 
   function hanteraFramgång(profilId: string, passId: string) {
     setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
@@ -136,13 +86,11 @@ export default function DashboardTabs({
     setModal(null)
   }
 
-  function hanteraSparat(uppdaterad: Profile) {
-    setLokalaAlla(prev => prev.map(f => f.id === uppdaterad.id ? uppdaterad : f))
+  function hanteraSparat(_uppdaterad: Profile) {
     setModal(null)
   }
 
   function hanteraBorttagen(profilId: string) {
-    setLokalaAlla(prev => prev.filter(f => f.id !== profilId))
     setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
     setModal(null)
   }
@@ -202,11 +150,11 @@ export default function DashboardTabs({
             const procent    = behövs > 0 ? Math.round((tilldelade / behövs) * 100) : 0
             const allaFulla  = grupp.every(s => s.status === 'full')
             const någraFulla = grupp.some(s => s.status === 'full' || s.status === 'delvis')
-            const isAktiv    = aktivOmrade === omrade && aktivAdmin === null
+            const isAktiv    = aktivOmrade === omrade
             return (
               <button
                 key={omrade}
-                onClick={() => { setAktivOmrade(omrade); setAktivAdmin(null) }}
+                onClick={() => setAktivOmrade(omrade)}
                 className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   isAktiv
                     ? 'border-[#0066CC] text-[#0066CC]'
@@ -226,34 +174,11 @@ export default function DashboardTabs({
             )
           })}
 
-          {/* Separator */}
-          <div className="flex-shrink-0 w-px bg-gray-200 my-2 mx-1" />
-
-          {/* Admin-flikar */}
-          {([
-            ['funktionarer', `Funktionärer (${lokalaAlla.length})`],
-            ['karta', 'Karta'],
-            ['sl', 'Sektionsledare'],
-            ['bjudin', 'Bjud in'],
-            ['import', 'Importera'],
-          ] as [AdminFlik, string][]).map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setAktivAdmin(id)}
-              className={`flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                aktivAdmin === id
-                  ? 'border-[#0066CC] text-[#0066CC]'
-                  : 'border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
         </div>
       </div>
 
       {/* ── Områdesinnehåll ────────────────────────────────────── */}
-      {aktivAdmin === null && (
+      {(
         <div className="pt-5 space-y-8">
           {sektionerIOmrade.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-12">Inga sektioner i det här området.</p>
@@ -276,106 +201,8 @@ export default function DashboardTabs({
       )}
 
       {/* ── Admin-flikar ───────────────────────────────────────── */}
-      {aktivAdmin === 'funktionarer' && (
-        <div className="pt-6 space-y-4">
-          <div className="flex gap-2">
-            <input
-              type="search"
-              value={sök}
-              onChange={e => setSök(e.target.value)}
-              placeholder="Sök namn, e-post eller klubb…"
-              className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(KOMPETENS_LABELS).map(([k, label]) => (
-              <button
-                key={k}
-                onClick={() => toggleKompetensFilter(k)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                  aktivaKompetenser.includes(k)
-                    ? 'bg-[#0066CC] text-white border-[#0066CC]'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-            {aktivaKompetenser.length > 0 && (
-              <button
-                onClick={() => setAktivaKompetenser([])}
-                className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-400 hover:text-gray-600"
-              >
-                Rensa ×
-              </button>
-            )}
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-            {filtrerade.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-gray-400">Inga funktionärer matchar sökningen.</p>
-            ) : (
-              filtrerade.map(f => (
-                <div key={f.id} className="px-4 py-3 flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{f.full_name ?? '(inget namn)'}</p>
-                    <p className="text-xs text-gray-500 truncate">{f.email}</p>
-                    {f.klubb && <p className="text-xs text-gray-400 truncate">{f.klubb}</p>}
-                    {(f.kompetenser ?? []).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {(f.kompetenser ?? []).map(k => (
-                          <span key={k} className="text-[10px] bg-blue-50 text-[#0066CC] px-1.5 py-0.5 rounded-full">
-                            {KOMPETENS_LABELS[k] ?? k}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setModal({ typ: 'redigera', funktionar: f })}
-                    className="flex-shrink-0 text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition font-medium"
-                  >
-                    Redigera
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-          <p className="text-xs text-gray-400 text-right">{filtrerade.length} av {lokalaAlla.length} funktionärer</p>
-        </div>
-      )}
-
-      {aktivAdmin === 'karta' && (
-        <div className="pt-6">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Tävlingsområde – Stora Skuggan, Norra Djurgården
-          </h2>
-          <SektionKarta sektioner={sektioner} />
-        </div>
-      )}
-
-      {aktivAdmin === 'sl' && (
-        <div className="pt-6">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Sektionsledare ({sektionsledare.length})
-          </h2>
-          <SektionsledareFlik sektionsledare={sektionsledare} sektioner={sektioner} />
-        </div>
-      )}
-
-      {aktivAdmin === 'bjudin' && (
-        <div className="pt-6">
-          <BjudInFlik smsInbjudningar={smsInbjudningar} emailInbjudningar={emailInbjudningar} />
-        </div>
-      )}
-
-      {aktivAdmin === 'import' && (
-        <div className="pt-6">
-          <ExcelImportFlik />
-        </div>
-      )}
-
-      {/* ── Otilldelade (visas alltid under sektionsvyn) ────────── */}
-      {aktivAdmin === null && lokalaOtilldelade.length > 0 && (
+      {/* ── Otilldelade ────────────────────────────────────────── */}
+      {lokalaOtilldelade.length > 0 && (
         <div className="pt-6">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
             Funktionärer utan tilldelning ({lokalaOtilldelade.length})

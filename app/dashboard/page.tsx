@@ -88,14 +88,10 @@ export default async function DashboardPage() {
           passMedSektioner={passMedSektioner}
           tilldeladePerPass={tilldeladePerPass}
           otilldelade={otilldelade}
-          allaFunktionärer={allaFunktionärer}
           totalBehövs={totalBehövs}
           totalTilldelade={totalTilldelade}
           totalSaknas={totalSaknas}
           bemanningsgrad={bemanningsgrad}
-          emailInbjudningar={emailInbjudningar}
-          smsInbjudningar={smsInbjudningar}
-          sektionsledare={sektionsledare}
         />
       </main>
     </div>
