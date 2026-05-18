@@ -52,6 +52,7 @@ export type Pass = {
   starttid: string
   sluttid: string
   behovs_antal: number
+  kompetenser: string[]
   created_at: string
 }
 
@@ -177,6 +178,7 @@ export type PassMedSektion = {
   sektion_id: string
   sektion_namn: string
   sektion_farg: string
+  kompetenser: string[]
 }
 
 export type TilldeladPerPass = {

@@ -19,6 +19,7 @@ export async function skapaPass(data: {
   starttid: string
   sluttid: string
   behovs_antal: number
+  kompetenser?: string[]
 }): Promise<{ ok: boolean; passId?: string; meddelande?: string }> {
   const ctx = await verifieraTL()
   if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
@@ -32,6 +33,7 @@ export async function skapaPass(data: {
       starttid:     data.starttid,
       sluttid:      data.sluttid,
       behovs_antal: Math.max(1, Math.min(50, data.behovs_antal)),
+      kompetenser:  data.kompetenser ?? [],
     })
     .select('id')
     .single()
@@ -51,6 +53,7 @@ export async function uppdateraPass(
     starttid: string
     sluttid: string
     behovs_antal: number
+    kompetenser?: string[]
   }
 ): Promise<{ ok: boolean; meddelande?: string; tiderAndrades?: boolean }> {
   const ctx = await verifieraTL()
@@ -74,6 +77,7 @@ export async function uppdateraPass(
       starttid:     data.starttid,
       sluttid:      data.sluttid,
       behovs_antal: Math.max(1, Math.min(50, data.behovs_antal)),
+      kompetenser:  data.kompetenser ?? [],
     })
     .eq('id', passId)
 

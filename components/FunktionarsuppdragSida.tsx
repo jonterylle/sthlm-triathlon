@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import TilldelningsModal from '@/components/TilldelningsModal'
-import type { PassMedSektion, TilldeladPerPass, OtilldeladFunktionar } from '@/lib/database.types'
+import PassModal from '@/components/PassModal'
+import type { PassMedSektion, TilldeladPerPass, OtilldeladFunktionar, SektionBemanningsgrad } from '@/lib/database.types'
 
 const OMRADE_LABELS: Record<string, string> = {
   simning:  '🏊 Simning',
@@ -19,17 +20,21 @@ const KOMPETENS_LABELS: Record<string, string> = {
   cykel_teknik: 'Cykelmekanik', engelska: 'Engelska',
 }
 
+type PassModal = { typ: 'nytt' } | { typ: 'redigera'; pass: PassMedSektion }
+
 interface Props {
   passer: PassMedSektion[]
   tilldelade: TilldeladPerPass[]
   otilldelade: OtilldeladFunktionar[]
+  sektioner: SektionBemanningsgrad[]
   isTL: boolean
 }
 
-export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade, isTL }: Props) {
-  const [lokalaPasser, setLokalaPasser]     = useState(passer)
+export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade, sektioner, isTL }: Props) {
+  const [lokalaPasser, setLokalaPasser]           = useState(passer)
   const [lokalaOtilldelade, setLokalaOtilldelade] = useState(otilldelade)
-  const [valtPassId, setValtPassId]         = useState<string | null>(null)
+  const [valtPassId, setValtPassId]               = useState<string | null>(null)
+  const [passModal, setPassModal]                 = useState<PassModal | null>(null)
 
   // Filter
   const [filterOmrade, setFilterOmrade]     = useState('')
@@ -77,6 +82,20 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
     setValtPassId(null)
   }
 
+  function hanteraPassSparat(uppdaterat: PassMedSektion, nyskapad: boolean) {
+    if (nyskapad) {
+      setLokalaPasser(prev => [...prev, uppdaterat])
+    } else {
+      setLokalaPasser(prev => prev.map(p => p.pass_id === uppdaterat.pass_id ? uppdaterat : p))
+    }
+    setPassModal(null)
+  }
+
+  function hanteraPassBorttagen(passId: string) {
+    setLokalaPasser(prev => prev.filter(p => p.pass_id !== passId))
+    setPassModal(null)
+  }
+
   const totaltSaknas = lokalaPasser.reduce((s, p) => s + Math.max(0, p.saknas), 0)
 
   return (
@@ -89,7 +108,15 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
               {totaltSaknas} platser saknas
             </span>
           )}
-          <span className="text-sm text-gray-400">{lokalaPasser.length} pass totalt</span>
+          <span className="text-sm text-gray-400">{lokalaPasser.length} uppdrag totalt</span>
+          {isTL && (
+            <button
+              onClick={() => setPassModal({ typ: 'nytt' })}
+              className="bg-[#0066CC] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+            >
+              <span className="text-base leading-none">+</span> Nytt uppdrag
+            </button>
+          )}
         </div>
       </div>
 
@@ -184,18 +211,27 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
                             </div>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {(saknas > 0 || isTL) && (
-                              <button
-                                onClick={() => setValtPassId(p.pass_id)}
-                                className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                                  saknas > 0
-                                    ? 'bg-[#0066CC] text-white hover:bg-blue-700'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                              >
-                                {saknas > 0 ? `+ ${saknas} platser` : 'Hantera'}
-                              </button>
-                            )}
+                            <div className="flex items-center justify-end gap-2">
+                              {saknas > 0 && (
+                                <button
+                                  onClick={() => setValtPassId(p.pass_id)}
+                                  className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[#0066CC] text-white hover:bg-blue-700 transition-colors"
+                                >
+                                  + {saknas} platser
+                                </button>
+                              )}
+                              {isTL && (
+                                <button
+                                  onClick={() => setPassModal({ typ: 'redigera', pass: p })}
+                                  className="text-gray-400 hover:text-[#0066CC] transition-colors p-1.5 rounded-lg hover:bg-blue-50"
+                                  title="Redigera uppdrag"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       )
@@ -216,6 +252,29 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
           otilldelade={lokalaOtilldelade}
           onClose={() => setValtPassId(null)}
           onSuccess={hanteraFramgång}
+        />
+      )}
+
+      {/* Pass-modal (nytt) */}
+      {passModal?.typ === 'nytt' && (
+        <PassModal
+          sektioner={sektioner}
+          onClose={() => setPassModal(null)}
+          onSparat={hanteraPassSparat}
+          onBorttagen={hanteraPassBorttagen}
+        />
+      )}
+
+      {/* Pass-modal (redigera) */}
+      {passModal?.typ === 'redigera' && (
+        <PassModal
+          sektionId={passModal.pass.sektion_id}
+          sektionNamn={passModal.pass.sektion_namn}
+          pass={passModal.pass}
+          sektioner={sektioner}
+          onClose={() => setPassModal(null)}
+          onSparat={hanteraPassSparat}
+          onBorttagen={hanteraPassBorttagen}
         />
       )}
     </div>
