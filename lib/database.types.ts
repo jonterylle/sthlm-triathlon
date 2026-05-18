@@ -36,6 +36,7 @@ export type Sektion = {
   namn: string
   beskrivning: string | null
   farg: string
+  omrade: SektionOmrade
   lat: number | null
   lng: number | null
   behovs_antal: number

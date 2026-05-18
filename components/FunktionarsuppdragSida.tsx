@@ -3,16 +3,8 @@
 import { useState, useMemo } from 'react'
 import TilldelningsModal from '@/components/TilldelningsModal'
 import PassModal from '@/components/PassModal'
+import SektionModal from '@/components/SektionModal'
 import type { PassMedSektion, TilldeladPerPass, OtilldeladFunktionar, SektionBemanningsgrad } from '@/lib/database.types'
-
-const OMRADE_LABELS: Record<string, string> = {
-  simning:  '🏊 Simning',
-  t1:       '🔄 T1',
-  cykling:  '🚴 Cykling',
-  lopning:  '🏃 Löpning',
-  arena_t2: '🏁 Arena / T2',
-  ovrigt:   '📋 Övrigt',
-}
 
 const KOMPETENS_LABELS: Record<string, string> = {
   sjukvard: 'Sjukvård', korkort: 'Körkort',
@@ -20,7 +12,8 @@ const KOMPETENS_LABELS: Record<string, string> = {
   cykel_teknik: 'Cykelmekanik', engelska: 'Engelska',
 }
 
-type PassModal = { typ: 'nytt' } | { typ: 'redigera'; pass: PassMedSektion }
+type PassModalState    = { typ: 'nytt' } | { typ: 'redigera'; pass: PassMedSektion }
+type SektionModalState = { typ: 'ny' }   | { typ: 'redigera'; sektion: SektionBemanningsgrad }
 
 interface Props {
   passer: PassMedSektion[]
@@ -31,19 +24,19 @@ interface Props {
 }
 
 export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade, sektioner, isTL }: Props) {
-  const [lokalaPasser, setLokalaPasser]           = useState(passer)
+  const [lokalaPasser,      setLokalaPasser]      = useState(passer)
+  const [lokalaSektioner,   setLokalaSektioner]   = useState(sektioner)
   const [lokalaOtilldelade, setLokalaOtilldelade] = useState(otilldelade)
-  const [valtPassId, setValtPassId]               = useState<string | null>(null)
-  const [passModal, setPassModal]                 = useState<PassModal | null>(null)
+
+  const [valtPassId,   setValtPassId]   = useState<string | null>(null)
+  const [passModal,    setPassModal]    = useState<PassModalState | null>(null)
+  const [sektionModal, setSektionModal] = useState<SektionModalState | null>(null)
 
   // Filter
-  const [filterOmrade, setFilterOmrade]     = useState('')
-  const [filterSektion, setFilterSektion]   = useState('')
-  const [filterLuckor, setFilterLuckor]     = useState(false)
-  const [sök, setSök]                       = useState('')
+  const [filterSektion, setFilterSektion] = useState('')
+  const [filterLuckor,  setFilterLuckor]  = useState(false)
+  const [sök,           setSök]           = useState('')
 
-  const unikaOmraden  = [...new Set(lokalaPasser.map(p => p.sektion_farg && '').filter(Boolean))]
-  void unikaOmraden
   const unikaSektioner = useMemo(() =>
     [...new Map(lokalaPasser.map(p => [p.sektion_id, p.sektion_namn])).entries()],
   [lokalaPasser])
@@ -62,16 +55,23 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
 
   // Gruppera per sektion
   const grupperadePerSektion = useMemo(() => {
-    const map = new Map<string, { sektionNamn: string; sektionFarg: string; passer: PassMedSektion[] }>()
+    const map = new Map<string, {
+      sektionNamn: string
+      sektionFarg: string
+      passer: PassMedSektion[]
+      sektionObj?: SektionBemanningsgrad
+    }>()
     filtrerade.forEach(p => {
       if (!map.has(p.sektion_id)) {
-        map.set(p.sektion_id, { sektionNamn: p.sektion_namn, sektionFarg: p.sektion_farg, passer: [] })
+        const sektionObj = lokalaSektioner.find(s => s.id === p.sektion_id)
+        map.set(p.sektion_id, { sektionNamn: p.sektion_namn, sektionFarg: p.sektion_farg, passer: [], sektionObj })
       }
       map.get(p.sektion_id)!.passer.push(p)
     })
     return [...map.values()]
-  }, [filtrerade])
+  }, [filtrerade, lokalaSektioner])
 
+  // ── Callbacks: tilldelning ───────────────────────────────────
   function hanteraFramgång(profilId: string, passId: string) {
     setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
     setLokalaPasser(prev => prev.map(p =>
@@ -82,6 +82,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
     setValtPassId(null)
   }
 
+  // ── Callbacks: pass ──────────────────────────────────────────
   function hanteraPassSparat(uppdaterat: PassMedSektion, nyskapad: boolean) {
     if (nyskapad) {
       setLokalaPasser(prev => [...prev, uppdaterat])
@@ -96,7 +97,30 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
     setPassModal(null)
   }
 
-  const totaltSaknas = lokalaPasser.reduce((s, p) => s + Math.max(0, p.saknas), 0)
+  // ── Callbacks: sektion ───────────────────────────────────────
+  function hanteraSektionSparad(uppdaterad: SektionBemanningsgrad, nyskapad: boolean) {
+    if (nyskapad) {
+      setLokalaSektioner(prev => [...prev, uppdaterad].sort((a, b) => a.sortorder - b.sortorder))
+    } else {
+      setLokalaSektioner(prev => prev.map(s => s.id === uppdaterad.id ? uppdaterad : s))
+      // Synka namn och färg på pass som tillhör sektionen
+      setLokalaPasser(prev => prev.map(p =>
+        p.sektion_id === uppdaterad.id
+          ? { ...p, sektion_namn: uppdaterad.namn, sektion_farg: uppdaterad.farg }
+          : p
+      ))
+    }
+    setSektionModal(null)
+  }
+
+  function hanteraSektionBorttagen(sektionId: string) {
+    setLokalaSektioner(prev => prev.filter(s => s.id !== sektionId))
+    setLokalaPasser(prev => prev.filter(p => p.sektion_id !== sektionId))
+    setSektionModal(null)
+  }
+
+  const totaltSaknas   = lokalaPasser.reduce((s, p) => s + Math.max(0, p.saknas), 0)
+  const nästaSortorder = Math.max(0, ...lokalaSektioner.map(s => s.sortorder)) + 1
 
   return (
     <div className="space-y-6">
@@ -110,12 +134,20 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
           )}
           <span className="text-sm text-gray-400">{lokalaPasser.length} uppdrag totalt</span>
           {isTL && (
-            <button
-              onClick={() => setPassModal({ typ: 'nytt' })}
-              className="bg-[#0066CC] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-1.5"
-            >
-              <span className="text-base leading-none">+</span> Nytt uppdrag
-            </button>
+            <>
+              <button
+                onClick={() => setSektionModal({ typ: 'ny' })}
+                className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl hover:border-gray-400 transition-colors flex items-center gap-1.5"
+              >
+                <span className="text-base leading-none">+</span> Ny sektion
+              </button>
+              <button
+                onClick={() => setPassModal({ typ: 'nytt' })}
+                className="bg-[#0066CC] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+              >
+                <span className="text-base leading-none">+</span> Nytt uppdrag
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -158,15 +190,26 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
         </div>
       ) : (
         <div className="space-y-6">
-          {grupperadePerSektion.map(({ sektionNamn, sektionFarg, passer: gruppPasser }) => (
+          {grupperadePerSektion.map(({ sektionNamn, sektionFarg, passer: gruppPasser, sektionObj }) => (
             <div key={sektionNamn}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: sektionFarg }} />
+                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: sektionFarg }} />
                 <h2 className="text-sm font-semibold text-gray-700">{sektionNamn}</h2>
                 <span className="text-xs text-gray-400">
                   {gruppPasser.reduce((s, p) => s + p.tilldelade, 0)}/
                   {gruppPasser.reduce((s, p) => s + p.behovs_antal, 0)} bemannade
                 </span>
+                {isTL && sektionObj && (
+                  <button
+                    onClick={() => setSektionModal({ typ: 'redigera', sektion: sektionObj })}
+                    className="ml-auto text-gray-300 hover:text-[#0066CC] transition-colors p-1 rounded-lg hover:bg-blue-50"
+                    title="Redigera sektion"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                    </svg>
+                  </button>
+                )}
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -186,7 +229,18 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
                       const saknas = Math.max(0, p.saknas)
                       return (
                         <tr key={p.pass_id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 font-medium text-gray-900">{p.pass_namn}</td>
+                          <td className="px-4 py-3 font-medium text-gray-900">
+                            <div>{p.pass_namn}</div>
+                            {p.kompetenser.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {p.kompetenser.map(k => (
+                                  <span key={k} className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">
+                                    {KOMPETENS_LABELS[k] ?? k}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{p.starttid}–{p.sluttid}</td>
                           <td className="px-4 py-3 text-center">
                             <span className={`font-semibold ${
@@ -258,7 +312,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
       {/* Pass-modal (nytt) */}
       {passModal?.typ === 'nytt' && (
         <PassModal
-          sektioner={sektioner}
+          sektioner={lokalaSektioner}
           onClose={() => setPassModal(null)}
           onSparat={hanteraPassSparat}
           onBorttagen={hanteraPassBorttagen}
@@ -271,10 +325,30 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
           sektionId={passModal.pass.sektion_id}
           sektionNamn={passModal.pass.sektion_namn}
           pass={passModal.pass}
-          sektioner={sektioner}
+          sektioner={lokalaSektioner}
           onClose={() => setPassModal(null)}
           onSparat={hanteraPassSparat}
           onBorttagen={hanteraPassBorttagen}
+        />
+      )}
+
+      {/* Sektionsmodal (ny) */}
+      {sektionModal?.typ === 'ny' && (
+        <SektionModal
+          nästaSortorder={nästaSortorder}
+          onClose={() => setSektionModal(null)}
+          onSparat={hanteraSektionSparad}
+          onBorttagen={hanteraSektionBorttagen}
+        />
+      )}
+
+      {/* Sektionsmodal (redigera) */}
+      {sektionModal?.typ === 'redigera' && (
+        <SektionModal
+          sektion={sektionModal.sektion}
+          onClose={() => setSektionModal(null)}
+          onSparat={hanteraSektionSparad}
+          onBorttagen={hanteraSektionBorttagen}
         />
       )}
     </div>
