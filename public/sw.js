@@ -1,4 +1,4 @@
-const CACHE = 'sthlm-tri-v2'
+const CACHE = 'sthlm-tri-v3'
 
 // Static assets to pre-cache on install
 // /login utelämnas medvetet — hämtas alltid från nätverket
@@ -92,7 +92,10 @@ self.addEventListener('fetch', (event) => {
         (cached) =>
           cached ??
           fetch(request).then((res) => {
-            caches.open(CACHE).then((c) => c.put(request, res.clone()))
+            if (res.ok) {
+              const toCache = res.clone()
+              caches.open(CACHE).then((c) => c.put(request, toCache))
+            }
             return res
           })
       )
