@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import TilldelningsModal from '@/components/TilldelningsModal'
 import PassModal from '@/components/PassModal'
 import SektionModal from '@/components/SektionModal'
-import type { PassMedSektion, TilldeladPerPass, OtilldeladFunktionar, SektionBemanningsgrad } from '@/lib/database.types'
+import type { PassMedSektion, TilldeladPerPass, FunktionarForTilldelning, SektionBemanningsgrad } from '@/lib/database.types'
 
 const KOMPETENS_LABELS: Record<string, string> = {
   sjukvard: 'Sjukvård', korkort: 'Körkort',
@@ -18,15 +18,15 @@ type SektionModalState = { typ: 'ny' }   | { typ: 'redigera'; sektion: SektionBe
 interface Props {
   passer: PassMedSektion[]
   tilldelade: TilldeladPerPass[]
-  otilldelade: OtilldeladFunktionar[]
+  funktionärer: FunktionarForTilldelning[]
   sektioner: SektionBemanningsgrad[]
   isTL: boolean
 }
 
-export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade, sektioner, isTL }: Props) {
-  const [lokalaPasser,      setLokalaPasser]      = useState(passer)
-  const [lokalaSektioner,   setLokalaSektioner]   = useState(sektioner)
-  const [lokalaOtilldelade, setLokalaOtilldelade] = useState(otilldelade)
+export default function FunktionarsuppdragSida({ passer, tilldelade, funktionärer, sektioner, isTL }: Props) {
+  const [lokalaPasser,     setLokalaPasser]    = useState(passer)
+  const [lokalaSektioner,  setLokalaSektioner] = useState(sektioner)
+  const [lokalaFunktionär, setLokalaFunktionär] = useState(funktionärer)
 
   const [valtPassId,   setValtPassId]   = useState<string | null>(null)
   const [passModal,    setPassModal]    = useState<PassModalState | null>(null)
@@ -73,7 +73,11 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
 
   // ── Callbacks: tilldelning ───────────────────────────────────
   function hanteraFramgång(profilId: string, passId: string) {
-    setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
+    // Öka antal_pass-räknaren för den tilldelade funktionären
+    setLokalaFunktionär(prev => prev.map(f =>
+      f.id === profilId ? { ...f, antal_pass: f.antal_pass + 1 } : f
+    ))
+    // Uppdatera passets bemanningssiffror
     setLokalaPasser(prev => prev.map(p =>
       p.pass_id === passId
         ? { ...p, tilldelade: p.tilldelade + 1, saknas: Math.max(0, p.saknas - 1) }
@@ -303,7 +307,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, otilldelade
         <TilldelningsModal
           valtPassId={valtPassId}
           allPass={lokalaPasser}
-          otilldelade={lokalaOtilldelade}
+          funktionärer={lokalaFunktionär}
           onClose={() => setValtPassId(null)}
           onSuccess={hanteraFramgång}
         />

@@ -168,6 +168,11 @@ export type OtilldeladFunktionar = {
   updated_at: string
 }
 
+// Alla funktionärer med räknare på aktiva pass — används i tilldelningsflödet
+export type FunktionarForTilldelning = OtilldeladFunktionar & {
+  antal_pass: number
+}
+
 export type PassMedSektion = {
   pass_id: string
   pass_namn: string
@@ -258,6 +263,10 @@ export type Database = {
       get_otilldelade_funktionarer: {
         Args: Record<string, never>
         Returns: OtilldeladFunktionar[]
+      }
+      get_funktionarer_for_tilldelning: {
+        Args: Record<string, never>
+        Returns: FunktionarForTilldelning[]
       }
       get_pass_med_sektioner: {
         Args: Record<string, never>

@@ -7,7 +7,7 @@ import PassModal from '@/components/PassModal'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
-  OtilldeladFunktionar,
+  FunktionarForTilldelning,
   PassMedSektion,
   TilldeladPerPass,
   SektionsledareInfo,
@@ -40,7 +40,7 @@ interface Props {
   pass: PassBemanningsgrad[]
   passMedSektioner: PassMedSektion[]
   tilldeladePerPass: TilldeladPerPass[]
-  otilldelade: OtilldeladFunktionar[]
+  funktionärer: FunktionarForTilldelning[]
   totalBehövs: number
   totalTilldelade: number
   totalSaknas: number
@@ -48,7 +48,7 @@ interface Props {
 }
 
 type ModalLäge =
-  | { typ: 'fran-funktionar'; funktionar: OtilldeladFunktionar }
+  | { typ: 'fran-funktionar'; funktionar: FunktionarForTilldelning }
   | { typ: 'fran-pass'; passId: string }
   | { typ: 'redigera'; funktionar: Profile }
   | { typ: 'pass-redigera'; pass: PassMedSektion; sektionNamn: string }
@@ -60,7 +60,7 @@ export default function DashboardTabs({
   pass: _pass,
   passMedSektioner,
   tilldeladePerPass,
-  otilldelade,
+  funktionärer,
   totalBehövs,
   totalTilldelade,
   totalSaknas,
@@ -70,12 +70,17 @@ export default function DashboardTabs({
   const [aktivOmrade, setAktivOmrade] = useState<SektionOmrade>(förstaOmrade)
   const [modal, setModal] = useState<ModalLäge>(null)
 
-  const [lokalaOtilldelade, setLokalaOtilldelade] = useState(otilldelade)
-  const [lokalaPasser, setLokalaPasser]           = useState(passMedSektioner)
-  const [lokalaTilldelade, setLokalaTilldelade]   = useState(tilldeladePerPass)
+  const [lokalaFunktionär, setLokalaFunktionär] = useState(funktionärer)
+  const [lokalaPasser, setLokalaPasser]          = useState(passMedSektioner)
+  const [lokalaTilldelade, setLokalaTilldelade]  = useState(tilldeladePerPass)
+
+  // Funktionärer utan något tilldelat pass (för visning i "utan tilldelning"-listan)
+  const otilldelade = lokalaFunktionär.filter(f => f.antal_pass === 0)
 
   function hanteraFramgång(profilId: string, passId: string) {
-    setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
+    setLokalaFunktionär(prev => prev.map(f =>
+      f.id === profilId ? { ...f, antal_pass: f.antal_pass + 1 } : f
+    ))
     setLokalaPasser(prev =>
       prev.map(p =>
         p.pass_id === passId
@@ -91,7 +96,7 @@ export default function DashboardTabs({
   }
 
   function hanteraBorttagen(profilId: string) {
-    setLokalaOtilldelade(prev => prev.filter(f => f.id !== profilId))
+    setLokalaFunktionär(prev => prev.filter(f => f.id !== profilId))
     setModal(null)
   }
 
@@ -132,9 +137,9 @@ export default function DashboardTabs({
         />
         <StatKort
           label="Ej tilldelade"
-          value={String(lokalaOtilldelade.length)}
+          value={String(otilldelade.length)}
           sub="funktionärer"
-          farg={lokalaOtilldelade.length === 0 ? 'green' : 'amber'}
+          farg={otilldelade.length === 0 ? 'green' : 'amber'}
         />
       </div>
 
@@ -189,11 +194,9 @@ export default function DashboardTabs({
                 sektion={sektion}
                 passer={lokalaPasser.filter(p => p.sektion_id === sektion.id)}
                 tilldelade={lokalaTilldelade.filter(t => t.sektion_id === sektion.id)}
-                otilldelade={lokalaOtilldelade}
                 onTilldelaPass={passId => setModal({ typ: 'fran-pass', passId })}
                 onRedigeraPass={p => setModal({ typ: 'pass-redigera', pass: p, sektionNamn: sektion.namn })}
                 onNyttPass={() => setModal({ typ: 'pass-nytt', sektionId: sektion.id, sektionNamn: sektion.namn })}
-                onTilldelaFunktionar={f => setModal({ typ: 'fran-funktionar', funktionar: f })}
               />
             ))
           )}
@@ -202,13 +205,13 @@ export default function DashboardTabs({
 
       {/* ── Admin-flikar ───────────────────────────────────────── */}
       {/* ── Otilldelade ────────────────────────────────────────── */}
-      {lokalaOtilldelade.length > 0 && (
+      {otilldelade.length > 0 && (
         <div className="pt-6">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Funktionärer utan tilldelning ({lokalaOtilldelade.length})
+            Funktionärer utan tilldelning ({otilldelade.length})
           </h2>
           <div className="bg-white rounded-xl border border-amber-200 divide-y divide-gray-100">
-            {lokalaOtilldelade.map(f => (
+            {otilldelade.map(f => (
               <div key={f.id} className="px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{f.full_name ?? '(inget namn)'}</p>
@@ -232,7 +235,7 @@ export default function DashboardTabs({
           valtFunktionar={modal.typ === 'fran-funktionar' ? modal.funktionar : undefined}
           valtPassId={modal.typ === 'fran-pass' ? modal.passId : undefined}
           allPass={lokalaPasser}
-          otilldelade={lokalaOtilldelade}
+          funktionärer={lokalaFunktionär}
           onClose={() => setModal(null)}
           onSuccess={hanteraFramgång}
         />
@@ -277,23 +280,17 @@ function SektionsFlik({
   sektion,
   passer,
   tilldelade,
-  otilldelade,
   onTilldelaPass,
   onRedigeraPass,
   onNyttPass,
-  onTilldelaFunktionar,
 }: {
   sektion: SektionBemanningsgrad
   passer: PassMedSektion[]
   tilldelade: TilldeladPerPass[]
-  otilldelade: OtilldeladFunktionar[]
   onTilldelaPass: (passId: string) => void
   onRedigeraPass: (pass: PassMedSektion) => void
   onNyttPass: () => void
-  onTilldelaFunktionar: (f: OtilldeladFunktionar) => void
 }) {
-  void otilldelade
-  void onTilldelaFunktionar
 
   const procent = sektion.behovs_totalt > 0
     ? Math.round((sektion.tilldelade_totalt / sektion.behovs_totalt) * 100)

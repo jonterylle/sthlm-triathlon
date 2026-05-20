@@ -6,7 +6,7 @@ import SektionsledareApp from '@/components/SektionsledareApp'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
-  OtilldeladFunktionar,
+  FunktionarForTilldelning,
   PassMedSektion,
   TilldeladPerPass,
   MinSektionRad,
@@ -50,10 +50,10 @@ export default async function DashboardPage() {
   }
 
   // ── TL-vy ──────────────────────────────────────────────────
-  const [sektionerRes, passRes, otilldeladeRes, passMedSektionerRes, tilldeladeRes, slRes, emailInbjRes, smsInbjRes, allaFunktionärerRes] = await Promise.all([
+  const [sektionerRes, passRes, funktionärerRes, passMedSektionerRes, tilldeladeRes, slRes, emailInbjRes, smsInbjRes, allaFunktionärerRes] = await Promise.all([
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
     supabase.from('pass_bemanningsgrad').select('*'),
-    supabase.rpc('get_otilldelade_funktionarer'),
+    supabase.rpc('get_funktionarer_for_tilldelning'),
     supabase.rpc('get_pass_med_sektioner'),
     supabase.rpc('get_tilldelade_per_pass'),
     supabase.rpc('get_sektionsledare'),
@@ -62,15 +62,20 @@ export default async function DashboardPage() {
     supabase.from('profiles').select('*').eq('role', 'funktionar').order('full_name'),
   ])
 
-  const sektioner: SektionBemanningsgrad[]     = sektionerRes.data ?? []
-  const pass: PassBemanningsgrad[]             = passRes.data ?? []
-  const otilldelade: OtilldeladFunktionar[]    = otilldeladeRes.data ?? []
-  const passMedSektioner: PassMedSektion[]     = passMedSektionerRes.data ?? []
-  const tilldeladePerPass: TilldeladPerPass[]  = tilldeladeRes.data ?? []
-  const sektionsledare: SektionsledareInfo[]   = slRes.data ?? []
-  const emailInbjudningar                      = emailInbjRes.data ?? []
-  const smsInbjudningar                        = smsInbjRes.data ?? []
-  const allaFunktionärer                       = allaFunktionärerRes.data ?? []
+  const sektioner: SektionBemanningsgrad[]         = sektionerRes.data ?? []
+  const pass: PassBemanningsgrad[]                 = passRes.data ?? []
+  const funktionärer: FunktionarForTilldelning[]   = funktionärerRes.data ?? []
+  const passMedSektioner: PassMedSektion[]         = passMedSektionerRes.data ?? []
+  const tilldeladePerPass: TilldeladPerPass[]      = tilldeladeRes.data ?? []
+  const sektionsledare: SektionsledareInfo[]       = slRes.data ?? []
+  const emailInbjudningar                          = emailInbjRes.data ?? []
+  const smsInbjudningar                            = smsInbjRes.data ?? []
+  const allaFunktionärer                           = allaFunktionärerRes.data ?? []
+
+  void sektionsledare
+  void emailInbjudningar
+  void smsInbjudningar
+  void allaFunktionärer
 
   const totalBehövs     = sektioner.reduce((s, x) => s + (x.behovs_totalt ?? 0), 0)
   const totalTilldelade = sektioner.reduce((s, x) => s + (x.tilldelade_totalt ?? 0), 0)
@@ -87,7 +92,7 @@ export default async function DashboardPage() {
           pass={pass}
           passMedSektioner={passMedSektioner}
           tilldeladePerPass={tilldeladePerPass}
-          otilldelade={otilldelade}
+          funktionärer={funktionärer}
           totalBehövs={totalBehövs}
           totalTilldelade={totalTilldelade}
           totalSaknas={totalSaknas}
