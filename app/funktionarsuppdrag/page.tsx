@@ -28,6 +28,11 @@ export default async function FunktionarsuppdragPage() {
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
   ])
 
+  // DEBUG: logga RPC-resultat till Vercel-loggar
+  console.log('[DEBUG funktionarsuppdrag] funktionärer data:', JSON.stringify(funktionärerRes.data))
+  console.log('[DEBUG funktionarsuppdrag] funktionärer error:', JSON.stringify(funktionärerRes.error))
+  console.log('[DEBUG funktionarsuppdrag] profil roll:', profile.role, 'uid:', user.id)
+
   const passer: PassMedSektion[]                 = passerRes.data ?? []
   const tilldelade: TilldeladPerPass[]           = tilldeladeRes.data ?? []
   const funktionärer: FunktionarForTilldelning[] = funktionärerRes.data ?? []
