@@ -2,9 +2,12 @@
 -- Migration 014: RPC för alla funktionärer med tilldelningsräknare
 -- Ersätter get_otilldelade_funktionarer i tilldelningsflödet
 -- så att TL kan tilldela en funktionär flera uppdrag.
+-- Fix: sektion_preferens är uuid i profiles — castas till text.
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.get_funktionarer_for_tilldelning()
+DROP FUNCTION IF EXISTS public.get_funktionarer_for_tilldelning();
+
+CREATE FUNCTION public.get_funktionarer_for_tilldelning()
 RETURNS TABLE (
   id                 uuid,
   email              text,
@@ -17,7 +20,7 @@ RETURNS TABLE (
   registrerad_at     timestamptz,
   created_at         timestamptz,
   updated_at         timestamptz,
-  antal_pass         bigint
+  antal_pass         int
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -36,12 +39,12 @@ BEGIN
       p.role::text,
       p.telefon,
       COALESCE(p.kompetenser, '{}'),
-      p.sektion_preferens,
+      p.sektion_preferens::text,
       p.pass_preferens,
       p.registrerad_at,
       p.created_at,
       p.updated_at,
-      COUNT(t.id) FILTER (WHERE t.status = 'bekraftad') AS antal_pass
+      COUNT(t.id) FILTER (WHERE t.status = 'bekraftad')::int AS antal_pass
     FROM public.profiles p
     LEFT JOIN public.tilldelningar t ON t.profil_id = p.id
     WHERE p.role = 'funktionar'
