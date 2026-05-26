@@ -110,6 +110,7 @@ export default function TilldelningsModal({
                 {funktionärer.map(f => (
                   <option key={f.id} value={f.id}>
                     {f.full_name ?? f.email}
+                    {f.role === 'tl' ? ' · TL' : f.role === 'sektionsledare' ? ' · SL' : ''}
                     {f.antal_pass > 0 ? ` · ${f.antal_pass} uppdrag` : ''}
                   </option>
                 ))}
