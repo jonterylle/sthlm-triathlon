@@ -56,6 +56,37 @@ export async function tilldelaFunktionar(
   return { ok: true }
 }
 
+// ── Ta bort tilldelning ───────────────────────────────────────
+export async function taBortTilldelning(
+  tilldelningId: string
+): Promise<TilldelningResultat> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, meddelande: 'Inte inloggad' }
+
+  const { data: tlProfil } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!tlProfil || tlProfil.role !== 'tl') {
+    return { ok: false, meddelande: 'Behörighet saknas' }
+  }
+
+  const { error } = await supabase
+    .from('tilldelningar')
+    .delete()
+    .eq('id', tilldelningId)
+
+  if (error) {
+    console.error('[taBortTilldelning] delete error:', error.message)
+    return { ok: false, meddelande: 'Kunde inte ta bort tilldelningen. Försök igen.' }
+  }
+
+  return { ok: true }
+}
+
 // ── Hjälpfunktion: skicka bekräftelsemail via Resend ─────────
 async function skickabekraftelsemail(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

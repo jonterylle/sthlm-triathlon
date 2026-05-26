@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useTransition } from 'react'
 import TilldelningsModal from '@/components/TilldelningsModal'
 import PassModal from '@/components/PassModal'
 import SektionModal from '@/components/SektionModal'
+import { taBortTilldelning } from '@/app/dashboard/tilldela'
 import type { PassMedSektion, TilldeladPerPass, FunktionarForTilldelning, SektionBemanningsgrad } from '@/lib/database.types'
 
 const KOMPETENS_LABELS: Record<string, string> = {
@@ -24,9 +25,14 @@ interface Props {
 }
 
 export default function FunktionarsuppdragSida({ passer, tilldelade, funktionärer, sektioner, isTL }: Props) {
-  const [lokalaPasser,     setLokalaPasser]    = useState(passer)
-  const [lokalaSektioner,  setLokalaSektioner] = useState(sektioner)
-  const [lokalaFunktionär, setLokalaFunktionär] = useState(funktionärer)
+  const [lokalaPasser,      setLokalaPasser]      = useState(passer)
+  const [lokalaSektioner,   setLokalaSektioner]   = useState(sektioner)
+  const [lokalaFunktionär,  setLokalaFunktionär]  = useState(funktionärer)
+  const [lokalaTilldelade,  setLokalaTilldelade]  = useState(tilldelade)
+
+  const [bekräftaBorttagning, setBekräftaBorttagning] = useState<string | null>(null) // tilldelning_id
+  const [borttagningFel,      setBorttagningFel]      = useState<string | null>(null)
+  const [pending,             startTransition]        = useTransition()
 
   const [valtPassId,   setValtPassId]   = useState<string | null>(null)
   const [passModal,    setPassModal]    = useState<PassModalState | null>(null)
@@ -84,6 +90,39 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
         : p
     ))
     setValtPassId(null)
+  }
+
+  function hanteraTaBort(tilldelningId: string) {
+    setBekräftaBorttagning(tilldelningId)
+    setBorttagningFel(null)
+  }
+
+  function hanteraBekräftaBorttagning() {
+    if (!bekräftaBorttagning) return
+    const tilldelningId = bekräftaBorttagning
+    const tilldelning = lokalaTilldelade.find(t => t.tilldelning_id === tilldelningId)
+    if (!tilldelning) return
+
+    startTransition(async () => {
+      const res = await taBortTilldelning(tilldelningId)
+      if (res.ok) {
+        // Ta bort från lokalt state
+        setLokalaTilldelade(prev => prev.filter(t => t.tilldelning_id !== tilldelningId))
+        // Uppdatera passets bemanningssiffror
+        setLokalaPasser(prev => prev.map(p =>
+          p.pass_id === tilldelning.pass_id
+            ? { ...p, tilldelade: Math.max(0, p.tilldelade - 1), saknas: p.saknas + 1 }
+            : p
+        ))
+        // Minska antal_pass för funktionären
+        setLokalaFunktionär(prev => prev.map(f =>
+          f.id === tilldelning.profil_id ? { ...f, antal_pass: Math.max(0, f.antal_pass - 1) } : f
+        ))
+        setBekräftaBorttagning(null)
+      } else {
+        setBorttagningFel(res.meddelande ?? 'Något gick fel')
+      }
+    })
   }
 
   // ── Callbacks: pass ──────────────────────────────────────────
@@ -229,7 +268,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {gruppPasser.map(p => {
-                      const passDeltagare = tilldelade.filter(t => t.pass_id === p.pass_id)
+                      const passDeltagare = lokalaTilldelade.filter(t => t.pass_id === p.pass_id)
                       const saknas = Math.max(0, p.saknas)
                       return (
                         <tr key={p.pass_id} className="hover:bg-gray-50 transition-colors">
@@ -255,10 +294,43 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">
                             <div className="flex flex-wrap gap-1">
-                              {passDeltagare.slice(0, 3).map(t => (
-                                <span key={t.tilldelning_id} className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
-                                  {t.full_name?.split(' ')[0] ?? t.email.split('@')[0]}
-                                </span>
+                              {passDeltagare.map(t => (
+                                bekräftaBorttagning === t.tilldelning_id ? (
+                                  // Inline-bekräftelse
+                                  <span key={t.tilldelning_id} className="inline-flex items-center gap-1 text-xs bg-red-50 border border-red-200 text-red-700 px-2 py-0.5 rounded-full">
+                                    <span>Ta bort {t.full_name?.split(' ')[0] ?? t.email.split('@')[0]}?</span>
+                                    {borttagningFel && <span className="text-red-500">{borttagningFel}</span>}
+                                    <button
+                                      onClick={hanteraBekräftaBorttagning}
+                                      disabled={pending}
+                                      className="ml-1 font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
+                                    >
+                                      {pending ? '…' : 'Ja'}
+                                    </button>
+                                    <button
+                                      onClick={() => { setBekräftaBorttagning(null); setBorttagningFel(null) }}
+                                      disabled={pending}
+                                      className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                    >
+                                      Nej
+                                    </button>
+                                  </span>
+                                ) : (
+                                  // Normalt chip med ✕ för TL
+                                  <span key={t.tilldelning_id} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full group">
+                                    {t.full_name?.split(' ')[0] ?? t.email.split('@')[0]}
+                                    {isTL && (
+                                      <button
+                                        onClick={() => hanteraTaBort(t.tilldelning_id)}
+                                        className="text-gray-300 hover:text-red-500 transition-colors leading-none opacity-0 group-hover:opacity-100"
+                                        title={`Ta bort ${t.full_name ?? t.email} från detta pass`}
+                                        aria-label="Ta bort tilldelning"
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
+                                  </span>
+                                )
                               ))}
                               {passDeltagare.length > 3 && (
                                 <span className="text-xs text-gray-400">+{passDeltagare.length - 3}</span>
