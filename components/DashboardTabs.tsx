@@ -146,45 +146,6 @@ export default function DashboardTabs({
         />
       </div>
 
-      {/* ── Sektionsansvar ────────────────────────────────────── */}
-      {sektioner.length > 0 && (() => {
-        const utanSL = sektioner.filter(s => !sektionSL.some(sl => sl.sektion_id === s.id)).length
-        return (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-              <span className="text-sm font-semibold text-gray-700">Sektionsansvar</span>
-              {utanSL > 0 && (
-                <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
-                  {utanSL} utan ansvarig
-                </span>
-              )}
-            </div>
-            <div className="divide-y divide-gray-50">
-              {sektioner.map(s => {
-                const slForSektion = sektionSL.filter(sl => sl.sektion_id === s.id)
-                return (
-                  <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.farg }} />
-                    <span className="text-sm text-gray-700 w-40 flex-shrink-0 truncate">{s.namn}</span>
-                    <div className="flex flex-wrap gap-1.5 flex-1">
-                      {slForSektion.length > 0 ? (
-                        slForSektion.map(sl => (
-                          <span key={sl.profil_id} className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full">
-                            {sl.full_name ?? sl.email}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-red-400 italic">Ingen ansvarig</span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })()}
-
       {/* ── Områdesflikar ─────────────────────────────────────── */}
       <div className="border-b border-gray-200">
         <div className="flex overflow-x-auto scrollbar-hide -mb-px">
@@ -236,6 +197,7 @@ export default function DashboardTabs({
                 sektion={sektion}
                 passer={lokalaPasser.filter(p => p.sektion_id === sektion.id)}
                 tilldelade={lokalaTilldelade.filter(t => t.sektion_id === sektion.id)}
+                sektionSL={sektionSL.filter(sl => sl.sektion_id === sektion.id)}
                 onTilldelaPass={passId => setModal({ typ: 'fran-pass', passId })}
                 onRedigeraPass={p => setModal({ typ: 'pass-redigera', pass: p, sektionNamn: sektion.namn })}
                 onNyttPass={() => setModal({ typ: 'pass-nytt', sektionId: sektion.id, sektionNamn: sektion.namn })}
@@ -322,6 +284,7 @@ function SektionsFlik({
   sektion,
   passer,
   tilldelade,
+  sektionSL,
   onTilldelaPass,
   onRedigeraPass,
   onNyttPass,
@@ -329,6 +292,7 @@ function SektionsFlik({
   sektion: SektionBemanningsgrad
   passer: PassMedSektion[]
   tilldelade: TilldeladPerPass[]
+  sektionSL: SektionSL[]
   onTilldelaPass: (passId: string) => void
   onRedigeraPass: (pass: PassMedSektion) => void
   onNyttPass: () => void
@@ -361,9 +325,26 @@ function SektionsFlik({
               </p>
             </div>
           </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-2xl font-bold" style={{ color: barColor }}>{procent}%</p>
-            <p className="text-xs text-gray-400">{sektion.tilldelade_totalt} / {sektion.behovs_totalt} platser</p>
+          <div className="flex items-start gap-4 flex-shrink-0">
+            {/* SL-ansvariga */}
+            <div className="text-right hidden sm:block">
+              {sektionSL.length > 0 ? (
+                <div className="flex flex-col items-end gap-1">
+                  {sektionSL.map(sl => (
+                    <span key={sl.profil_id} className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                      {sl.full_name ?? sl.email}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-xs text-red-400 italic">Ingen ansvarig</span>
+              )}
+            </div>
+            {/* Bemanningsgrad */}
+            <div className="text-right flex-shrink-0">
+              <p className="text-2xl font-bold" style={{ color: barColor }}>{procent}%</p>
+              <p className="text-xs text-gray-400">{sektion.tilldelade_totalt} / {sektion.behovs_totalt} platser</p>
+            </div>
           </div>
         </div>
 
