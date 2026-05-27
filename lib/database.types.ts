@@ -202,6 +202,14 @@ export type TilldeladPerPass = {
   notering: string | null
 }
 
+// Koppling SL → sektion (från sektion_sektionsledare via RPC)
+export type SektionSL = {
+  sektion_id: string
+  profil_id: string
+  full_name: string | null
+  email: string
+}
+
 // ── Database-typ för Supabase-klienten ───────────────────────────
 
 export type Database = {
@@ -253,6 +261,12 @@ export type Database = {
         Update: Partial<Omit<PushSubscription, 'id'>>
         Relationships: []
       }
+      sektion_sektionsledare: {
+        Row: { sektion_id: string; profil_id: string; skapad_at: string }
+        Insert: { sektion_id: string; profil_id: string; skapad_at?: string }
+        Update: Partial<{ sektion_id: string; profil_id: string }>
+        Relationships: []
+      }
     }
     Views: {
       sektion_bemanningsgrad: { Row: SektionBemanningsgrad; Relationships: [] }
@@ -283,6 +297,10 @@ export type Database = {
       get_sektionsledare: {
         Args: Record<string, never>
         Returns: SektionsledareInfo[]
+      }
+      get_sektionsledare_per_sektion: {
+        Args: Record<string, never>
+        Returns: SektionSL[]
       }
       hamta_sms_inbjudan: {
         Args: { p_token: string }

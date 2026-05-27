@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { skapaSektion, uppdateraSektion, taBortSektion } from '@/app/dashboard/sektions-actions'
-import type { SektionBemanningsgrad, SektionOmrade } from '@/lib/database.types'
+import { skapaSektion, uppdateraSektion, taBortSektion, tilldelaSektionsledare, taBortSektionsledare } from '@/app/dashboard/sektions-actions'
+import type { SektionBemanningsgrad, SektionOmrade, SektionSL, SektionsledareInfo } from '@/lib/database.types'
 
 const OMRADEN: { value: SektionOmrade; label: string }[] = [
   { value: 'simning',   label: '🏊 Simning' },
@@ -20,19 +20,27 @@ const FARG_FORSLAG = [
 ]
 
 interface Props {
-  sektion?: SektionBemanningsgrad   // undefined = ny sektion
+  sektion?: SektionBemanningsgrad
   nästaSortorder?: number
+  allaSL: SektionsledareInfo[]
+  koppladeSL: SektionSL[]
   onClose: () => void
   onSparat: (sektion: SektionBemanningsgrad, nyskapad: boolean) => void
   onBorttagen: (sektionId: string) => void
+  onSLTillagd: (sl: SektionSL) => void
+  onSLBorttagen: (sektionId: string, profilId: string) => void
 }
 
 export default function SektionModal({
   sektion,
   nästaSortorder = 10,
+  allaSL,
+  koppladeSL,
   onClose,
   onSparat,
   onBorttagen,
+  onSLTillagd,
+  onSLBorttagen,
 }: Props) {
   const arNy = !sektion
 
@@ -44,8 +52,20 @@ export default function SektionModal({
   const [sortorder,   setSortorder]   = useState(sektion?.sortorder   ?? nästaSortorder)
 
   const [isPending, startTransition] = useTransition()
-  const [fel, setFel]     = useState<string | null>(null)
+  const [fel, setFel]         = useState<string | null>(null)
   const [raderar, setRaderar] = useState(false)
+
+  // SL-hantering
+  const [valdNySL,           setValdNySL]           = useState('')
+  const [slPending,          startSLTransition]     = useTransition()
+  const [slFel,              setSlFel]              = useState<string | null>(null)
+  const [bekräftaTaBortSL,   setBekräftaTaBortSL]   = useState<string | null>(null) // profil_id
+
+  // Lokalt state för kopplade SL (speglar parent men hanteras här för snabb UI-respons)
+  const [lokalaKoppladeSL, setLokalaKoppladeSL] = useState(koppladeSL)
+
+  // Filtrera bort redan kopplade SL från dropdown
+  const tillgängligaSL = allaSL.filter(sl => !lokalaKoppladeSL.some(k => k.profil_id === sl.id))
 
   function handleSpara(e: React.FormEvent) {
     e.preventDefault()
@@ -97,6 +117,38 @@ export default function SektionModal({
       const res = await taBortSektion(sektion.id)
       if (!res.ok) { setFel(res.meddelande ?? 'Kunde inte ta bort.'); setRaderar(false); return }
       onBorttagen(sektion.id)
+    })
+  }
+
+  function handleLäggTillSL() {
+    if (!valdNySL || !sektion) return
+    setSlFel(null)
+    const slInfo = allaSL.find(s => s.id === valdNySL)
+    if (!slInfo) return
+
+    startSLTransition(async () => {
+      const res = await tilldelaSektionsledare(sektion.id, valdNySL)
+      if (!res.ok) { setSlFel(res.meddelande ?? 'Fel'); return }
+      const nySL: SektionSL = {
+        sektion_id: sektion.id,
+        profil_id:  slInfo.id,
+        full_name:  slInfo.full_name,
+        email:      slInfo.email,
+      }
+      setLokalaKoppladeSL(prev => [...prev, nySL])
+      onSLTillagd(nySL)
+      setValdNySL('')
+    })
+  }
+
+  function handleTaBortSL(profilId: string) {
+    if (!sektion) return
+    startSLTransition(async () => {
+      const res = await taBortSektionsledare(sektion.id, profilId)
+      if (!res.ok) { setSlFel(res.meddelande ?? 'Fel'); return }
+      setLokalaKoppladeSL(prev => prev.filter(s => s.profil_id !== profilId))
+      onSLBorttagen(sektion.id, profilId)
+      setBekräftaTaBortSL(null)
     })
   }
 
@@ -166,7 +218,6 @@ export default function SektionModal({
                   title={f}
                 />
               ))}
-              {/* Eget hex-värde */}
               <div className="flex items-center gap-1.5 ml-1">
                 <input
                   type="color"
@@ -198,6 +249,82 @@ export default function SektionModal({
               />
             </div>
           </div>
+
+          {/* ── Sektionsledare (bara vid redigering av befintlig sektion) ── */}
+          {!arNy && (
+            <div className="pt-2 border-t border-gray-100">
+              <label className="block text-xs text-gray-500 mb-2">Sektionsledare</label>
+
+              {/* Kopplade SL */}
+              <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
+                {lokalaKoppladeSL.length === 0 && (
+                  <span className="text-xs text-gray-300 italic">Ingen sektionsledare kopplad</span>
+                )}
+                {lokalaKoppladeSL.map(sl => (
+                  bekräftaTaBortSL === sl.profil_id ? (
+                    <span key={sl.profil_id} className="inline-flex items-center gap-1 text-xs bg-red-50 border border-red-200 text-red-700 px-2 py-1 rounded-full">
+                      <span>Ta bort {sl.full_name?.split(' ')[0] ?? sl.email}?</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTaBortSL(sl.profil_id)}
+                        disabled={slPending}
+                        className="font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        {slPending ? '…' : 'Ja'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBekräftaTaBortSL(null)}
+                        disabled={slPending}
+                        className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                      >
+                        Nej
+                      </button>
+                    </span>
+                  ) : (
+                    <span key={sl.profil_id} className="inline-flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-1 rounded-full group">
+                      {sl.full_name ?? sl.email}
+                      <button
+                        type="button"
+                        onClick={() => setBekräftaTaBortSL(sl.profil_id)}
+                        className="text-purple-300 hover:text-red-500 transition-colors leading-none opacity-0 group-hover:opacity-100"
+                        title={`Ta bort ${sl.full_name ?? sl.email} som sektionsledare`}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  )
+                ))}
+              </div>
+
+              {/* Lägg till SL */}
+              {tillgängligaSL.length > 0 && (
+                <div className="flex gap-2">
+                  <select
+                    value={valdNySL}
+                    onChange={e => { setValdNySL(e.target.value); setSlFel(null) }}
+                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
+                  >
+                    <option value="">Lägg till sektionsledare…</option>
+                    {tillgängligaSL.map(sl => (
+                      <option key={sl.id} value={sl.id}>
+                        {sl.full_name ?? sl.email}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleLäggTillSL}
+                    disabled={!valdNySL || slPending}
+                    className="px-3 py-2 rounded-xl bg-[#0066CC] text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors"
+                  >
+                    {slPending ? '…' : '+ Lägg till'}
+                  </button>
+                </div>
+              )}
+              {slFel && <p className="text-xs text-red-600 mt-1">{slFel}</p>}
+            </div>
+          )}
         </form>
 
         {/* Footer */}

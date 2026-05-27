@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminHeader from '@/components/AdminHeader'
 import FunktionarsuppdragSida from '@/components/FunktionarsuppdragSida'
-import type { PassMedSektion, TilldeladPerPass, FunktionarForTilldelning, SektionBemanningsgrad } from '@/lib/database.types'
+import type { PassMedSektion, TilldeladPerPass, FunktionarForTilldelning, SektionBemanningsgrad, SektionSL, SektionsledareInfo } from '@/lib/database.types'
 
 export default async function FunktionarsuppdragPage() {
   const supabase = await createClient()
@@ -21,21 +21,27 @@ export default async function FunktionarsuppdragPage() {
 
   const roleLabel = profile.role === 'tl' ? 'Tävlingsledare' : 'Sektionsledare'
 
-  const [passerRes, tilldeladeRes, funktionärerRes, sektionerRes] = await Promise.all([
+  const [passerRes, tilldeladeRes, funktionärerRes, sektionerRes, sektionSLRes, allaSLRes] = await Promise.all([
     supabase.rpc('get_pass_med_sektioner'),
     supabase.rpc('get_tilldelade_per_pass'),
     supabase.rpc('get_funktionarer_for_tilldelning'),
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
+    supabase.rpc('get_sektionsledare_per_sektion'),
+    profile.role === 'tl'
+      ? supabase.rpc('get_sektionsledare')
+      : Promise.resolve({ data: [] }),
   ])
 
-const passer: PassMedSektion[]                 = passerRes.data ?? []
-  const tilldelade: TilldeladPerPass[]           = tilldeladeRes.data ?? []
-  const funktionärer: FunktionarForTilldelning[] = funktionärerRes.data ?? []
-  const sektioner: SektionBemanningsgrad[]       = sektionerRes.data ?? []
+  const passer: PassMedSektion[]                 = passerRes.data ?? []
+  const tilldelade: TilldeladPerPass[]            = tilldeladeRes.data ?? []
+  const funktionärer: FunktionarForTilldelning[]  = funktionärerRes.data ?? []
+  const sektioner: SektionBemanningsgrad[]        = sektionerRes.data ?? []
+  const sektionSL: SektionSL[]                    = sektionSLRes.data ?? []
+  const allaSL: SektionsledareInfo[]              = (allaSLRes.data ?? []) as SektionsledareInfo[]
 
-  // SL filtreras på sektion_preferens (server-side förfilter)
+  // SL: filtrera pass på de sektioner de ansvarar för (via nya tabellen)
   const filtreradePasser = profile.role === 'sektionsledare'
-    ? passer.filter(p => p.sektion_id === profile.sektion_preferens)
+    ? passer.filter(p => sektionSL.some(sl => sl.sektion_id === p.sektion_id && sl.profil_id === user.id))
     : passer
 
   return (
@@ -47,6 +53,8 @@ const passer: PassMedSektion[]                 = passerRes.data ?? []
           tilldelade={tilldelade}
           funktionärer={funktionärer}
           sektioner={sektioner}
+          sektionSL={sektionSL}
+          allaSL={allaSL}
           isTL={profile.role === 'tl'}
         />
       </main>

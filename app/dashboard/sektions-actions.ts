@@ -84,6 +84,51 @@ export async function uppdateraSektion(
   return { ok: true }
 }
 
+// ── Tilldela sektionsledare till sektion ──────────────────────
+export async function tilldelaSektionsledare(
+  sektionId: string,
+  profilId: string
+): Promise<{ ok: boolean; meddelande?: string }> {
+  const ctx = await verifieraTL()
+  if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
+  const { supabase } = ctx
+
+  const { error } = await supabase
+    .from('sektion_sektionsledare')
+    .insert({ sektion_id: sektionId, profil_id: profilId })
+
+  if (error) {
+    console.error('[tilldelaSektionsledare]', error.message, error.code)
+    if (error.code === '23505') {
+      return { ok: false, meddelande: 'Sektionsledaren är redan kopplad till denna sektion.' }
+    }
+    return { ok: false, meddelande: 'Kunde inte koppla sektionsledaren.' }
+  }
+  return { ok: true }
+}
+
+// ── Ta bort sektionsledare från sektion ───────────────────────
+export async function taBortSektionsledare(
+  sektionId: string,
+  profilId: string
+): Promise<{ ok: boolean; meddelande?: string }> {
+  const ctx = await verifieraTL()
+  if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
+  const { supabase } = ctx
+
+  const { error } = await supabase
+    .from('sektion_sektionsledare')
+    .delete()
+    .eq('sektion_id', sektionId)
+    .eq('profil_id', profilId)
+
+  if (error) {
+    console.error('[taBortSektionsledare]', error.message)
+    return { ok: false, meddelande: 'Kunde inte ta bort kopplingen.' }
+  }
+  return { ok: true }
+}
+
 // ── Ta bort sektion ───────────────────────────────────────────
 export async function taBortSektion(
   sektionId: string

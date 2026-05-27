@@ -5,7 +5,7 @@ import TilldelningsModal from '@/components/TilldelningsModal'
 import PassModal from '@/components/PassModal'
 import SektionModal from '@/components/SektionModal'
 import { taBortTilldelning } from '@/app/dashboard/tilldela'
-import type { PassMedSektion, TilldeladPerPass, FunktionarForTilldelning, SektionBemanningsgrad } from '@/lib/database.types'
+import type { PassMedSektion, TilldeladPerPass, FunktionarForTilldelning, SektionBemanningsgrad, SektionSL, SektionsledareInfo } from '@/lib/database.types'
 
 const KOMPETENS_LABELS: Record<string, string> = {
   sjukvard: 'Sjukvård', korkort: 'Körkort',
@@ -21,14 +21,17 @@ interface Props {
   tilldelade: TilldeladPerPass[]
   funktionärer: FunktionarForTilldelning[]
   sektioner: SektionBemanningsgrad[]
+  sektionSL: SektionSL[]
+  allaSL: SektionsledareInfo[]
   isTL: boolean
 }
 
-export default function FunktionarsuppdragSida({ passer, tilldelade, funktionärer, sektioner, isTL }: Props) {
+export default function FunktionarsuppdragSida({ passer, tilldelade, funktionärer, sektioner, sektionSL, allaSL, isTL }: Props) {
   const [lokalaPasser,      setLokalaPasser]      = useState(passer)
   const [lokalaSektioner,   setLokalaSektioner]   = useState(sektioner)
   const [lokalaFunktionär,  setLokalaFunktionär]  = useState(funktionärer)
   const [lokalaTilldelade,  setLokalaTilldelade]  = useState(tilldelade)
+  const [lokalaSektionSL,   setLokalaSektionSL]   = useState(sektionSL)
 
   const [bekräftaBorttagning, setBekräftaBorttagning] = useState<string | null>(null) // tilldelning_id
   const [borttagningFel,      setBorttagningFel]      = useState<string | null>(null)
@@ -412,9 +415,15 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
       {sektionModal?.typ === 'ny' && (
         <SektionModal
           nästaSortorder={nästaSortorder}
+          allaSL={allaSL}
+          koppladeSL={[]}
           onClose={() => setSektionModal(null)}
           onSparat={hanteraSektionSparad}
           onBorttagen={hanteraSektionBorttagen}
+          onSLTillagd={(sl) => setLokalaSektionSL(prev => [...prev, sl])}
+          onSLBorttagen={(sektionId, profilId) =>
+            setLokalaSektionSL(prev => prev.filter(s => !(s.sektion_id === sektionId && s.profil_id === profilId)))
+          }
         />
       )}
 
@@ -422,9 +431,15 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
       {sektionModal?.typ === 'redigera' && (
         <SektionModal
           sektion={sektionModal.sektion}
+          allaSL={allaSL}
+          koppladeSL={lokalaSektionSL.filter(s => s.sektion_id === sektionModal.sektion.id)}
           onClose={() => setSektionModal(null)}
           onSparat={hanteraSektionSparad}
           onBorttagen={hanteraSektionBorttagen}
+          onSLTillagd={(sl) => setLokalaSektionSL(prev => [...prev, sl])}
+          onSLBorttagen={(sektionId, profilId) =>
+            setLokalaSektionSL(prev => prev.filter(s => !(s.sektion_id === sektionId && s.profil_id === profilId)))
+          }
         />
       )}
     </div>
