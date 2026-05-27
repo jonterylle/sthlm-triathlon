@@ -168,6 +168,12 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
   const totaltSaknas   = lokalaPasser.reduce((s, p) => s + Math.max(0, p.saknas), 0)
   const nästaSortorder = Math.max(0, ...lokalaSektioner.map(s => s.sortorder)) + 1
 
+  const sektionerUtanSL = lokalaSektioner.filter(
+    s => !lokalaSektionSL.some(sl => sl.sektion_id === s.id)
+  ).length
+
+  const [visaAnsvar, setVisaAnsvar] = useState(true)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -197,6 +203,78 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
           )}
         </div>
       </div>
+
+      {/* ── Sektionsansvar-visualisering ──────────────────────── */}
+      {isTL && lokalaSektioner.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setVisaAnsvar(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700">Sektionsansvar</span>
+              {sektionerUtanSL > 0 && (
+                <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                  {sektionerUtanSL} utan ansvarig
+                </span>
+              )}
+            </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14" height="14"
+              fill="currentColor"
+              viewBox="0 0 16 16"
+              className={`text-gray-400 transition-transform ${visaAnsvar ? 'rotate-180' : ''}`}
+            >
+              <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+
+          {visaAnsvar && (
+            <div className="border-t border-gray-100 divide-y divide-gray-50">
+              {lokalaSektioner.map(s => {
+                const slForSektion = lokalaSektionSL.filter(sl => sl.sektion_id === s.id)
+                const harSL = slForSektion.length > 0
+                return (
+                  <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
+                    {/* Färgpunkt + namn */}
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.farg }} />
+                    <span className="text-sm text-gray-700 w-40 flex-shrink-0 truncate">{s.namn}</span>
+
+                    {/* SL-chips */}
+                    <div className="flex flex-wrap gap-1.5 flex-1">
+                      {harSL ? (
+                        slForSektion.map(sl => (
+                          <span
+                            key={sl.profil_id}
+                            className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full"
+                          >
+                            {sl.full_name ?? sl.email}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-red-400 italic">Ingen ansvarig</span>
+                      )}
+                    </div>
+
+                    {/* Redigera-knapp */}
+                    <button
+                      onClick={() => setSektionModal({ typ: 'redigera', sektion: s })}
+                      className="text-gray-300 hover:text-[#0066CC] transition-colors p-1 rounded-lg hover:bg-blue-50 flex-shrink-0"
+                      title="Redigera sektion och sektionsledare"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                      </svg>
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filter */}
       <div className="flex flex-wrap gap-2">
