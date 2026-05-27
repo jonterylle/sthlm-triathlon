@@ -11,6 +11,7 @@ import type {
   TilldeladPerPass,
   MinSektionRad,
   SektionsledareInfo,
+  SektionSL,
 } from '@/lib/database.types'
 
 export default async function DashboardPage() {
@@ -50,7 +51,7 @@ export default async function DashboardPage() {
   }
 
   // ── TL-vy ──────────────────────────────────────────────────
-  const [sektionerRes, passRes, funktionärerRes, passMedSektionerRes, tilldeladeRes, slRes, emailInbjRes, smsInbjRes, allaFunktionärerRes] = await Promise.all([
+  const [sektionerRes, passRes, funktionärerRes, passMedSektionerRes, tilldeladeRes, slRes, emailInbjRes, smsInbjRes, allaFunktionärerRes, sektionSLRes] = await Promise.all([
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
     supabase.from('pass_bemanningsgrad').select('*'),
     supabase.rpc('get_funktionarer_for_tilldelning'),
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
     supabase.from('inbjudningar').select('id, email, skickad_at, status, roll').order('skickad_at', { ascending: false }),
     supabase.from('sms_inbjudningar').select('id, telefon, skickad_at, email_inkommen, status').order('skickad_at', { ascending: false }),
     supabase.from('profiles').select('*').eq('role', 'funktionar').order('full_name'),
+    supabase.rpc('get_sektionsledare_per_sektion'),
   ])
 
   const sektioner: SektionBemanningsgrad[]         = sektionerRes.data ?? []
@@ -71,6 +73,7 @@ export default async function DashboardPage() {
   const emailInbjudningar                          = emailInbjRes.data ?? []
   const smsInbjudningar                            = smsInbjRes.data ?? []
   const allaFunktionärer                           = allaFunktionärerRes.data ?? []
+  const sektionSL: SektionSL[]                     = sektionSLRes.data ?? []
 
   void sektionsledare
   void emailInbjudningar
@@ -93,6 +96,7 @@ export default async function DashboardPage() {
           passMedSektioner={passMedSektioner}
           tilldeladePerPass={tilldeladePerPass}
           funktionärer={funktionärer}
+          sektionSL={sektionSL}
           totalBehövs={totalBehövs}
           totalTilldelade={totalTilldelade}
           totalSaknas={totalSaknas}

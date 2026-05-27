@@ -11,6 +11,7 @@ import type {
   PassMedSektion,
   TilldeladPerPass,
   SektionsledareInfo,
+  SektionSL,
   SektionOmrade,
   Profile,
 } from '@/lib/database.types'
@@ -41,6 +42,7 @@ interface Props {
   passMedSektioner: PassMedSektion[]
   tilldeladePerPass: TilldeladPerPass[]
   funktionärer: FunktionarForTilldelning[]
+  sektionSL: SektionSL[]
   totalBehövs: number
   totalTilldelade: number
   totalSaknas: number
@@ -61,6 +63,7 @@ export default function DashboardTabs({
   passMedSektioner,
   tilldeladePerPass,
   funktionärer,
+  sektionSL,
   totalBehövs,
   totalTilldelade,
   totalSaknas,
@@ -142,6 +145,45 @@ export default function DashboardTabs({
           farg={otilldelade.length === 0 ? 'green' : 'amber'}
         />
       </div>
+
+      {/* ── Sektionsansvar ────────────────────────────────────── */}
+      {sektioner.length > 0 && (() => {
+        const utanSL = sektioner.filter(s => !sektionSL.some(sl => sl.sektion_id === s.id)).length
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <span className="text-sm font-semibold text-gray-700">Sektionsansvar</span>
+              {utanSL > 0 && (
+                <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                  {utanSL} utan ansvarig
+                </span>
+              )}
+            </div>
+            <div className="divide-y divide-gray-50">
+              {sektioner.map(s => {
+                const slForSektion = sektionSL.filter(sl => sl.sektion_id === s.id)
+                return (
+                  <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.farg }} />
+                    <span className="text-sm text-gray-700 w-40 flex-shrink-0 truncate">{s.namn}</span>
+                    <div className="flex flex-wrap gap-1.5 flex-1">
+                      {slForSektion.length > 0 ? (
+                        slForSektion.map(sl => (
+                          <span key={sl.profil_id} className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full">
+                            {sl.full_name ?? sl.email}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-red-400 italic">Ingen ansvarig</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Områdesflikar ─────────────────────────────────────── */}
       <div className="border-b border-gray-200">
