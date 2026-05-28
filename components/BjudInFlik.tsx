@@ -138,7 +138,7 @@ function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) 
           {/* Roll-väljare */}
           <div>
             <p className="text-xs font-medium text-gray-600 mb-2">Roll vid registrering</p>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <RollKnapp aktiv={valdRoll === 'funktionar'} onClick={() => setValdRoll('funktionar')} label="Funktionär" beskrivning="Ser sin tilldelning" />
               <RollKnapp aktiv={valdRoll === 'sektionsledare'} onClick={() => setValdRoll('sektionsledare')} label="Sektionsledare" beskrivning="Hanterar sin sektion" />
               <RollKnapp aktiv={valdRoll === 'tl'} onClick={() => setValdRoll('tl')} label="Tävlingsledare" beskrivning="Fullständig åtkomst" />

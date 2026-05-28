@@ -11,8 +11,8 @@ interface Props {
 
 const NAV = [
   { href: '/dashboard',           label: 'Översikt' },
-  { href: '/funktionarer',        label: 'Funktionärer' },
   { href: '/funktionarsuppdrag',  label: 'Funktionärsuppdrag' },
+  { href: '/funktionarer',        label: 'Funktionärer' },
   { href: '/karta',               label: 'Karta' },
 ]
 
