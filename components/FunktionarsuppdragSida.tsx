@@ -13,6 +13,18 @@ const KOMPETENS_LABELS: Record<string, string> = {
   cykel_teknik: 'Cykelmekanik', engelska: 'Engelska',
 }
 
+/** Formaterar '2026-08-09' → 'sön 9 aug' */
+function formateraDatum(iso: string): string {
+  const d = new Date(iso + 'T12:00:00') // noon för att undvika tidszons-flippar
+  return d.toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+/** Kort variant: '9 aug' */
+function formateraDatumKort(iso: string): string {
+  const d = new Date(iso + 'T12:00:00')
+  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })
+}
+
 type PassModalState    = { typ: 'nytt' } | { typ: 'redigera'; pass: PassMedSektion }
 type SektionModalState = { typ: 'ny' }   | { typ: 'redigera'; sektion: SektionBemanningsgrad }
 
@@ -43,6 +55,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
 
   // Filter
   const [filterSektion, setFilterSektion] = useState('')
+  const [filterDatum,   setFilterDatum]   = useState('')
   const [filterLuckor,  setFilterLuckor]  = useState(false)
   const [sök,           setSök]           = useState('')
 
@@ -53,16 +66,20 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
   const filtrerade = useMemo(() => {
     return lokalaPasser.filter(p => {
       if (filterSektion && p.sektion_id !== filterSektion) return false
+      if (filterDatum && (p.datum ?? '2026-08-09') !== filterDatum) return false
       if (filterLuckor && p.saknas <= 0) return false
       if (sök) {
         const q = sök.toLowerCase()
         if (!p.pass_namn.toLowerCase().includes(q) && !p.sektion_namn.toLowerCase().includes(q)) return false
       }
       return true
-    }).sort((a, b) => a.starttid.localeCompare(b.starttid))
-  }, [lokalaPasser, filterSektion, filterLuckor, sök])
+    }).sort((a, b) => {
+      const datumDiff = (a.datum ?? '').localeCompare(b.datum ?? '')
+      return datumDiff !== 0 ? datumDiff : a.starttid.localeCompare(b.starttid)
+    })
+  }, [lokalaPasser, filterSektion, filterDatum, filterLuckor, sök])
 
-  // Gruppera per sektion
+  // Gruppera per sektion, sedan per datum inom sektionen
   const grupperadePerSektion = useMemo(() => {
     const map = new Map<string, {
       sektionNamn: string
@@ -79,6 +96,11 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
     })
     return [...map.values()]
   }, [filtrerade, lokalaSektioner])
+
+  // Räkna unika datum bland filtrerade pass
+  const unikaDatum = useMemo(() =>
+    [...new Set(filtrerade.map(p => p.datum ?? '2026-08-09'))].sort(),
+  [filtrerade])
 
   // ── Callbacks: tilldelning ───────────────────────────────────
   function hanteraFramgång(profilId: string, passId: string) {
@@ -295,6 +317,18 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
             <option key={id} value={id}>{namn}</option>
           ))}
         </select>
+        {unikaDatum.length > 1 && (
+          <select
+            value={filterDatum}
+            onChange={e => setFilterDatum(e.target.value)}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
+          >
+            <option value="">Alla dagar</option>
+            {unikaDatum.map(d => (
+              <option key={d} value={d}>{formateraDatum(d)}</option>
+            ))}
+          </select>
+        )}
         <button
           onClick={() => setFilterLuckor(v => !v)}
           className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
@@ -354,7 +388,21 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
                       return (
                         <tr key={p.pass_id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3 font-medium text-gray-900">
-                            <div>{p.pass_namn}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span>{p.pass_namn}</span>
+                              {p.lat != null && p.lng != null && (
+                                <a
+                                  href={`https://www.google.com/maps?q=${p.lat},${p.lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Visa plats på karta"
+                                  onClick={e => e.stopPropagation()}
+                                  className="text-gray-400 hover:text-[#0066CC] transition-colors text-base leading-none flex-shrink-0"
+                                >
+                                  📍
+                                </a>
+                              )}
+                            </div>
                             {p.kompetenser.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {p.kompetenser.map(k => (
@@ -365,7 +413,10 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{p.starttid}–{p.sluttid}</td>
+                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                            <p className="text-xs text-gray-400">{formateraDatum(p.datum ?? '2026-08-09')}</p>
+                            <p>{p.starttid}–{p.sluttid}</p>
+                          </td>
                           <td className="px-4 py-3 text-center">
                             <span className={`font-semibold ${
                               saknas === 0 ? 'text-green-600' : saknas <= 2 ? 'text-amber-600' : 'text-red-500'

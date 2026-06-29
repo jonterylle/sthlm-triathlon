@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import BjudInFlik from '@/components/BjudInFlik'
 import ExcelImportFlik from '@/components/ExcelImportFlik'
 import FunktionarRedigeraModal from '@/components/FunktionarRedigeraModal'
-import type { Profile, SektionBemanningsgrad, SektionsledareInfo } from '@/lib/database.types'
+import type { Profile, SektionBemanningsgrad, SektionsledareInfo, TilldeladPerPass } from '@/lib/database.types'
 
 const ROLL_LABELS: Record<string, string> = {
   tl:             'Tävlingsledare',
@@ -28,6 +28,7 @@ interface Props {
   funktionärer: Profile[]
   sektioner: SektionBemanningsgrad[]
   sektionsledare: SektionsledareInfo[]
+  tilldelade: TilldeladPerPass[]
   emailInbjudningar: EmailRad[]
   smsInbjudningar: SMSRad[]
   isTL: boolean
@@ -40,6 +41,7 @@ export default function FunktionarerSida({
   funktionärer,
   sektioner,
   sektionsledare,
+  tilldelade,
   emailInbjudningar,
   smsInbjudningar,
   isTL,
@@ -66,6 +68,22 @@ export default function FunktionarerSida({
     })
     return m
   }, [sektionsledare])
+
+  // Sektion ID → färg
+  const sektionFärgMap = useMemo(() =>
+    new Map(sektioner.map(s => [s.id, s.farg])),
+  [sektioner])
+
+  // Profil ID → tilldelade pass
+  const uppdragMap = useMemo(() => {
+    const m = new Map<string, TilldeladPerPass[]>()
+    tilldelade.forEach(t => {
+      const arr = m.get(t.profil_id) ?? []
+      arr.push(t)
+      m.set(t.profil_id, arr)
+    })
+    return m
+  }, [tilldelade])
 
   const filtrerade = useMemo(() => {
     const q = sök.toLowerCase()
@@ -226,6 +244,22 @@ export default function FunktionarerSida({
                           <td className="px-4 py-3">
                             <p className="font-medium text-gray-900">{f.full_name ?? '(inget namn)'}</p>
                             {f.klubb && <p className="text-xs text-gray-400">{f.klubb}</p>}
+                            {(uppdragMap.get(f.id) ?? []).length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {(uppdragMap.get(f.id) ?? []).map(u => (
+                                  <span
+                                    key={u.tilldelning_id}
+                                    className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-50 border border-gray-200 text-gray-600"
+                                  >
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: sektionFärgMap.get(u.sektion_id) ?? '#ccc' }}
+                                    />
+                                    {u.pass_namn}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{f.email}</td>
                           {isTL && (
@@ -274,7 +308,7 @@ export default function FunktionarerSida({
                     Tävlingsledare ({tl.length})
                   </h2>
                   <div className="flex flex-wrap gap-3">
-                    {tl.map(f => <PersonKort key={f.id} person={f} badge="bg-purple-100 text-purple-700" badgeLabel="TL" onClick={() => setModal(f)} />)}
+                    {tl.map(f => <PersonKort key={f.id} person={f} badge="bg-purple-100 text-purple-700" badgeLabel="TL" uppdrag={uppdragMap.get(f.id) ?? []} onClick={() => setModal(f)} />)}
                   </div>
                 </div>
               )}
@@ -297,7 +331,7 @@ export default function FunktionarerSida({
                             <h3 className="text-sm font-semibold text-gray-700">{s.namn}</h3>
                           </div>
                           {slFörSektion.map(f => (
-                            <PersonKort key={f.id} person={f} badge="bg-blue-100 text-blue-700" badgeLabel="SL" onClick={() => setModal(f)} compact />
+                            <PersonKort key={f.id} person={f} badge="bg-blue-100 text-blue-700" badgeLabel="SL" uppdrag={uppdragMap.get(f.id) ?? []} onClick={() => setModal(f)} compact />
                           ))}
                           {slFörSektion.length === 0 && (
                             <p className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">Ingen SL tilldelad</p>
@@ -305,7 +339,7 @@ export default function FunktionarerSida({
                           {funktFörSektion.length > 0 && (
                             <div className="pt-2 border-t border-gray-100 space-y-1">
                               {funktFörSektion.map(f => (
-                                <PersonKort key={f.id} person={f} badge="bg-gray-100 text-gray-600" badgeLabel="F" onClick={() => setModal(f)} compact />
+                                <PersonKort key={f.id} person={f} badge="bg-gray-100 text-gray-600" badgeLabel="F" uppdrag={uppdragMap.get(f.id) ?? []} onClick={() => setModal(f)} compact />
                               ))}
                             </div>
                           )}
@@ -326,7 +360,7 @@ export default function FunktionarerSida({
                       Utan sektion ({utanSektion.length})
                     </h2>
                     <div className="flex flex-wrap gap-3">
-                      {utanSektion.map(f => <PersonKort key={f.id} person={f} badge="bg-gray-100 text-gray-600" badgeLabel="F" onClick={() => setModal(f)} />)}
+                      {utanSektion.map(f => <PersonKort key={f.id} person={f} badge="bg-gray-100 text-gray-600" badgeLabel="F" uppdrag={uppdragMap.get(f.id) ?? []} onClick={() => setModal(f)} />)}
                     </div>
                   </div>
                 )
@@ -352,22 +386,23 @@ export default function FunktionarerSida({
 // ── PersonKort ────────────────────────────────────────────────
 
 function PersonKort({
-  person, badge, badgeLabel, onClick, compact = false,
+  person, badge, badgeLabel, uppdrag, onClick, compact = false,
 }: {
   person: Profile
   badge: string
   badgeLabel: string
+  uppdrag: TilldeladPerPass[]
   onClick: () => void
   compact?: boolean
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 bg-white border border-gray-200 rounded-xl hover:border-[#0066CC] hover:shadow-sm transition-all text-left ${
+      className={`flex items-start gap-3 bg-white border border-gray-200 rounded-xl hover:border-[#0066CC] hover:shadow-sm transition-all text-left ${
         compact ? 'w-full px-3 py-2' : 'px-4 py-3'
       }`}
     >
-      <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
         <span className="text-xs font-bold text-[#0066CC]">
           {(person.full_name ?? person.email).charAt(0).toUpperCase()}
         </span>
@@ -375,6 +410,11 @@ function PersonKort({
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900 truncate">{person.full_name ?? '(inget namn)'}</p>
         {!compact && <p className="text-xs text-gray-400 truncate">{person.email}</p>}
+        {uppdrag.length > 0 && (
+          <p className="text-[10px] text-gray-400 mt-0.5">
+            {uppdrag.length} uppdrag: {uppdrag.map(u => u.pass_namn).join(', ')}
+          </p>
+        )}
       </div>
       <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${badge}`}>{badgeLabel}</span>
     </button>

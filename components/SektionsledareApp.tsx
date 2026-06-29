@@ -12,10 +12,16 @@ interface Props {
 interface PassData {
   pass_id: string
   pass_namn: string
+  datum: string
   starttid: string
   sluttid: string
   behovs_antal: number
   funktionarer: FunktionarRad[]
+}
+
+function formateraDatum(iso: string): string {
+  const d = new Date(iso + 'T12:00:00')
+  return d.toLocaleDateString('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 interface FunktionarRad {
@@ -43,10 +49,11 @@ function byggPassData(rader: MinSektionRad[]): PassData[] {
   for (const rad of rader) {
     if (!passMap.has(rad.pass_id)) {
       passMap.set(rad.pass_id, {
-        pass_id:     rad.pass_id,
-        pass_namn:   rad.pass_namn,
-        starttid:    rad.starttid,
-        sluttid:     rad.sluttid,
+        pass_id:      rad.pass_id,
+        pass_namn:    rad.pass_namn,
+        datum:        rad.datum,
+        starttid:     rad.starttid,
+        sluttid:      rad.sluttid,
         behovs_antal: rad.behovs_antal,
         funktionarer: [],
       })
@@ -157,7 +164,7 @@ export default function SektionsledareApp({ rader, slNamn }: Props) {
               }`}
             >
               {p.pass_namn}
-              <span className="ml-1.5 text-xs opacity-70">{p.starttid}–{p.sluttid}</span>
+              <span className="ml-1.5 text-xs opacity-70">{formateraDatum(p.datum)} · {p.starttid}–{p.sluttid}</span>
             </button>
           ))}
         </div>

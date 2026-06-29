@@ -16,10 +16,13 @@ async function verifieraTL() {
 export async function skapaPass(data: {
   sektion_id: string
   namn: string
+  datum: string
   starttid: string
   sluttid: string
   behovs_antal: number
   kompetenser?: string[]
+  lat?: number | null
+  lng?: number | null
 }): Promise<{ ok: boolean; passId?: string; meddelande?: string }> {
   const ctx = await verifieraTL()
   if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
@@ -30,10 +33,13 @@ export async function skapaPass(data: {
     .insert({
       sektion_id:   data.sektion_id,
       namn:         data.namn.trim().slice(0, 100),
+      datum:        data.datum,
       starttid:     data.starttid,
       sluttid:      data.sluttid,
       behovs_antal: Math.max(1, Math.min(50, data.behovs_antal)),
       kompetenser:  data.kompetenser ?? [],
+      lat:          data.lat ?? null,
+      lng:          data.lng ?? null,
     })
     .select('id')
     .single()
@@ -50,10 +56,13 @@ export async function uppdateraPass(
   passId: string,
   data: {
     namn: string
+    datum: string
     starttid: string
     sluttid: string
     behovs_antal: number
     kompetenser?: string[]
+    lat?: number | null
+    lng?: number | null
   }
 ): Promise<{ ok: boolean; meddelande?: string; tiderAndrades?: boolean }> {
   const ctx = await verifieraTL()
@@ -63,21 +72,26 @@ export async function uppdateraPass(
   // Hämta nuvarande tider för att avgöra om mail ska skickas
   const { data: gammalt } = await supabase
     .from('pass')
-    .select('namn, starttid, sluttid, behovs_antal')
+    .select('namn, datum, starttid, sluttid, behovs_antal')
     .eq('id', passId)
     .single()
 
   const tiderAndrades =
-    gammalt?.starttid !== data.starttid || gammalt?.sluttid !== data.sluttid
+    gammalt?.datum !== data.datum ||
+    gammalt?.starttid !== data.starttid ||
+    gammalt?.sluttid !== data.sluttid
 
   const { error } = await supabase
     .from('pass')
     .update({
       namn:         data.namn.trim().slice(0, 100),
+      datum:        data.datum,
       starttid:     data.starttid,
       sluttid:      data.sluttid,
       behovs_antal: Math.max(1, Math.min(50, data.behovs_antal)),
       kompetenser:  data.kompetenser ?? [],
+      lat:          data.lat ?? null,
+      lng:          data.lng ?? null,
     })
     .eq('id', passId)
 

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminHeader from '@/components/AdminHeader'
 import FunktionarerSida from '@/components/FunktionarerSida'
-import type { Profile, SektionBemanningsgrad, SektionsledareInfo } from '@/lib/database.types'
+import type { Profile, SektionBemanningsgrad, SektionsledareInfo, TilldeladPerPass } from '@/lib/database.types'
 
 export default async function FunktionarerPage() {
   const supabase = await createClient()
@@ -21,12 +21,13 @@ export default async function FunktionarerPage() {
 
   const roleLabel = profile.role === 'tl' ? 'Tävlingsledare' : 'Sektionsledare'
 
-  const [funktionärerRes, sektionerRes, slRes, emailInbjRes, smsInbjRes] = await Promise.all([
+  const [funktionärerRes, sektionerRes, slRes, emailInbjRes, smsInbjRes, tilldeladeRes] = await Promise.all([
     supabase.from('profiles').select('*').order('full_name'),
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
     supabase.rpc('get_sektionsledare'),
     supabase.from('inbjudningar').select('id, email, skickad_at, status, roll').order('skickad_at', { ascending: false }),
     supabase.from('sms_inbjudningar').select('id, telefon, skickad_at, email_inkommen, status').order('skickad_at', { ascending: false }),
+    supabase.rpc('get_tilldelade_per_pass'),
   ])
 
   const allaProfiler: Profile[]               = funktionärerRes.data ?? []
@@ -34,6 +35,7 @@ export default async function FunktionarerPage() {
   const sektionsledare: SektionsledareInfo[]  = slRes.data ?? []
   const emailInbjudningar                     = emailInbjRes.data ?? []
   const smsInbjudningar                       = smsInbjRes.data ?? []
+  const tilldelade: TilldeladPerPass[]        = tilldeladeRes.data ?? []
 
   // TL ser alla, SL ser bara funktionärer (inga TL/SL-kollegor)
   const funktionärer = profile.role === 'tl'
@@ -48,6 +50,7 @@ export default async function FunktionarerPage() {
           funktionärer={funktionärer}
           sektioner={sektioner}
           sektionsledare={sektionsledare}
+          tilldelade={tilldelade}
           emailInbjudningar={emailInbjudningar}
           smsInbjudningar={smsInbjudningar}
           isTL={profile.role === 'tl'}

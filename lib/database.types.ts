@@ -50,10 +50,13 @@ export type Pass = {
   id: string
   sektion_id: string
   namn: string
+  datum: string
   starttid: string
   sluttid: string
   behovs_antal: number
   kompetenser: string[]
+  lat: number | null
+  lng: number | null
   created_at: string
 }
 
@@ -75,6 +78,7 @@ export type MinSektionRad = {
   sektion_farg: string
   pass_id: string
   pass_namn: string
+  datum: string
   starttid: string
   sluttid: string
   behovs_antal: number
@@ -176,6 +180,7 @@ export type FunktionarForTilldelning = OtilldeladFunktionar & {
 export type PassMedSektion = {
   pass_id: string
   pass_namn: string
+  datum: string
   starttid: string
   sluttid: string
   behovs_antal: number
@@ -185,6 +190,8 @@ export type PassMedSektion = {
   sektion_namn: string
   sektion_farg: string
   kompetenser: string[]
+  lat: number | null
+  lng: number | null
 }
 
 export type TilldeladPerPass = {
