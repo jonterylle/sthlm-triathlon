@@ -35,7 +35,7 @@ export default async function WelcomePage() {
   const t = tilldelningRes.data
   if (t?.pass_id) {
     const [passRes] = await Promise.all([
-      supabase.from('pass').select('namn, starttid, sluttid, sektion_id').eq('id', t.pass_id).single(),
+      supabase.from('pass').select('namn, datum, starttid, sluttid, sektion_id, maps_url').eq('id', t.pass_id).single(),
     ])
 
     const pass = passRes.data
@@ -51,13 +51,15 @@ export default async function WelcomePage() {
       ])
 
       tilldelning = {
-        pass_namn: pass.namn,
-        starttid: pass.starttid,
-        sluttid: pass.sluttid,
-        sektion_namn: sektionInfoRes.data?.namn ?? 'Okänd sektion',
-        sektion_farg: sektionInfoRes.data?.farg ?? '#0066CC',
-        sektionsledare_namn: slRes.data?.full_name ?? null,
+        pass_namn:            pass.namn,
+        datum:                pass.datum ?? '2026-08-09',
+        starttid:             pass.starttid,
+        sluttid:              pass.sluttid,
+        sektion_namn:         sektionInfoRes.data?.namn ?? 'Okänd sektion',
+        sektion_farg:         sektionInfoRes.data?.farg ?? '#0066CC',
+        sektionsledare_namn:  slRes.data?.full_name ?? null,
         sektionsledare_email: slRes.data?.email ?? null,
+        maps_url:             pass.maps_url ?? null,
       }
     }
   }

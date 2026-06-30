@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react'
 import { skapaPass, uppdateraPass, taBortPass } from '@/app/dashboard/pass-actions'
 import type { PassMedSektion, SektionBemanningsgrad } from '@/lib/database.types'
-import KartaVäljare from '@/components/KartaVäljare'
 
 const KOMPETENSER = [
   { key: 'sjukvard',             label: 'Sjukvård / HLR' },
@@ -44,9 +43,7 @@ export default function PassModal({
   const [sluttid,     setSluttid]     = useState(pass?.sluttid      ?? '14:00')
   const [behovsAntal, setBehovsAntal] = useState(pass?.behovs_antal ?? 2)
   const [kompetenser, setKompetenser] = useState<string[]>(pass?.kompetenser ?? [])
-  const [lat,         setLat]         = useState<number | null>(pass?.lat ?? null)
-  const [lng,         setLng]         = useState<number | null>(pass?.lng ?? null)
-  const [visaKarta,   setVisaKarta]   = useState(pass?.lat != null)
+  const [mapsUrl,     setMapsUrl]     = useState(pass?.maps_url ?? '')
 
   const [isPending, startTransition] = useTransition()
   const [fel, setFel]     = useState<string | null>(null)
@@ -72,9 +69,9 @@ export default function PassModal({
     if (starttid >= sluttid) { setFel('Sluttid måste vara efter starttid.'); return }
 
     startTransition(async () => {
-      const position = { lat: visaKarta ? lat : null, lng: visaKarta ? lng : null }
+      const maps_url = mapsUrl.trim() || null
       if (arNytt) {
-        const res = await skapaPass({ sektion_id: sektionId, namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, ...position })
+        const res = await skapaPass({ sektion_id: sektionId, namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url })
         if (!res.ok) { setFel(res.meddelande ?? 'Fel'); return }
         onSparat({
           pass_id:      res.passId!,
@@ -89,12 +86,12 @@ export default function PassModal({
           sektion_namn: sektionNamn,
           sektion_farg: sektioner.find(s => s.id === sektionId)?.farg ?? '#0066CC',
           kompetenser,
-          ...position,
+          maps_url,
         }, true)
       } else {
-        const res = await uppdateraPass(pass.pass_id, { namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, ...position })
+        const res = await uppdateraPass(pass.pass_id, { namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url })
         if (!res.ok) { setFel(res.meddelande ?? 'Fel'); return }
-        onSparat({ ...pass, pass_namn: namn, datum, starttid, sluttid, behovs_antal: behovsAntal, saknas: Math.max(0, behovsAntal - pass.tilldelade), kompetenser, ...position }, false)
+        onSparat({ ...pass, pass_namn: namn, datum, starttid, sluttid, behovs_antal: behovsAntal, saknas: Math.max(0, behovsAntal - pass.tilldelade), kompetenser, maps_url }, false)
       }
     })
   }
@@ -218,67 +215,25 @@ export default function PassModal({
             )}
           </div>
 
-          {/* ── Kartposition ── */}
-          <div className="border-t border-gray-100 pt-4">
-            <button
-              type="button"
-              onClick={() => { setVisaKarta(v => !v); if (visaKarta) { setLat(null); setLng(null) } }}
-              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-[#0066CC] transition-colors"
-            >
-              <span className="text-base">📍</span>
-              {visaKarta ? 'Ta bort kartposition' : 'Lägg till kartposition'}
-              <span className="text-gray-400 text-xs">{visaKarta ? '−' : '+'}</span>
-            </button>
-
-            {visaKarta && (
-              <div className="mt-3 space-y-3">
-                <p className="text-xs text-gray-400">
-                  Klicka på kartan för att sätta ut platsen för uppdraget.
-                </p>
-
-                <KartaVäljare
-                  lat={lat}
-                  lng={lng}
-                  onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng) }}
-                />
-
-                {/* Koordinater (manuell inmatning / visning) */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Latitud</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={lat ?? ''}
-                      onChange={e => setLat(e.target.value ? parseFloat(e.target.value) : null)}
-                      placeholder="59.366…"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Longitud</label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={lng ?? ''}
-                      onChange={e => setLng(e.target.value ? parseFloat(e.target.value) : null)}
-                      placeholder="18.034…"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
-                    />
-                  </div>
-                </div>
-
-                {lat != null && lng != null && (
-                  <a
-                    href={`https://www.google.com/maps?q=${lat},${lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-[#0066CC] hover:underline"
-                  >
-                    Öppna i Google Maps ↗
-                  </a>
-                )}
-              </div>
+          {/* ── Plats / Google Maps-länk ── */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">📍 Plats (Google Maps-länk)</label>
+            <input
+              type="url"
+              value={mapsUrl}
+              onChange={e => setMapsUrl(e.target.value)}
+              placeholder="Klistra in Google Maps-länk…"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
+            />
+            {mapsUrl && (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-flex items-center gap-1 text-xs text-[#0066CC] hover:underline"
+              >
+                Öppna länk ↗
+              </a>
             )}
           </div>
         </form>

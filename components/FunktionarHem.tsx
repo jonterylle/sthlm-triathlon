@@ -8,8 +8,9 @@ interface Props {
   onGåTillProfil: () => void
 }
 
-function formatTid(iso: string) {
-  return new Date(iso).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
+function formateraDatum(iso: string): string {
+  const d = new Date(iso + 'T12:00:00')
+  return d.toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 export default function FunktionarHem({ profil, tilldelning, onGåTillProfil }: Props) {
@@ -32,9 +33,24 @@ export default function FunktionarHem({ profil, tilldelning, onGåTillProfil }: 
         >
           <p className="text-xs opacity-75 mb-0.5">Din sektion</p>
           <h2 className="text-xl font-bold">{tilldelning.sektion_namn}</h2>
-          <p className="text-sm opacity-85 mt-1">
-            {formatTid(tilldelning.starttid)} – {formatTid(tilldelning.sluttid)} · {tilldelning.pass_namn}
+          <p className="text-sm opacity-85 mt-1">{tilldelning.pass_namn}</p>
+          <p className="text-xs opacity-75 mt-1">
+            {formateraDatum(tilldelning.datum)} · {tilldelning.starttid}–{tilldelning.sluttid}
           </p>
+          {tilldelning.maps_url && (
+            <a
+              href={tilldelning.maps_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 text-xs bg-white/20 hover:bg-white/30 transition-colors px-2.5 py-1 rounded-full"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+              Visa plats på karta
+            </a>
+          )}
         </div>
       ) : (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">

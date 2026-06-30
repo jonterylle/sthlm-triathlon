@@ -13,12 +13,14 @@ type Flik = 'hem' | 'profil' | 'karta'
 
 export type TilldelningInfo = {
   pass_namn: string
+  datum: string
   starttid: string
   sluttid: string
   sektion_namn: string
   sektion_farg: string
   sektionsledare_namn: string | null
   sektionsledare_email: string | null
+  maps_url: string | null
 } | null
 
 export type ProfilData = {

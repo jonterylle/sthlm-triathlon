@@ -390,9 +390,9 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
                           <td className="px-4 py-3 font-medium text-gray-900">
                             <div className="flex items-center gap-1.5">
                               <span>{p.pass_namn}</span>
-                              {p.lat != null && p.lng != null && (
+                              {p.maps_url && (
                                 <a
-                                  href={`https://www.google.com/maps?q=${p.lat},${p.lng}`}
+                                  href={p.maps_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   title="Visa plats på karta"
