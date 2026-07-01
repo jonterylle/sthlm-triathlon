@@ -1,0 +1,9 @@
+<svg xmlns="http://w3.org" viewBox="0 0 100 100" width="200" height="200">
+  <circle cx="50" cy="50" r="45" fill="#f0f0f0"/>
+  <!-- Axlar och hals -->
+  <path d="M30,75 C35,65 42,60 45,58 L45,54 C47,54 51,54 53,54 L53,58 C56,60 63,65 68,75 Z" fill="#111111"/>
+  <!-- Det stora 70-talshåret -->
+  <path d="M42,54 C36,50 34,40 37,30 C40,22 58,22 61,30 C64,40 62,50 56,54 C54,51 44,51 42,54 Z" fill="#111111"/>
+  <!-- Negativt utrymme (vitt) som klipper ut pannbandet över pannan -->
+  <path d="M40,34 Q49,32 58,34 L57,37 Q49,35 41,37 Z" fill="#ffffff"/>
+</svg>

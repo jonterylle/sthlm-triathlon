@@ -42,8 +42,9 @@ export default function PassModal({
   const [starttid,    setStarttid]    = useState(pass?.starttid     ?? '08:00')
   const [sluttid,     setSluttid]     = useState(pass?.sluttid      ?? '14:00')
   const [behovsAntal, setBehovsAntal] = useState(pass?.behovs_antal ?? 2)
-  const [kompetenser, setKompetenser] = useState<string[]>(pass?.kompetenser ?? [])
-  const [mapsUrl,     setMapsUrl]     = useState(pass?.maps_url ?? '')
+  const [kompetenser,  setKompetenser]  = useState<string[]>(pass?.kompetenser ?? [])
+  const [mapsUrl,      setMapsUrl]      = useState(pass?.maps_url ?? '')
+  const [beskrivning,  setBeskrivning]  = useState(pass?.beskrivning ?? '')
 
   const [isPending, startTransition] = useTransition()
   const [fel, setFel]     = useState<string | null>(null)
@@ -69,9 +70,10 @@ export default function PassModal({
     if (starttid >= sluttid) { setFel('Sluttid måste vara efter starttid.'); return }
 
     startTransition(async () => {
-      const maps_url = mapsUrl.trim() || null
+      const maps_url    = mapsUrl.trim() || null
+      const beskr       = beskrivning.trim() || null
       if (arNytt) {
-        const res = await skapaPass({ sektion_id: sektionId, namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url })
+        const res = await skapaPass({ sektion_id: sektionId, namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url, beskrivning: beskr })
         if (!res.ok) { setFel(res.meddelande ?? 'Fel'); return }
         onSparat({
           pass_id:      res.passId!,
@@ -87,11 +89,12 @@ export default function PassModal({
           sektion_farg: sektioner.find(s => s.id === sektionId)?.farg ?? '#0066CC',
           kompetenser,
           maps_url,
+          beskrivning:  beskr,
         }, true)
       } else {
-        const res = await uppdateraPass(pass.pass_id, { namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url })
+        const res = await uppdateraPass(pass.pass_id, { namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url, beskrivning: beskr })
         if (!res.ok) { setFel(res.meddelande ?? 'Fel'); return }
-        onSparat({ ...pass, pass_namn: namn, datum, starttid, sluttid, behovs_antal: behovsAntal, saknas: Math.max(0, behovsAntal - pass.tilldelade), kompetenser, maps_url }, false)
+        onSparat({ ...pass, pass_namn: namn, datum, starttid, sluttid, behovs_antal: behovsAntal, saknas: Math.max(0, behovsAntal - pass.tilldelade), kompetenser, maps_url, beskrivning: beskr }, false)
       }
     })
   }
@@ -235,6 +238,18 @@ export default function PassModal({
                 Öppna länk ↗
               </a>
             )}
+          </div>
+
+          {/* ── Fritext / info till funktionären ── */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">📝 Information till funktionären</label>
+            <textarea
+              value={beskrivning}
+              onChange={e => setBeskrivning(e.target.value)}
+              placeholder="T.ex. klädkod, mötesplats, utrustning, kontaktperson…"
+              rows={4}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] resize-none"
+            />
           </div>
         </form>
 

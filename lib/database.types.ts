@@ -56,6 +56,7 @@ export type Pass = {
   behovs_antal: number
   kompetenser: string[]
   maps_url: string | null
+  beskrivning: string | null
   created_at: string
 }
 
@@ -82,6 +83,7 @@ export type MinSektionRad = {
   sluttid: string
   behovs_antal: number
   maps_url: string | null
+  beskrivning: string | null
   tilldelning_id: string | null
   profil_id: string | null
   full_name: string | null
@@ -191,6 +193,7 @@ export type PassMedSektion = {
   sektion_farg: string
   kompetenser: string[]
   maps_url: string | null
+  beskrivning: string | null
 }
 
 export type TilldeladPerPass = {

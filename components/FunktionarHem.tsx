@@ -52,6 +52,14 @@ export default function FunktionarHem({ profil, tilldelning, onGåTillProfil }: 
             </a>
           )}
         </div>
+
+        {/* Beskrivning / info från TL */}
+        {tilldelning.beskrivning && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-4">
+            <p className="text-xs font-semibold text-gray-500 mb-2">📝 Information om uppdraget</p>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{tilldelning.beskrivning}</p>
+          </div>
+        )}
       ) : (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
           <p className="text-sm font-semibold text-amber-800 mb-0.5">Pass ej tilldelat ännu</p>
