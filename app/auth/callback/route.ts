@@ -46,64 +46,52 @@ export async function GET(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.redirect(`${origin}/login`)
 
-  // ── Vitlistningskontroll ────────────────────────────────────
-  // Kontrollera att e-posten finns i inbjudningar INNAN vi läser profilen.
-  // Triggern handle_new_user skapar bara profil för inbjudna, men detta
-  // är ett extra lager: skyddar även mot race conditions.
-  const { data: inbjudan } = await supabase
-    .from('inbjudningar')
-    .select('id, roll')
-    .eq('email', user.email ?? '')
-    .maybeSingle()
-
-  if (!inbjudan) {
-    // Inte inbjuden — logga ut och visa felmeddelande
-    await supabase.auth.signOut()
-    return NextResponse.redirect(`${origin}/login?error=inte_inbjuden`)
-  }
-
-  // Uppdatera inbjudningsstatus till accepterad
-  await supabase
-    .from('inbjudningar')
-    .update({ status: 'accepterad' })
-    .eq('email', user.email ?? '')
-    .eq('status', 'skickad')
-
-  // Hämta profil — kan saknas om triggern missade att skapa den
+  // Hämta profil för roll — TL/SL som redan finns i systemet
+  // har en profil och behöver inte kontrolleras mot inbjudningar.
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, email')
     .eq('id', user.id)
     .single()
 
-  let role = profile?.role ?? inbjudan.roll ?? 'funktionar'
+  const role = profile?.role ?? 'funktionar'
+  let effectiveRole = role
 
-  // Om profil saknas (edge case) — skapa den nu via admin-klient
-  if (!profile) {
-    const admin = createAdminClient()
-    const nyRoll = (inbjudan.roll === 'tl' || inbjudan.roll === 'sektionsledare')
-      ? inbjudan.roll
-      : 'funktionar' as const
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin.from('profiles') as any).insert({
-      id:    user.id,
-      email: user.email!,
-      role:  nyRoll,
-    })
-    role = nyRoll
-  }
+  // ── Vitlistningskontroll ────────────────────────────────────
+  // TL och sektionsledare med befintlig profil är alltid tillåtna.
+  // Funktionärer (inkl. nya användare utan profil) måste finnas
+  // i inbjudningar-tabellen.
+  if (role === 'funktionar') {
+    const { data: inbjudan } = await supabase
+      .from('inbjudningar')
+      .select('id, roll')
+      .eq('email', user.email ?? '')
+      .maybeSingle()
 
-  // Sätt rätt roll om inbjudan anger en privilegierad roll
-  if (inbjudan.roll === 'sektionsledare' || inbjudan.roll === 'tl') {
-    if (role !== inbjudan.roll) {
+    if (!inbjudan) {
+      // Inte inbjuden — logga ut och visa felmeddelande
+      await supabase.auth.signOut()
+      return NextResponse.redirect(`${origin}/login?error=inte_inbjuden`)
+    }
+
+    // Uppdatera inbjudningsstatus till accepterad
+    await supabase
+      .from('inbjudningar')
+      .update({ status: 'accepterad' })
+      .eq('email', user.email ?? '')
+      .eq('status', 'skickad')
+
+    // Om inbjudan är för sektionsledare eller tl — uppdatera profilen
+    if (inbjudan.roll === 'sektionsledare' || inbjudan.roll === 'tl') {
       const admin = createAdminClient()
       await admin.from('profiles').update({ role: inbjudan.roll }).eq('id', user.id)
+      // Uppdatera lokala roll-variabeln så att redirect-destinationen stämmer
+      effectiveRole = inbjudan.roll
     }
-    role = inbjudan.roll
   }
   // ───────────────────────────────────────────────────────────
 
-  const destination = role === 'tl' || role === 'sektionsledare'
+  const destination = effectiveRole === 'tl' || effectiveRole === 'sektionsledare'
     ? '/dashboard'
     : '/welcome'
 
