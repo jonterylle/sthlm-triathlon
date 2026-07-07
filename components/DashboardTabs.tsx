@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import TilldelningsModal from '@/components/TilldelningsModal'
 import FunktionarRedigeraModal from '@/components/FunktionarRedigeraModal'
 import PassModal from '@/components/PassModal'
+import BroadcastModal from '@/components/BroadcastModal'
 import type {
   SektionBemanningsgrad,
   PassBemanningsgrad,
@@ -72,6 +73,7 @@ export default function DashboardTabs({
   const förstaOmrade = OMRADE_ORDNING.find(o => sektioner.some(s => s.omrade === o)) ?? 'simning'
   const [aktivOmrade, setAktivOmrade] = useState<SektionOmrade>(förstaOmrade)
   const [modal, setModal] = useState<ModalLäge>(null)
+  const [visaBroadcast, setVisaBroadcast] = useState(false)
 
   const [lokalaFunktionär, setLokalaFunktionär] = useState(funktionärer)
   const [lokalaPasser, setLokalaPasser]          = useState(passMedSektioner)
@@ -123,28 +125,41 @@ export default function DashboardTabs({
   return (
     <div className="space-y-0">
 
-      {/* ── Summering ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <StatKort
-          label="Bemanningsgrad"
-          value={`${bemanningsgrad}%`}
-          sub={`${totalTilldelade} av ${totalBehövs}`}
-          farg={bemanningsgrad >= 80 ? 'green' : bemanningsgrad >= 50 ? 'amber' : 'red'}
-        />
-        <StatKort label="Tilldelade" value={String(totalTilldelade)} sub="bekräftade pass" farg="blue" />
-        <StatKort
-          label="Platser kvar"
-          value={String(totalSaknas)}
-          sub="att fylla"
-          farg={totalSaknas === 0 ? 'green' : 'red'}
-        />
-        <StatKort
-          label="Ej tilldelade"
-          value={String(otilldelade.length)}
-          sub="funktionärer"
-          farg={otilldelade.length === 0 ? 'green' : 'amber'}
-        />
+      {/* ── Summering + broadcast-knapp ───────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
+          <StatKort
+            label="Bemanningsgrad"
+            value={`${bemanningsgrad}%`}
+            sub={`${totalTilldelade} av ${totalBehövs}`}
+            farg={bemanningsgrad >= 80 ? 'green' : bemanningsgrad >= 50 ? 'amber' : 'red'}
+          />
+          <StatKort label="Tilldelade" value={String(totalTilldelade)} sub="bekräftade pass" farg="blue" />
+          <StatKort
+            label="Platser kvar"
+            value={String(totalSaknas)}
+            sub="att fylla"
+            farg={totalSaknas === 0 ? 'green' : 'red'}
+          />
+          <StatKort
+            label="Ej tilldelade"
+            value={String(otilldelade.length)}
+            sub="funktionärer"
+            farg={otilldelade.length === 0 ? 'green' : 'amber'}
+          />
+        </div>
+        <button
+          onClick={() => setVisaBroadcast(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#0066CC] hover:bg-[#0052a3] text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+            <path d="M18 8.5a4.5 4.5 0 0 1 0 7M5 8h10l-2 8H7L5 8zm0 0L3.5 6" />
+          </svg>
+          Skicka meddelande
+        </button>
       </div>
+
+      {visaBroadcast && <BroadcastModal onClose={() => setVisaBroadcast(false)} />}
 
       {/* ── Områdesflikar ─────────────────────────────────────── */}
       <div className="border-b border-gray-200">
