@@ -17,58 +17,69 @@ export default async function WelcomePage() {
   if (!profil) return redirect('/login')
   if (profil.role === 'tl' || profil.role === 'sektionsledare') return redirect('/dashboard')
 
-  // Hämta sektioner för karta och profilformulär parallellt
-  const [sektionerRes, sektionValRes, tilldelningRes] = await Promise.all([
+  // Hämta sektioner och ALLA bekräftade tilldelningar parallellt
+  const [sektionerRes, sektionValRes, tilldelningarRes] = await Promise.all([
     supabase.from('sektion_bemanningsgrad').select('*').order('sortorder'),
     supabase.from('sektioner').select('id, namn').order('sortorder'),
     supabase
       .from('tilldelningar')
       .select('id, pass_id')
       .eq('profil_id', user.id)
-      .eq('status', 'bekraftad')
-      .maybeSingle(),
+      .eq('status', 'bekraftad'),   // ← ingen .maybeSingle(), returnerar array
   ])
 
-  // Bygg tilldelningsinfo om tilldelning finns — separata queries undviker join-typfel
-  let tilldelning: TilldelningInfo = null
+  // Bygg TilldelningInfo för varje tilldelning parallellt
+  const rawTilldelningar = tilldelningarRes.data ?? []
 
-  const t = tilldelningRes.data
-  if (t?.pass_id) {
-    const [passRes] = await Promise.all([
-      supabase.from('pass').select('namn, datum, starttid, sluttid, sektion_id, maps_url, beskrivning').eq('id', t.pass_id).single(),
-    ])
+  const tilldelningar: TilldelningInfo[] = (
+    await Promise.all(
+      rawTilldelningar.map(async (t) => {
+        if (!t.pass_id) return null
 
-    const pass = passRes.data
-    if (pass) {
-      const [sektionInfoRes, slRes] = await Promise.all([
-        supabase.from('sektioner').select('namn, farg').eq('id', pass.sektion_id).single(),
-        supabase
-          .from('profiles')
-          .select('full_name, email')
-          .eq('sektion_preferens', pass.sektion_id)
-          .eq('role', 'sektionsledare')
-          .maybeSingle(),
-      ])
+        const passRes = await supabase
+          .from('pass')
+          .select('namn, datum, starttid, sluttid, sektion_id, maps_url, beskrivning')
+          .eq('id', t.pass_id)
+          .single()
 
-      tilldelning = {
-        pass_namn:            pass.namn,
-        datum:                pass.datum ?? '2026-08-09',
-        starttid:             pass.starttid,
-        sluttid:              pass.sluttid,
-        sektion_namn:         sektionInfoRes.data?.namn ?? 'Okänd sektion',
-        sektion_farg:         sektionInfoRes.data?.farg ?? '#0066CC',
-        sektionsledare_namn:  slRes.data?.full_name ?? null,
-        sektionsledare_email: slRes.data?.email ?? null,
-        maps_url:             pass.maps_url ?? null,
-        beskrivning:          pass.beskrivning ?? null,
-      }
-    }
-  }
+        const pass = passRes.data
+        if (!pass) return null
+
+        const [sektionInfoRes, slRes] = await Promise.all([
+          supabase.from('sektioner').select('namn, farg').eq('id', pass.sektion_id).single(),
+          supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('sektion_preferens', pass.sektion_id)
+            .eq('role', 'sektionsledare')
+            .maybeSingle(),
+        ])
+
+        return {
+          pass_namn:            pass.namn,
+          datum:                pass.datum ?? '2026-08-09',
+          starttid:             pass.starttid,
+          sluttid:              pass.sluttid,
+          sektion_namn:         sektionInfoRes.data?.namn ?? 'Okänd sektion',
+          sektion_farg:         sektionInfoRes.data?.farg ?? '#0066CC',
+          sektionsledare_namn:  slRes.data?.full_name ?? null,
+          sektionsledare_email: slRes.data?.email ?? null,
+          maps_url:             pass.maps_url ?? null,
+          beskrivning:          pass.beskrivning ?? null,
+        } satisfies TilldelningInfo
+      })
+    )
+  ).filter((t): t is TilldelningInfo => t !== null)
+    .sort((a, b) => {
+      // Sortera på datum, sedan starttid
+      if (a.datum !== b.datum) return a.datum.localeCompare(b.datum)
+      return a.starttid.localeCompare(b.starttid)
+    })
 
   return (
     <FunktionarApp
       profil={profil}
-      tilldelning={tilldelning}
+      tilldelningar={tilldelningar}
       sektioner={sektionerRes.data ?? []}
       sektionVal={sektionValRes.data ?? []}
     />

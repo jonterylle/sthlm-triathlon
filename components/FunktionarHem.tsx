@@ -4,7 +4,7 @@ import type { TilldelningInfo, ProfilData } from '@/components/FunktionarApp'
 
 interface Props {
   profil: ProfilData
-  tilldelning: TilldelningInfo
+  tilldelningar: TilldelningInfo[]
   onGåTillProfil: () => void
 }
 
@@ -13,9 +13,67 @@ function formateraDatum(iso: string): string {
   return d.toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-export default function FunktionarHem({ profil, tilldelning, onGåTillProfil }: Props) {
+function UppdragsKort({ t }: { t: TilldelningInfo }) {
+  return (
+    <div className="space-y-2">
+      {/* Hjältekort med sektionsfärg */}
+      <div
+        className="rounded-2xl p-4 text-white"
+        style={{ background: t.sektion_farg || '#0066CC' }}
+      >
+        <p className="text-xs opacity-75 mb-0.5">Din sektion</p>
+        <h2 className="text-xl font-bold">{t.sektion_namn}</h2>
+        <p className="text-sm opacity-85 mt-1">{t.pass_namn}</p>
+        <p className="text-xs opacity-75 mt-1">
+          {formateraDatum(t.datum)} · {t.starttid}–{t.sluttid}
+        </p>
+        {t.maps_url && (
+          <a
+            href={t.maps_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1.5 text-xs bg-white/20 hover:bg-white/30 transition-colors px-2.5 py-1 rounded-full"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+              <circle cx="12" cy="9" r="2.5" />
+            </svg>
+            Visa plats på karta
+          </a>
+        )}
+      </div>
+
+      {/* Beskrivning / info från TL */}
+      {t.beskrivning && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-4">
+          <p className="text-xs font-semibold text-gray-500 mb-2">📝 Information om uppdraget</p>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap">{t.beskrivning}</p>
+        </div>
+      )}
+
+      {/* Sektionsledare */}
+      {(t.sektionsledare_namn || t.sektionsledare_email) && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-400 mb-1">Sektionsledare</p>
+          <p className="text-sm font-medium text-gray-800">{t.sektionsledare_namn}</p>
+          {t.sektionsledare_email && (
+            <a
+              href={`mailto:${t.sektionsledare_email}`}
+              className="text-xs text-[#0066CC] mt-0.5 block"
+            >
+              {t.sektionsledare_email}
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function FunktionarHem({ profil, tilldelningar, onGåTillProfil }: Props) {
   const namn = profil.full_name ?? profil.email ?? 'Funktionär'
   const arRegistrerad = !!profil.registrerad_at
+  const harTilldelningar = tilldelningar.length > 0
 
   return (
     <div className="p-4 space-y-3">
@@ -25,32 +83,17 @@ export default function FunktionarHem({ profil, tilldelning, onGåTillProfil }: 
         Välkommen, <span className="font-medium text-gray-800">{namn}</span>
       </p>
 
-      {/* Tilldelning — hjältekort */}
-      {tilldelning ? (
-        <div
-          className="rounded-2xl p-4 text-white"
-          style={{ background: tilldelning.sektion_farg || '#0066CC' }}
-        >
-          <p className="text-xs opacity-75 mb-0.5">Din sektion</p>
-          <h2 className="text-xl font-bold">{tilldelning.sektion_namn}</h2>
-          <p className="text-sm opacity-85 mt-1">{tilldelning.pass_namn}</p>
-          <p className="text-xs opacity-75 mt-1">
-            {formateraDatum(tilldelning.datum)} · {tilldelning.starttid}–{tilldelning.sluttid}
-          </p>
-          {tilldelning.maps_url && (
-            <a
-              href={tilldelning.maps_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 text-xs bg-white/20 hover:bg-white/30 transition-colors px-2.5 py-1 rounded-full"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-                <circle cx="12" cy="9" r="2.5" />
-              </svg>
-              Visa plats på karta
-            </a>
+      {/* Uppdrag — ett kort per tilldelning */}
+      {harTilldelningar ? (
+        <div className="space-y-4">
+          {tilldelningar.length > 1 && (
+            <p className="text-xs text-gray-400">
+              Du har {tilldelningar.length} tilldelade uppdrag:
+            </p>
           )}
+          {tilldelningar.map((t, i) => (
+            <UppdragsKort key={i} t={t} />
+          ))}
         </div>
       ) : (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
@@ -58,30 +101,6 @@ export default function FunktionarHem({ profil, tilldelning, onGåTillProfil }: 
           <p className="text-xs text-amber-700">
             Tävlingsledningen meddelar dig när du är tilldelad en sektion och ett pass.
           </p>
-        </div>
-      )}
-
-      {/* Beskrivning / info från TL */}
-      {tilldelning?.beskrivning && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-4">
-          <p className="text-xs font-semibold text-gray-500 mb-2">📝 Information om uppdraget</p>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{tilldelning.beskrivning}</p>
-        </div>
-      )}
-
-      {/* Sektionsledare */}
-      {tilldelning && (tilldelning.sektionsledare_namn || tilldelning.sektionsledare_email) && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-400 mb-1">Sektionsledare</p>
-          <p className="text-sm font-medium text-gray-800">{tilldelning.sektionsledare_namn}</p>
-          {tilldelning.sektionsledare_email && (
-            <a
-              href={`mailto:${tilldelning.sektionsledare_email}`}
-              className="text-xs text-[#0066CC] mt-0.5 block"
-            >
-              {tilldelning.sektionsledare_email}
-            </a>
-          )}
         </div>
       )}
 

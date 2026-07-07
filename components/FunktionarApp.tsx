@@ -22,7 +22,7 @@ export type TilldelningInfo = {
   sektionsledare_email: string | null
   maps_url: string | null
   beskrivning: string | null
-} | null
+}
 
 export type ProfilData = {
   id: string
@@ -45,7 +45,7 @@ export type SektionVal = {
 
 interface Props {
   profil: ProfilData
-  tilldelning: TilldelningInfo
+  tilldelningar: TilldelningInfo[]
   sektioner: SektionBemanningsgrad[]
   sektionVal: SektionVal[]
   initialFlik?: Flik
@@ -53,7 +53,7 @@ interface Props {
 
 export default function FunktionarApp({
   profil,
-  tilldelning,
+  tilldelningar,
   sektioner,
   sektionVal,
   initialFlik = 'hem',
@@ -103,7 +103,7 @@ export default function FunktionarApp({
             </div>
             <FunktionarHem
               profil={profil}
-              tilldelning={tilldelning}
+              tilldelningar={tilldelningar}
               onGåTillProfil={() => setAktivFlik('profil')}
             />
           </>
