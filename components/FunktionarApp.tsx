@@ -21,7 +21,8 @@ export type TilldelningInfo = {
   sektionsledare_namn: string | null
   sektionsledare_email: string | null
   maps_url: string | null
-  beskrivning: string | null
+  klader_utrustning: string | null
+  instruktion: string | null
 }
 
 export type ProfilData = {

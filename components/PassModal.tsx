@@ -42,9 +42,10 @@ export default function PassModal({
   const [starttid,    setStarttid]    = useState(pass?.starttid     ?? '08:00')
   const [sluttid,     setSluttid]     = useState(pass?.sluttid      ?? '14:00')
   const [behovsAntal, setBehovsAntal] = useState(pass?.behovs_antal ?? 2)
-  const [kompetenser,  setKompetenser]  = useState<string[]>(pass?.kompetenser ?? [])
-  const [mapsUrl,      setMapsUrl]      = useState(pass?.maps_url ?? '')
-  const [beskrivning,  setBeskrivning]  = useState(pass?.beskrivning ?? '')
+  const [kompetenser,       setKompetenser]       = useState<string[]>(pass?.kompetenser ?? [])
+  const [mapsUrl,           setMapsUrl]           = useState(pass?.maps_url ?? '')
+  const [kladerUtrustning,  setKladerUtrustning]  = useState(pass?.klader_utrustning ?? '')
+  const [instruktion,       setInstruktion]       = useState(pass?.instruktion ?? '')
 
   const [isPending, startTransition] = useTransition()
   const [fel, setFel]     = useState<string | null>(null)
@@ -70,31 +71,33 @@ export default function PassModal({
     if (starttid >= sluttid) { setFel('Sluttid måste vara efter starttid.'); return }
 
     startTransition(async () => {
-      const maps_url    = mapsUrl.trim() || null
-      const beskr       = beskrivning.trim() || null
+      const maps_url         = mapsUrl.trim() || null
+      const klader_utrustning = kladerUtrustning.trim() || null
+      const inst              = instruktion.trim() || null
       if (arNytt) {
-        const res = await skapaPass({ sektion_id: sektionId, namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url, beskrivning: beskr })
+        const res = await skapaPass({ sektion_id: sektionId, namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url, klader_utrustning, instruktion: inst })
         if (!res.ok) { setFel(res.meddelande ?? 'Fel'); return }
         onSparat({
-          pass_id:      res.passId!,
-          pass_namn:    namn,
+          pass_id:           res.passId!,
+          pass_namn:         namn,
           datum,
           starttid,
           sluttid,
-          behovs_antal: behovsAntal,
-          tilldelade:   0,
-          saknas:       behovsAntal,
-          sektion_id:   sektionId,
-          sektion_namn: sektionNamn,
-          sektion_farg: sektioner.find(s => s.id === sektionId)?.farg ?? '#0066CC',
+          behovs_antal:      behovsAntal,
+          tilldelade:        0,
+          saknas:            behovsAntal,
+          sektion_id:        sektionId,
+          sektion_namn:      sektionNamn,
+          sektion_farg:      sektioner.find(s => s.id === sektionId)?.farg ?? '#0066CC',
           kompetenser,
           maps_url,
-          beskrivning:  beskr,
+          klader_utrustning,
+          instruktion:       inst,
         }, true)
       } else {
-        const res = await uppdateraPass(pass.pass_id, { namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url, beskrivning: beskr })
+        const res = await uppdateraPass(pass.pass_id, { namn, datum, starttid, sluttid, behovs_antal: behovsAntal, kompetenser, maps_url, klader_utrustning, instruktion: inst })
         if (!res.ok) { setFel(res.meddelande ?? 'Fel'); return }
-        onSparat({ ...pass, pass_namn: namn, datum, starttid, sluttid, behovs_antal: behovsAntal, saknas: Math.max(0, behovsAntal - pass.tilldelade), kompetenser, maps_url, beskrivning: beskr }, false)
+        onSparat({ ...pass, pass_namn: namn, datum, starttid, sluttid, behovs_antal: behovsAntal, saknas: Math.max(0, behovsAntal - pass.tilldelade), kompetenser, maps_url, klader_utrustning, instruktion: inst }, false)
       }
     })
   }
@@ -240,13 +243,25 @@ export default function PassModal({
             )}
           </div>
 
-          {/* ── Fritext / info till funktionären ── */}
+          {/* ── Kläder / Utrustning ── */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1">📝 Information till funktionären</label>
+            <label className="block text-xs text-gray-500 mb-1">👕 Kläder / Utrustning</label>
             <textarea
-              value={beskrivning}
-              onChange={e => setBeskrivning(e.target.value)}
-              placeholder="T.ex. klädkod, mötesplats, utrustning, kontaktperson…"
+              value={kladerUtrustning}
+              onChange={e => setKladerUtrustning(e.target.value)}
+              placeholder="T.ex. gul väst, regnkläder, eget vatten och mat…"
+              rows={3}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] resize-none"
+            />
+          </div>
+
+          {/* ── Instruktion ── */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">📋 Instruktion</label>
+            <textarea
+              value={instruktion}
+              onChange={e => setInstruktion(e.target.value)}
+              placeholder="T.ex. möt upp vid startporten kl. 07:30, ta emot cyklar…"
               rows={4}
               className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC] resize-none"
             />

@@ -22,7 +22,8 @@ export async function skapaPass(data: {
   behovs_antal: number
   kompetenser?: string[]
   maps_url?: string | null
-  beskrivning?: string | null
+  klader_utrustning?: string | null
+  instruktion?: string | null
 }): Promise<{ ok: boolean; passId?: string; meddelande?: string }> {
   const ctx = await verifieraTL()
   if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
@@ -37,9 +38,10 @@ export async function skapaPass(data: {
       starttid:     data.starttid,
       sluttid:      data.sluttid,
       behovs_antal: Math.max(1, Math.min(50, data.behovs_antal)),
-      kompetenser:  data.kompetenser ?? [],
-      maps_url:     data.maps_url?.trim() || null,
-      beskrivning:  data.beskrivning?.trim() || null,
+      kompetenser:        data.kompetenser ?? [],
+      maps_url:           data.maps_url?.trim() || null,
+      klader_utrustning:  data.klader_utrustning?.trim() || null,
+      instruktion:        data.instruktion?.trim() || null,
     })
     .select('id')
     .single()
@@ -62,7 +64,8 @@ export async function uppdateraPass(
     behovs_antal: number
     kompetenser?: string[]
     maps_url?: string | null
-    beskrivning?: string | null
+    klader_utrustning?: string | null
+    instruktion?: string | null
   }
 ): Promise<{ ok: boolean; meddelande?: string; tiderAndrades?: boolean }> {
   const ctx = await verifieraTL()
@@ -89,9 +92,10 @@ export async function uppdateraPass(
       starttid:     data.starttid,
       sluttid:      data.sluttid,
       behovs_antal: Math.max(1, Math.min(50, data.behovs_antal)),
-      kompetenser:  data.kompetenser ?? [],
-      maps_url:     data.maps_url?.trim() || null,
-      beskrivning:  data.beskrivning?.trim() || null,
+      kompetenser:        data.kompetenser ?? [],
+      maps_url:           data.maps_url?.trim() || null,
+      klader_utrustning:  data.klader_utrustning?.trim() || null,
+      instruktion:        data.instruktion?.trim() || null,
     })
     .eq('id', passId)
 

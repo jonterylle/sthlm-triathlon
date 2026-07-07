@@ -43,11 +43,19 @@ function UppdragsKort({ t }: { t: TilldelningInfo }) {
         )}
       </div>
 
-      {/* Beskrivning / info från TL */}
-      {t.beskrivning && (
+      {/* Kläder / Utrustning */}
+      {t.klader_utrustning && (
         <div className="bg-white rounded-2xl border border-gray-200 p-4">
-          <p className="text-xs font-semibold text-gray-500 mb-2">📝 Information om uppdraget</p>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{t.beskrivning}</p>
+          <p className="text-xs font-semibold text-gray-500 mb-2">👕 Kläder / Utrustning</p>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap">{t.klader_utrustning}</p>
+        </div>
+      )}
+
+      {/* Instruktion */}
+      {t.instruktion && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-4">
+          <p className="text-xs font-semibold text-gray-500 mb-2">📋 Instruktion</p>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap">{t.instruktion}</p>
         </div>
       )}
 
