@@ -5,31 +5,45 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { UserRole } from '@/lib/database.types'
 
 /**
- * Hämtar rollen från inbjudningar-tabellen för den inloggade användaren
- * och uppdaterar profilen om rollen inte är 'funktionar'.
+ * Hämtar rollen från inbjudningar-tabellen för den inloggade användaren,
+ * uppdaterar status till "accepterad" och sätter rätt roll på profilen.
  *
  * Anropas efter att en inbjudningslänk (implicit flow / hash-token) har
- * använts för att etablera en session.
+ * använts för att etablera en session via supabase.auth.setSession() på
+ * klientsidan.
  *
- * @returns Den roll som profilen skall ha (används för redirect-beslut)
+ * Obs: Admin-klienten används för inbjudningar eftersom RLS-policyn
+ * "TL hanterar inbjudningar" enbart tillåter TL att läsa tabellen.
+ *
+ * @returns Den roll som skall användas för redirect-beslutet
  */
 export async function tillämpInbjudanRoll(): Promise<UserRole> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) return 'funktionar'
 
-  // Hämta rollen från inbjudningen (RLS: inbjudningar_select_own tillåter detta)
-  const { data: inbjudan } = await supabase
+  // Admin-klienten kringgår RLS — inbjudningar är bara läsbara av TL annars
+  const admin = createAdminClient()
+
+  const { data: inbjudan } = await admin
     .from('inbjudningar')
-    .select('roll')
+    .select('id, roll')
     .eq('email', user.email)
     .maybeSingle()
 
   const roll = (inbjudan?.roll as UserRole | undefined) ?? 'funktionar'
 
-  // Uppdatera profilen via admin-klienten om rollen är sektionsledare eller tl
+  // Markera inbjudan som accepterad
+  if (inbjudan?.id) {
+    await admin
+      .from('inbjudningar')
+      .update({ status: 'accepterad' })
+      .eq('id', inbjudan.id)
+      .eq('status', 'skickad')
+  }
+
+  // Uppdatera profilen om rollen är sektionsledare eller tl
   if (roll === 'sektionsledare' || roll === 'tl') {
-    const admin = createAdminClient()
     const { error } = await admin
       .from('profiles')
       .update({ role: roll })

@@ -64,16 +64,7 @@ function LoginForm() {
         return;
       }
 
-      // Uppdatera inbjudningsstatus till accepterad
-      if (session.user.email) {
-        await supabase
-          .from("inbjudningar")
-          .update({ status: "accepterad" })
-          .eq("email", session.user.email)
-          .eq("status", "skickad");
-      }
-
-      // Tillämpa rollen från inbjudan (sätter sektionsledare-rollen på profilen om det gäller)
+      // Tillämpa rollen från inbjudan — uppdaterar även inbjudningsstatus och profil
       const roll = await tillämpInbjudanRoll();
 
       if (roll === "tl" || roll === "sektionsledare") {

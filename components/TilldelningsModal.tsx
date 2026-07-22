@@ -84,7 +84,12 @@ export default function TilldelningsModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">Funktionär</label>
             {valtFunktionar ? (
               <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
-                <p className="text-sm font-semibold text-gray-900">{valtFunktionar.full_name ?? '(inget namn)'}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-semibold text-gray-900">{valtFunktionar.full_name ?? '(inget namn)'}</p>
+                  {!valtFunktionar.registrerad_at && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Ej inloggad</span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">{valtFunktionar.email}</p>
                 {valtFunktionar.antal_pass > 0 && (
                   <p className="text-xs text-amber-600 mt-1">{valtFunktionar.antal_pass} aktiva uppdrag</p>
@@ -110,6 +115,7 @@ export default function TilldelningsModal({
                 {funktionärer.map(f => (
                   <option key={f.id} value={f.id}>
                     {f.full_name ?? f.email}
+                    {!f.registrerad_at ? ' · (Ej inloggad)' : ''}
                     {f.role === 'tl' ? ' · TL' : f.role === 'sektionsledare' ? ' · SL' : ''}
                     {f.antal_pass > 0 ? ` · ${f.antal_pass} uppdrag` : ''}
                   </option>

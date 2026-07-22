@@ -59,7 +59,9 @@ export async function bjudIn(
 
   const admin = createAdminClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-  const redirectTo = `${siteUrl}/auth/callback?next=/welcome`
+  // Inbjudningar använder implicit flow (hash-tokens, inte PKCE-kod) —
+  // redirectTo måste peka på en klientsida som kan läsa URL-fragmentet.
+  const redirectTo = `${siteUrl}/login`
   const resultat: InbjudanResultat[] = []
 
   for (const email of emails) {
@@ -87,25 +89,39 @@ export async function bjudIn(
       continue
     }
 
-    // Skicka inbjudan
+    // ── INSERT inbjudningar FÖRST ────────────────────────────
+    // handle_new_user-triggern (migration 022) kontrollerar att e-posten
+    // finns i inbjudningar innan den skapar en profil.
+    // Om vi skickar inbjudan (inviteUserByEmail) innan raden är infogad
+    // hinner triggern inte hitta e-posten → ingen profil skapas.
+    const { data: nyInbjudan, error: insertError } = await supabase
+      .from('inbjudningar')
+      .insert({ email, skickad_av: user.id, status: 'skickad', roll })
+      .select('id')
+      .single()
+
+    if (insertError) {
+      console.error(`[bjudIn] INSERT fel för ${email}:`, insertError.message, insertError.code)
+      resultat.push({ email, status: 'fel', meddelande: 'Kunde inte registrera inbjudan. Försök igen.' })
+      continue
+    }
+
+    // ── Skicka inbjudan via Supabase Auth ────────────────────
+    // auth.users INSERT → handle_new_user-triggern hittar nu e-posten
+    // i inbjudningar och skapar en profil direkt.
     const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
 
     if (error) {
       console.error(`[bjudIn] fel för ${email}:`, error.message)
-      await supabase.from('inbjudningar').insert({
-        email, skickad_av: user.id, status: 'fel', felmeddelande: error.message, roll,
-      })
+      // Markera inbjudan som misslyckad (raden finns redan)
+      await supabase.from('inbjudningar').update({
+        status: 'fel', felmeddelande: error.message,
+      }).eq('id', nyInbjudan.id)
       // Returnera generiskt fel till klienten — logga detaljer server-side
       resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan. Försök igen.' })
       continue
     }
 
-    const { error: insertError } = await supabase.from('inbjudningar').insert({
-      email, skickad_av: user.id, status: 'skickad', roll,
-    })
-    if (insertError) {
-      console.error(`[bjudIn] INSERT fel för ${email}:`, insertError.message, insertError.code)
-    }
     resultat.push({ email, status: 'skickad' })
   }
 
@@ -229,7 +245,7 @@ export async function bjudInFranSMS(smsId: string): Promise<{ ok: boolean; medde
   })
 
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/welcome`,
+    redirectTo: `${siteUrl}/login`,
   })
 
   if (error) {
@@ -257,7 +273,7 @@ export async function skickaOmInbjudan(
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/welcome`,
+    redirectTo: `${siteUrl}/login`,
   })
 
   if (error) {
@@ -367,17 +383,13 @@ export async function importeraFunktionarer(
 
   const admin      = createAdminClient()
   const siteUrl    = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-  const redirectTo = `${siteUrl}/auth/callback?next=/welcome`
+  const redirectTo = `${siteUrl}/login`
   const resultat: InbjudanResultat[] = []
 
   // Giltiga kompetenser (whitelist — skyddar mot godtycklig data i databasen)
   const GILTIGA_KOMPETENSER = new Set([
     'sjukvard', 'korkort', 'triathlon_erfarenhet', 'simning', 'cykel_teknik', 'engelska',
   ])
-
-  // Hämta auth-användare en gång för hela importen (inte per rad)
-  const { data: authUsersData } = await admin.auth.admin.listUsers()
-  const authUserMap = new Map(authUsersData?.users?.map(u => [u.email ?? '', u]) ?? [])
 
   for (const rad of begransade) {
     const email = String(rad.email ?? '').trim().toLowerCase()
@@ -402,40 +414,60 @@ export async function importeraFunktionarer(
       continue
     }
 
-    // Skicka inbjudan via Supabase Auth
+    // ── INSERT inbjudningar FÖRST ────────────────────────────────
+    // handle_new_user-triggern kontrollerar att e-posten finns i
+    // inbjudningar innan den skapar en profil. Om inbjudan saknas
+    // när auth.users INSERT sker skapas ingen profil.
+    const { data: nyInbjudan, error: insertError } = await supabase
+      .from('inbjudningar')
+      .insert({ email, skickad_av: user.id, status: 'skickad', roll: 'funktionar' })
+      .select('id')
+      .single()
+
+    if (insertError) {
+      console.error(`[importeraFunktionarer] INSERT-fel för ${email}:`, insertError.message)
+      resultat.push({ email, status: 'fel', meddelande: 'Kunde inte registrera inbjudan.' })
+      continue
+    }
+
+    // ── Skicka inbjudan — triggern skapar nu profilen direkt ────
     const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
     if (inviteError) {
-      console.error(`[importeraFunktionarer] fel för ${email}:`, inviteError.message)
-      await supabase.from('inbjudningar').insert({
-        email, skickad_av: user.id, status: 'fel',
-        felmeddelande: inviteError.message, roll: 'funktionar',
-      })
+      console.error(`[importeraFunktionarer] inviteUserByEmail-fel för ${email}:`, inviteError.message)
+      await supabase.from('inbjudningar').update({
+        status: 'fel', felmeddelande: inviteError.message,
+      }).eq('id', nyInbjudan.id)
       resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan.' })
       continue
     }
 
-    await supabase.from('inbjudningar').insert({
-      email, skickad_av: user.id, status: 'skickad', roll: 'funktionar',
-    })
-
-    // Förifyll profil — validerade och längdbegränsade fält
+    // ── Förifyll profilen med Excel-data ────────────────────────
+    // Triggern (handle_new_user) är synkron — profilen finns redan
+    // när inviteUserByEmail returnerar. Vi uppdaterar den direkt via
+    // admin-klienten med de fält som Excel-filen innehåller.
     const namn        = (String(rad.namn    ?? '').trim() || null)?.slice(0, 200) ?? null
     const telefon     = (String(rad.telefon ?? '').trim() || null)?.slice(0, 30)  ?? null
     const klubb       = (String(rad.klubb   ?? '').trim() || null)?.slice(0, 100) ?? null
-    // Whitelist-filtrera kompetenser mot kända värden
     const kompetenser = Array.isArray(rad.kompetenser)
-      ? rad.kompetenser.filter(k => typeof k === 'string' && GILTIGA_KOMPETENSER.has(k))
+      ? rad.kompetenser.filter((k: unknown) => typeof k === 'string' && GILTIGA_KOMPETENSER.has(k as string))
       : []
 
-    if (namn || telefon || klubb || kompetenser.length > 0) {
-      const authUser = authUserMap.get(email)
-      if (authUser) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase.from('profiles') as any).upsert({
-          id: authUser.id, email, full_name: namn, telefon, klubb,
-          kompetenser: kompetenser.length > 0 ? kompetenser : null,
-          role: 'funktionar',
-        }, { onConflict: 'id' })
+    // Bygg uppdateringsobjekt — inkludera bara fält med värden från Excel
+    const profilUppdatering: Record<string, unknown> = {}
+    if (namn)                    profilUppdatering.full_name   = namn
+    if (telefon)                 profilUppdatering.telefon     = telefon
+    if (klubb)                   profilUppdatering.klubb       = klubb
+    if (kompetenser.length > 0)  profilUppdatering.kompetenser = kompetenser
+
+    if (Object.keys(profilUppdatering).length > 0) {
+      const { error: profilErr } = await admin
+        .from('profiles')
+        .update(profilUppdatering)
+        .eq('email', email)
+
+      if (profilErr) {
+        // Inte ett hårt fel — inbjudan är skickad, profilen fylls i av funktionären
+        console.warn(`[importeraFunktionarer] kunde inte förifyll profil för ${email}:`, profilErr.message)
       }
     }
 
