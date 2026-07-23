@@ -25,6 +25,14 @@ export async function tillämpInbjudanRoll(): Promise<UserRole> {
   // Admin-klienten kringgår RLS — inbjudningar är bara läsbara av TL annars
   const admin = createAdminClient()
 
+  // Säkerställ att profilen finns — skapar den om trigger missade den
+  // (t.ex. inbjudan skickad innan trigger-fix i migration 022 rättades).
+  // ignoreDuplicates: true → påverkar inte befintliga profiler.
+  await admin.from('profiles').upsert(
+    { id: user.id, email: user.email, role: 'funktionar' as const },
+    { onConflict: 'id', ignoreDuplicates: true }
+  )
+
   const { data: inbjudan } = await admin
     .from('inbjudningar')
     .select('id, roll')

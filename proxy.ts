@@ -50,8 +50,14 @@ export async function proxy(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
+    // Om profil saknas (inbjudan skickad innan trigger-fix) — låt /login
+    // visa formuläret. tillämpInbjudanRoll() skapar profilen vid inloggning.
+    // Utan den här null-checken uppstår en redirect-loop:
+    //   proxy → /welcome → /login (ingen profil) → proxy → /welcome → …
+    if (!profile) return supabaseResponse;
+
     const url = request.nextUrl.clone();
-    url.pathname = profile?.role === "tl" || profile?.role === "sektionsledare"
+    url.pathname = profile.role === "tl" || profile.role === "sektionsledare"
       ? "/dashboard"
       : "/welcome";
     return NextResponse.redirect(url);
