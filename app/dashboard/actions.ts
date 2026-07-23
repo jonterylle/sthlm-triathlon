@@ -65,19 +65,40 @@ export async function bjudIn(
   const resultat: InbjudanResultat[] = []
 
   for (const email of emails) {
-    // Redan inbjuden?
+    // Kolla om e-posten redan finns i inbjudningar
     const { data: befintlig } = await supabase
       .from('inbjudningar')
-      .select('status')
+      .select('id, status')
       .eq('email', email)
       .single()
 
     if (befintlig) {
-      resultat.push({ email, status: 'redan_inbjuden' })
+      if (befintlig.status === 'accepterad') {
+        // Personen har redan accepterat sin inbjudan — de har ett konto
+        resultat.push({ email, status: 'redan_registrerad' })
+        continue
+      }
+
+      // Inbjudan finns men är inte accepterad (status: 'skickad' eller 'fel').
+      // Skicka om istället för att blockera — t.ex. när TL tagit bort och
+      // lägger till igen, eller om inbjudan fastnat/misslyckats.
+      const { error: resendError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+      if (resendError) {
+        console.error(`[bjudIn] om-inbjudan fel för ${email}:`, resendError.message)
+        await supabase.from('inbjudningar').update({
+          status: 'fel', felmeddelande: resendError.message,
+        }).eq('id', befintlig.id)
+        resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan. Försök igen.' })
+        continue
+      }
+      await supabase.from('inbjudningar').update({
+        status: 'skickad', felmeddelande: null, roll,
+      }).eq('id', befintlig.id)
+      resultat.push({ email, status: 'skickad' })
       continue
     }
 
-    // Redan registrerad?
+    // Redan registrerad (har profil men ingen inbjudningsrad)?
     const { data: befintligProfil } = await supabase
       .from('profiles')
       .select('id')
@@ -113,11 +134,9 @@ export async function bjudIn(
 
     if (error) {
       console.error(`[bjudIn] fel för ${email}:`, error.message)
-      // Markera inbjudan som misslyckad (raden finns redan)
       await supabase.from('inbjudningar').update({
         status: 'fel', felmeddelande: error.message,
       }).eq('id', nyInbjudan.id)
-      // Returnera generiskt fel till klienten — logga detaljer server-side
       resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan. Försök igen.' })
       continue
     }
@@ -300,18 +319,26 @@ export async function taBortInbjudan(
   const { supabase } = ctx
 
   // Ta bort rad i inbjudningar
-  await supabase.from('inbjudningar').delete().eq('id', inbjudanId)
+  const { error: deleteError } = await supabase
+    .from('inbjudningar')
+    .delete()
+    .eq('id', inbjudanId)
+
+  if (deleteError) {
+    console.error('[taBortInbjudan] kunde inte ta bort inbjudan:', deleteError.message)
+    return { ok: false, meddelande: 'Kunde inte ta bort inbjudan. Försök igen.' }
+  }
 
   // Ta bort auth-kontot om det finns (kaskaderar till profiles)
   const admin = createAdminClient()
   const { data: users } = await admin.auth.admin.listUsers()
-  const authUser = users?.users?.find((u) => u.email === email)
+  const authUser = users?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase())
 
   if (authUser) {
     const { error } = await admin.auth.admin.deleteUser(authUser.id)
     if (error) {
       console.error('[taBortInbjudan] kunde inte ta bort auth-konto:', error.message)
-      // Inbjudan är borttagen — returnerar ok ändå
+      // Inbjudan är borttagen — auth-kontot får rensas manuellt vid behov
     }
   }
 
