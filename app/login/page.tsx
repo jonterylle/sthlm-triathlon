@@ -7,9 +7,16 @@ import { tillämpInbjudanRoll } from "@/app/login/actions";
 
 // Map Supabase error messages → Swedish text
 const ERROR_MESSAGES: Record<string, string> = {
+  // Supabase rate limiting
   "Email rate limit exceeded": "För många försök. Vänta en stund och försök igen.",
+  "For security purposes, you can only request this after": "För många försök. Vänta en minut och försök igen.",
+  // Ej inbjuden / signup disabled
   "Signups not allowed": "Din e-postadress är inte registrerad. Kontakta tävlingsledningen.",
+  "Email signups are disabled": "Din e-postadress är inte registrerad. Kontakta tävlingsledningen.",
+  "signup_disabled": "Din e-postadress är inte registrerad. Kontakta tävlingsledningen.",
+  // Validering
   "Invalid email": "Ange en giltig e-postadress.",
+  "Unable to validate email address: invalid format": "Ange en giltig e-postadress.",
 };
 
 const URL_ERRORS: Record<string, string> = {
@@ -19,7 +26,12 @@ const URL_ERRORS: Record<string, string> = {
 };
 
 function getFriendlyError(msg: string): string {
-  return ERROR_MESSAGES[msg] ?? "Något gick fel. Försök igen eller kontakta tävlingsledningen.";
+  if (ERROR_MESSAGES[msg]) return ERROR_MESSAGES[msg];
+  // Prefixmatchning för meddelanden med variabelt innehåll (t.ex. sekunder i rate limit)
+  for (const [key, value] of Object.entries(ERROR_MESSAGES)) {
+    if (msg.startsWith(key)) return value;
+  }
+  return "Något gick fel. Försök igen eller kontakta tävlingsledningen.";
 }
 
 // ── Inre komponent med useSearchParams — måste vara inuti <Suspense> ──
@@ -89,6 +101,7 @@ function LoginForm() {
     });
 
     if (error) {
+      console.error("[login] signInWithOtp fel:", error.message, error);
       setStatus("error");
       setErrorMsg(getFriendlyError(error.message));
     } else {
