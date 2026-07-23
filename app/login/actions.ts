@@ -28,8 +28,9 @@ export async function tillämpInbjudanRoll(): Promise<UserRole> {
   // Säkerställ att profilen finns — skapar den om trigger missade den
   // (t.ex. inbjudan skickad innan trigger-fix i migration 022 rättades).
   // ignoreDuplicates: true → påverkar inte befintliga profiler.
-  await admin.from('profiles').upsert(
-    { id: user.id, email: user.email, role: 'funktionar' as const },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin.from('profiles') as any).upsert(
+    { id: user.id, email: user.email, role: 'funktionar' },
     { onConflict: 'id', ignoreDuplicates: true }
   )
 
