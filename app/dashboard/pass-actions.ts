@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getSiteUrl } from '@/lib/site-url'
 
 async function verifieraTL() {
   const supabase = await createClient()
@@ -162,7 +163,7 @@ async function skickaAndringsMail(
 
   if (!tilldelade || tilldelade.length === 0) return
 
-  const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sthlm-triathlon.vercel.app'
+  const siteUrl  = await getSiteUrl()
   const sektionNamn = tilldelade[0]?.pass?.sektioner?.namn ?? 'Okänd sektion'
 
   for (const t of tilldelade) {

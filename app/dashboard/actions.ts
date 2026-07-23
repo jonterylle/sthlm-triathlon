@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getSiteUrl } from '@/lib/site-url'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const TELEFON_RE = /^\+?[0-9\s\-]{7,15}$/
@@ -58,10 +59,9 @@ export async function bjudIn(
   if (emails.length === 0) return { resultat: [] }
 
   const admin = createAdminClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   // Inbjudningar använder implicit flow (hash-tokens, inte PKCE-kod) —
   // redirectTo måste peka på en klientsida som kan läsa URL-fragmentet.
-  const redirectTo = `${siteUrl}/login`
+  const redirectTo = `${await getSiteUrl()}/login`
   const resultat: InbjudanResultat[] = []
 
   for (const email of emails) {
@@ -164,7 +164,7 @@ export async function skickaSMSInbjudan(
 
   if (nummer.length === 0) return { resultat: [] }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  const siteUrl = await getSiteUrl()
   const elksUser = process.env.ELKS_API_USERNAME
   const elksPass = process.env.ELKS_API_PASSWORD
 
@@ -256,15 +256,13 @@ export async function bjudInFranSMS(smsId: string): Promise<{ ok: boolean; medde
 
   const email = smsRad.email_inkommen
   const admin = createAdminClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-
   // Skapa inbjudningsrad (SMS-inbjudningar är alltid funktionärer)
   await supabase.from('inbjudningar').upsert({
     email, skickad_av: user.id, status: 'skickad', roll: 'funktionar',
   })
 
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/login`,
+    redirectTo: `${await getSiteUrl()}/login`,
   })
 
   if (error) {
@@ -289,10 +287,9 @@ export async function skickaOmInbjudan(
   const { supabase } = ctx
 
   const admin = createAdminClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
   const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${siteUrl}/login`,
+    redirectTo: `${await getSiteUrl()}/login`,
   })
 
   if (error) {
@@ -409,8 +406,7 @@ export async function importeraFunktionarer(
   const begransade = rader.slice(0, 200)
 
   const admin      = createAdminClient()
-  const siteUrl    = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-  const redirectTo = `${siteUrl}/login`
+  const redirectTo = `${await getSiteUrl()}/login`
   const resultat: InbjudanResultat[] = []
 
   // Giltiga kompetenser (whitelist — skyddar mot godtycklig data i databasen)

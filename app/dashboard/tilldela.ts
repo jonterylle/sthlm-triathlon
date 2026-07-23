@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getSiteUrl } from '@/lib/site-url'
 
 export type TilldelningResultat = {
   ok: boolean
@@ -117,7 +118,7 @@ async function skickabekraftelsemail(
 
   const sektionNamn = pass.sektioner?.namn ?? 'Okänd sektion'
   const namn        = profil.full_name ?? profil.email
-  const siteUrl     = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sthlm-triathlon.vercel.app'
+  const siteUrl     = await getSiteUrl()
 
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
