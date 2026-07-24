@@ -19,7 +19,8 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       `connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://*.supabase.co"} https://api.46elks.com`,
-      "img-src 'self' data:",
+      // OpenStreetMap-tiles laddas som <img>-taggar av Leaflet
+      "img-src 'self' data: https://*.tile.openstreetmap.org",
       "font-src 'self'",
       "frame-ancestors 'none'",
     ].join("; "),

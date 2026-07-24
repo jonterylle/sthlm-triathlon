@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import 'leaflet/dist/leaflet.css'
 import type { PassForKarta } from '@/lib/database.types'
 
 // Arena: Stora Skuggan / STHLM Triathlon 2026
@@ -190,10 +191,6 @@ export default function AdminKarta({ allePass }: Props) {
 
       {/* Karta */}
       <div className="relative">
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
-        />
         <div ref={mapRef} className="w-full h-[500px] lg:h-[640px] rounded-xl border border-gray-200 z-0" />
 
         {/* Förklaring */}
