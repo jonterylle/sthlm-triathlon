@@ -46,7 +46,7 @@ export default async function WelcomePage() {
         if (!pass) return null
 
         const [sektionInfoRes, slRes] = await Promise.all([
-          supabase.from('sektioner').select('namn, farg').eq('id', pass.sektion_id).single(),
+          supabase.from('sektioner').select('namn, farg, lat, lng').eq('id', pass.sektion_id).single(),
           supabase
             .from('profiles')
             .select('full_name, email')
@@ -67,6 +67,8 @@ export default async function WelcomePage() {
           maps_url:             pass.maps_url ?? null,
           klader_utrustning:    pass.klader_utrustning ?? null,
           instruktion:          pass.instruktion ?? null,
+          lat:                  sektionInfoRes.data?.lat ?? null,
+          lng:                  sektionInfoRes.data?.lng ?? null,
         } satisfies TilldelningInfo
       })
     )

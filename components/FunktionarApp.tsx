@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { SektionBemanningsgrad } from '@/lib/database.types'
-import SektionKarta from '@/components/SektionKarta'
+import FunktionarKarta from '@/components/FunktionarKarta'
 import FunktionarHem from '@/components/FunktionarHem'
 import FunktionarProfil from '@/components/FunktionarProfil'
 import PushPrompt from '@/components/PushPrompt'
@@ -23,6 +23,8 @@ export type TilldelningInfo = {
   maps_url: string | null
   klader_utrustning: string | null
   instruktion: string | null
+  lat: number | null
+  lng: number | null
 }
 
 export type ProfilData = {
@@ -117,8 +119,9 @@ export default function FunktionarApp({
         )}
         {aktivFlik === 'karta' && (
           <div className="p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Sektionskarta</h2>
-            <SektionKarta sektioner={sektioner} />
+            <h2 className="text-sm font-semibold text-gray-700 mb-1">Tävlingsområde</h2>
+            <p className="text-xs text-gray-400 mb-3">Stora Skuggan · 9 aug 2026</p>
+            <FunktionarKarta tilldelningar={tilldelningar} />
           </div>
         )}
       </main>

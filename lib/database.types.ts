@@ -199,6 +199,19 @@ export type PassMedSektion = {
   instruktion: string | null
 }
 
+export type PassForKarta = {
+  pass_id: string
+  pass_namn: string
+  datum: string
+  starttid: string
+  sluttid: string
+  sektion_id: string
+  sektion_namn: string
+  sektion_farg: string
+  lat: number | null
+  lng: number | null
+}
+
 export type TilldeladPerPass = {
   tilldelning_id: string
   profil_id: string
@@ -313,6 +326,10 @@ export type Database = {
       get_sektionsledare_per_sektion: {
         Args: Record<string, never>
         Returns: SektionSL[]
+      }
+      get_alle_pass_for_karta: {
+        Args: Record<string, never>
+        Returns: PassForKarta[]
       }
       hamta_sms_inbjudan: {
         Args: { p_token: string }
