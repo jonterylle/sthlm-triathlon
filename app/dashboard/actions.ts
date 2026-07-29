@@ -79,10 +79,8 @@ export async function bjudIn(
         continue
       }
 
-      // Inbjudan finns men är inte accepterad (status: 'skickad' eller 'fel').
-      // Skicka om istället för att blockera — t.ex. när TL tagit bort och
-      // lägger till igen, eller om inbjudan fastnat/misslyckats.
-      const { error: resendError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+      // Inbjudan finns men är inte accepterad — skicka om och säkerställ profil.
+      const { data: resendData, error: resendError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
       if (resendError) {
         console.error(`[bjudIn] om-inbjudan fel för ${email}:`, resendError.message)
         await supabase.from('inbjudningar').update({
@@ -90,6 +88,14 @@ export async function bjudIn(
         }).eq('id', befintlig.id)
         resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan. Försök igen.' })
         continue
+      }
+      // Säkerställ profil — triggern utlöses inte om auth-användaren redan finns
+      if (resendData?.user?.id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (admin.from('profiles') as any).upsert(
+          { id: resendData.user.id, email, role: 'funktionar' },
+          { onConflict: 'id', ignoreDuplicates: true },
+        )
       }
       await supabase.from('inbjudningar').update({
         status: 'skickad', felmeddelande: null, roll,
@@ -128,9 +134,7 @@ export async function bjudIn(
     }
 
     // ── Skicka inbjudan via Supabase Auth ────────────────────
-    // auth.users INSERT → handle_new_user-triggern hittar nu e-posten
-    // i inbjudningar och skapar en profil direkt.
-    const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+    const { data: newInviteData, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
 
     if (error) {
       console.error(`[bjudIn] fel för ${email}:`, error.message)
@@ -139,6 +143,15 @@ export async function bjudIn(
       }).eq('id', nyInbjudan.id)
       resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan. Försök igen.' })
       continue
+    }
+
+    // Säkerställ profil — triggern utlöses inte om auth-användaren redan fanns
+    if (newInviteData?.user?.id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin.from('profiles') as any).upsert(
+        { id: newInviteData.user.id, email, role: 'funktionar' },
+        { onConflict: 'id', ignoreDuplicates: true },
+      )
     }
 
     resultat.push({ email, status: 'skickad' })
@@ -453,8 +466,14 @@ export async function importeraFunktionarer(
       continue
     }
 
-    // ── Skicka inbjudan — triggern skapar nu profilen direkt ────
-    const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
+    // ── Skicka inbjudan ──────────────────────────────────────────
+    // inviteUserByEmail returnerar alltid user-objektet — antingen för
+    // nytt konto eller befintligt (om auth-användaren redan existerade).
+    // handle_new_user-triggern utlöses bara vid nytt INSERT i auth.users,
+    // dvs. INTE om auth-användaren redan finns (t.ex. pga tidigare inbjudan
+    // som aldrig rensades). Därför skapar vi alltid profilen explicit via
+    // det returnerade user.id — triggern är bara ett extra skyddsnät.
+    const { data: inviteData, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
     if (inviteError) {
       console.error(`[importeraFunktionarer] inviteUserByEmail-fel för ${email}:`, inviteError.message)
       await supabase.from('inbjudningar').update({
@@ -464,10 +483,17 @@ export async function importeraFunktionarer(
       continue
     }
 
+    // ── Säkerställ att profil finns ──────────────────────────────
+    const authUserId = inviteData?.user?.id
+    if (authUserId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin.from('profiles') as any).upsert(
+        { id: authUserId, email, role: 'funktionar' },
+        { onConflict: 'id', ignoreDuplicates: true },
+      )
+    }
+
     // ── Förifyll profilen med Excel-data ────────────────────────
-    // Triggern (handle_new_user) är synkron — profilen finns redan
-    // när inviteUserByEmail returnerar. Vi uppdaterar den direkt via
-    // admin-klienten med de fält som Excel-filen innehåller.
     const namn        = (String(rad.namn    ?? '').trim() || null)?.slice(0, 200) ?? null
     const telefon     = (String(rad.telefon ?? '').trim() || null)?.slice(0, 30)  ?? null
     const klubb       = (String(rad.klubb   ?? '').trim() || null)?.slice(0, 100) ?? null
@@ -475,21 +501,19 @@ export async function importeraFunktionarer(
       ? rad.kompetenser.filter((k: unknown) => typeof k === 'string' && GILTIGA_KOMPETENSER.has(k as string))
       : []
 
-    // Bygg uppdateringsobjekt — inkludera bara fält med värden från Excel
     const profilUppdatering: Record<string, unknown> = {}
     if (namn)                    profilUppdatering.full_name   = namn
     if (telefon)                 profilUppdatering.telefon     = telefon
     if (klubb)                   profilUppdatering.klubb       = klubb
     if (kompetenser.length > 0)  profilUppdatering.kompetenser = kompetenser
 
-    if (Object.keys(profilUppdatering).length > 0) {
+    if (authUserId && Object.keys(profilUppdatering).length > 0) {
       const { error: profilErr } = await admin
         .from('profiles')
         .update(profilUppdatering)
-        .eq('email', email)
+        .eq('id', authUserId)
 
       if (profilErr) {
-        // Inte ett hårt fel — inbjudan är skickad, profilen fylls i av funktionären
         console.warn(`[importeraFunktionarer] kunde inte förifyll profil för ${email}:`, profilErr.message)
       }
     }
