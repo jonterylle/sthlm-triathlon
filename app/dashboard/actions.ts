@@ -82,11 +82,19 @@ export async function bjudIn(
       // Inbjudan finns men är inte accepterad — skicka om och säkerställ profil.
       const { data: resendData, error: resendError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
       if (resendError) {
-        console.error(`[bjudIn] om-inbjudan fel för ${email}:`, resendError.message)
+        console.error(`[bjudIn] om-inbjudan fel för ${email}:`, resendError.message, resendError)
+
+        const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(resendError.message)
+        if (isAlreadyRegistered) {
+          await supabase.from('inbjudningar').update({ status: 'accepterad' }).eq('id', befintlig.id)
+          resultat.push({ email, status: 'redan_registrerad', meddelande: 'Användaren har redan ett aktivt konto.' })
+          continue
+        }
+
         await supabase.from('inbjudningar').update({
           status: 'fel', felmeddelande: resendError.message,
         }).eq('id', befintlig.id)
-        resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan. Försök igen.' })
+        resultat.push({ email, status: 'fel', meddelande: resendError.message })
         continue
       }
       // Säkerställ profil — triggern utlöses inte om auth-användaren redan finns
@@ -137,11 +145,21 @@ export async function bjudIn(
     const { data: newInviteData, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
 
     if (error) {
-      console.error(`[bjudIn] fel för ${email}:`, error.message)
+      console.error(`[bjudIn] fel för ${email}:`, error.message, error)
+
+      // "already registered" → personen har ett aktivt konto, behandla som redan_registrerad
+      const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(error.message)
+      if (isAlreadyRegistered) {
+        await supabase.from('inbjudningar').update({ status: 'accepterad' }).eq('id', nyInbjudan.id)
+        resultat.push({ email, status: 'redan_registrerad', meddelande: 'Användaren har redan ett aktivt konto.' })
+        continue
+      }
+
       await supabase.from('inbjudningar').update({
         status: 'fel', felmeddelande: error.message,
       }).eq('id', nyInbjudan.id)
-      resultat.push({ email, status: 'fel', meddelande: 'Kunde inte skicka inbjudan. Försök igen.' })
+      // Visa faktisk Supabase-fel istället för generiskt meddelande
+      resultat.push({ email, status: 'fel', meddelande: error.message })
       continue
     }
 

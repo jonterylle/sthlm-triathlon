@@ -165,12 +165,22 @@ function EmailSektion({ emailInbjudningar }: { emailInbjudningar: EmailRad[] }) 
         </form>
 
         {resultat.length > 0 && (
-          <div className="mt-4 space-y-1.5">
+          <div className="mt-4 space-y-2">
             {resultat.map((r) => (
-              <div key={r.email} className="flex items-center gap-2 text-xs">
-                <span>{statusIkon(r.status)}</span>
-                <span className="font-mono text-gray-700">{r.email}</span>
-                <span className="text-gray-400">{statusText(r.status)}</span>
+              <div key={r.email} className="text-xs">
+                <div className="flex items-center gap-2">
+                  <span>{statusIkon(r.status)}</span>
+                  <span className="font-mono text-gray-700">{r.email}</span>
+                  <span className={r.status === 'fel' ? 'text-red-500' : 'text-gray-400'}>
+                    {statusText(r.status)}
+                  </span>
+                </div>
+                {r.status === 'fel' && r.meddelande && (
+                  <p className="ml-6 mt-0.5 text-red-400 font-mono break-all">{r.meddelande}</p>
+                )}
+                {r.status === 'redan_registrerad' && r.meddelande && (
+                  <p className="ml-6 mt-0.5 text-gray-400">{r.meddelande}</p>
+                )}
               </div>
             ))}
           </div>
