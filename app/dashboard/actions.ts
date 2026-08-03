@@ -311,12 +311,22 @@ export async function skickaGroupSMS(
   const elksPass = process.env.ELKS_API_PASSWORD
   if (!elksUser || !elksPass) return { ok: false, meddelande: '46elks är inte konfigurerat.' }
 
-  // Hämta alla profiler med telefonnummer
-  const { data: mottagare, error: dbError } = await supabase
+  // Valfri filtrering på specifika profil-IDs (kommaseparerade)
+  const rawIds = String(formData.get('profilIds') ?? '').trim()
+  const valdaIds = rawIds ? rawIds.split(',').map(s => s.trim()).filter(Boolean) : null
+
+  // Hämta profiler med telefonnummer (alla, eller bara valda)
+  let query = supabase
     .from('profiles')
     .select('id, full_name, email, telefon')
     .not('telefon', 'is', null)
     .neq('telefon', '')
+
+  if (valdaIds && valdaIds.length > 0) {
+    query = query.in('id', valdaIds)
+  }
+
+  const { data: mottagare, error: dbError } = await query
 
   if (dbError || !mottagare) {
     console.error('[skickaGroupSMS] DB-fel:', dbError?.message)

@@ -5,6 +5,7 @@ import BjudInFlik from '@/components/BjudInFlik'
 import ExcelImportFlik from '@/components/ExcelImportFlik'
 import FunktionarRedigeraModal from '@/components/FunktionarRedigeraModal'
 import SMSMeddelandeFlik from '@/components/SMSMeddelandeFlik'
+import type { SMSMottagare } from '@/components/SMSMeddelandeFlik'
 import type { Profile, SektionBemanningsgrad, SektionsledareInfo, TilldeladPerPass } from '@/lib/database.types'
 
 const ROLL_LABELS: Record<string, string> = {
@@ -162,7 +163,14 @@ export default function FunktionarerSida({
       {/* SMS meddelande */}
       {aktivFlik === 'sms' && (
         <SMSMeddelandeFlik
-          antalMedTelefon={lokala.filter(f => f.telefon).length}
+          mottagare={lokala
+            .filter((f): f is typeof f & { telefon: string } => !!f.telefon)
+            .map((f): SMSMottagare => ({
+              id: f.id,
+              full_name: f.full_name,
+              email: f.email,
+              telefon: f.telefon,
+            }))}
         />
       )}
 
