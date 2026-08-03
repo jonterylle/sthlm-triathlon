@@ -87,7 +87,7 @@ export async function bjudIn(
         const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(resendError.message)
         if (isAlreadyRegistered) {
           // Sök upp auth-ID och säkerställ profil
-          const { data: authRow } = await (admin.schema('auth') as any)
+          const { data: authRow } = await (admin as any).schema('auth')
             .from('users').select('id').eq('email', email).single()
           if (authRow?.id) {
             await (admin.from('profiles') as any).upsert(
