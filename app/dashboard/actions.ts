@@ -225,10 +225,11 @@ export async function skickaSMSInbjudan(
   const resultat: SMSResultat[] = []
 
   for (const telefon of nummer) {
-    // Normalisera till internationellt format (svenska nummer)
-    const normaliseradTelefon = telefon.startsWith('0')
-      ? '+46' + telefon.slice(1)
-      : telefon
+    // Normalisera till E.164 — strip mellanslag, bindestreck, parenteser osv
+    const stripped = telefon.replace(/[^\d+]/g, '')
+    const normaliseradTelefon = stripped.startsWith('0')
+      ? '+46' + stripped.slice(1)
+      : stripped
 
     // Redan inbjuden via SMS?
     const { data: befintlig } = await supabase
@@ -338,8 +339,8 @@ export async function skickaGroupSMS(
   const fel: GroupSMSResultat['fel'] = []
 
   for (const p of mottagare) {
-    const raw = (p.telefon as string).replace(/\s/g, '')
-    const telefon = raw.startsWith('0') ? '+46' + raw.slice(1) : raw
+    const stripped = (p.telefon as string).replace(/[^\d+]/g, '')
+    const telefon = stripped.startsWith('0') ? '+46' + stripped.slice(1) : stripped
 
     const smsRes = await fetch('https://api.46elks.com/a1/sms', {
       method: 'POST',
