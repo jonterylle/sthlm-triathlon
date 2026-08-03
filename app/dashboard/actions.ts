@@ -288,6 +288,82 @@ export async function skickaSMSInbjudan(
   return { resultat }
 }
 
+// ── Skicka grupp-SMS till alla funktionärer med telefonnummer ──
+export type GroupSMSResultat = {
+  skickade: number
+  misslyckade: number
+  totalt: number
+  fel: { namn: string; telefon: string; fel: string }[]
+}
+
+export async function skickaGroupSMS(
+  formData: FormData
+): Promise<{ ok: boolean; resultat?: GroupSMSResultat; meddelande?: string }> {
+  const ctx = await verifieraTL()
+  if (!ctx) return { ok: false, meddelande: 'Åtkomst nekad' }
+  const { supabase } = ctx
+
+  const meddelande = String(formData.get('meddelande') ?? '').trim()
+  if (!meddelande) return { ok: false, meddelande: 'Meddelandet får inte vara tomt.' }
+  if (meddelande.length > 612) return { ok: false, meddelande: 'Meddelandet är för långt (max 612 tecken).' }
+
+  const elksUser = process.env.ELKS_API_USERNAME
+  const elksPass = process.env.ELKS_API_PASSWORD
+  if (!elksUser || !elksPass) return { ok: false, meddelande: '46elks är inte konfigurerat.' }
+
+  // Hämta alla profiler med telefonnummer
+  const { data: mottagare, error: dbError } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, telefon')
+    .not('telefon', 'is', null)
+    .neq('telefon', '')
+
+  if (dbError || !mottagare) {
+    console.error('[skickaGroupSMS] DB-fel:', dbError?.message)
+    return { ok: false, meddelande: 'Kunde inte hämta mottagare.' }
+  }
+
+  const auth = Buffer.from(`${elksUser}:${elksPass}`).toString('base64')
+  let skickade = 0
+  const fel: GroupSMSResultat['fel'] = []
+
+  for (const p of mottagare) {
+    const raw = (p.telefon as string).replace(/\s/g, '')
+    const telefon = raw.startsWith('0') ? '+46' + raw.slice(1) : raw
+
+    const smsRes = await fetch('https://api.46elks.com/a1/sms', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        from: 'STHLMTriath',
+        to: telefon,
+        message: meddelande,
+      }).toString(),
+    })
+
+    if (smsRes.ok) {
+      skickade++
+    } else {
+      const felText = await smsRes.text()
+      console.error(`[skickaGroupSMS] 46elks fel för ${telefon}:`, felText)
+      fel.push({ namn: p.full_name ?? p.email, telefon, fel: felText })
+    }
+  }
+
+  return {
+    ok: true,
+    resultat: {
+      skickade,
+      misslyckade: fel.length,
+      totalt: mottagare.length,
+      fel,
+    },
+  }
+}
+
 // ── Skicka e-postinbjudan till inkommen SMS-e-post ────────────
 export async function bjudInFranSMS(smsId: string): Promise<{ ok: boolean; meddelande?: string }> {
   const ctx = await verifieraTL()

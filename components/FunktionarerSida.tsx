@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import BjudInFlik from '@/components/BjudInFlik'
 import ExcelImportFlik from '@/components/ExcelImportFlik'
 import FunktionarRedigeraModal from '@/components/FunktionarRedigeraModal'
+import SMSMeddelandeFlik from '@/components/SMSMeddelandeFlik'
 import type { Profile, SektionBemanningsgrad, SektionsledareInfo, TilldeladPerPass } from '@/lib/database.types'
 
 const ROLL_LABELS: Record<string, string> = {
@@ -35,7 +36,7 @@ interface Props {
 }
 
 type Vy = 'lista' | 'organisation'
-type Flik = 'vy' | 'bjudin' | 'import'
+type Flik = 'vy' | 'bjudin' | 'import' | 'sms'
 
 export default function FunktionarerSida({
   funktionärer,
@@ -133,6 +134,7 @@ export default function FunktionarerSida({
             ['vy',     'Lista & Organisation'],
             ['bjudin', 'Bjud in'],
             ['import', 'Importera Excel'],
+            ['sms',    'SMS meddelande'],
           ] as [Flik, string][]).map(([id, label]) => (
             <button
               key={id}
@@ -156,6 +158,13 @@ export default function FunktionarerSida({
 
       {/* Importera */}
       {aktivFlik === 'import' && <ExcelImportFlik />}
+
+      {/* SMS meddelande */}
+      {aktivFlik === 'sms' && (
+        <SMSMeddelandeFlik
+          antalMedTelefon={lokala.filter(f => f.telefon).length}
+        />
+      )}
 
       {/* Lista/Organisation */}
       {aktivFlik === 'vy' && (
