@@ -86,6 +86,15 @@ export async function bjudIn(
 
         const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(resendError.message)
         if (isAlreadyRegistered) {
+          // Sök upp auth-ID och säkerställ profil
+          const { data: authRow } = await (admin.schema('auth') as any)
+            .from('users').select('id').eq('email', email).single()
+          if (authRow?.id) {
+            await (admin.from('profiles') as any).upsert(
+              { id: authRow.id, email, role: roll ?? 'funktionar' },
+              { onConflict: 'id', ignoreDuplicates: true },
+            )
+          }
           await supabase.from('inbjudningar').update({ status: 'accepterad' }).eq('id', befintlig.id)
           resultat.push({ email, status: 'redan_registrerad', meddelande: 'Användaren har redan ett aktivt konto.' })
           continue
@@ -150,6 +159,15 @@ export async function bjudIn(
       // "already registered" → personen har ett aktivt konto, behandla som redan_registrerad
       const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(error.message)
       if (isAlreadyRegistered) {
+        // Sök upp auth-ID och säkerställ profil
+        const { data: authRow } = await (admin.schema('auth') as any)
+          .from('users').select('id').eq('email', email).single()
+        if (authRow?.id) {
+          await (admin.from('profiles') as any).upsert(
+            { id: authRow.id, email, role: roll ?? 'funktionar' },
+            { onConflict: 'id', ignoreDuplicates: true },
+          )
+        }
         await supabase.from('inbjudningar').update({ status: 'accepterad' }).eq('id', nyInbjudan.id)
         resultat.push({ email, status: 'redan_registrerad', meddelande: 'Användaren har redan ett aktivt konto.' })
         continue
