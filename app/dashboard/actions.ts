@@ -423,17 +423,65 @@ export async function skickaOmInbjudan(
   const { supabase } = ctx
 
   const admin = createAdminClient()
+  const redirectTo = `${await getSiteUrl()}/login`
 
-  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${await getSiteUrl()}/login`,
-  })
+  const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
 
   if (error) {
-    console.error('[skickaOmInbjudan] fel:', error.message)
-    return { ok: false, meddelande: 'Kunde inte skicka om inbjudan. Försök igen.' }
+    const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(error.message)
+
+    if (!isAlreadyRegistered) {
+      console.error('[skickaOmInbjudan] fel:', error.message)
+      return { ok: false, meddelande: error.message }
+    }
+
+    // Bekräftad användare — generera magic link och skicka via Resend
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+      options: { redirectTo },
+    })
+
+    if (linkError || !linkData?.properties?.action_link) {
+      console.error('[skickaOmInbjudan] generateLink fel:', linkError?.message)
+      return { ok: false, meddelande: 'Kunde inte generera inloggningslänk.' }
+    }
+
+    const resendKey = process.env.RESEND_API_KEY
+    if (!resendKey) {
+      return { ok: false, meddelande: 'RESEND_API_KEY saknas — kan inte skicka e-post.' }
+    }
+
+    const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@sthlm-triathlon.se'
+    const loginUrl  = linkData.properties.action_link
+
+    const emailRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `STHLM Triathlon 2026 <${fromEmail}>`,
+        to: [email],
+        subject: 'Din inloggningslänk till STHLM Triathlon 2026',
+        html: `
+          <p>Hej!</p>
+          <p>Klicka på länken nedan för att logga in på STHLM Triathlon 2026:</p>
+          <p><a href="${loginUrl}" style="background:#0066CC;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Logga in</a></p>
+          <p style="color:#999;font-size:12px;">Länken är giltig i 1 timme. Om du inte begärt denna länk kan du ignorera detta mail.</p>
+        `,
+      }),
+    })
+
+    if (!emailRes.ok) {
+      const felText = await emailRes.text()
+      console.error('[skickaOmInbjudan] Resend fel:', felText)
+      return { ok: false, meddelande: 'Kunde inte skicka e-post via Resend.' }
+    }
   }
 
-  // Återställ status till 'skickad' om det tidigare var 'fel'
+  // Återställ status till 'skickad'
   await supabase
     .from('inbjudningar')
     .update({ status: 'skickad', felmeddelande: null })
