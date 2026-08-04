@@ -35,6 +35,21 @@ async function verifieraTL() {
   return { supabase, user, profile }
 }
 
+// ── Hjälpfunktion: ta bort obekräftat auth-konto om det finns ─
+// Förhindrar att inviteUserByEmail misslyckas pga gamla orphan-konton.
+async function rensaObekräftatKonto(admin: ReturnType<typeof createAdminClient>, email: string) {
+  const { data: authRow } = await (admin as any).schema('auth')
+    .from('users')
+    .select('id, email_confirmed_at')
+    .eq('email', email)
+    .single()
+
+  if (authRow?.id && !authRow.email_confirmed_at) {
+    await admin.auth.admin.deleteUser(authRow.id)
+    console.log(`[rensaObekräftat] Tog bort obekräftat konto för ${email}`)
+  }
+}
+
 // ── Skicka e-postinbjudningar ─────────────────────────────────
 export async function bjudIn(
   formData: FormData
@@ -80,6 +95,7 @@ export async function bjudIn(
       }
 
       // Inbjudan finns men är inte accepterad — skicka om och säkerställ profil.
+      await rensaObekräftatKonto(admin, email)
       const { data: resendData, error: resendError } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
       if (resendError) {
         console.error(`[bjudIn] om-inbjudan fel för ${email}:`, resendError.message, resendError)
@@ -149,6 +165,9 @@ export async function bjudIn(
       resultat.push({ email, status: 'fel', meddelande: 'Kunde inte registrera inbjudan. Försök igen.' })
       continue
     }
+
+    // ── Rensa ev. obekräftat orphan-konto för att möjliggöra ny inbjudan ──
+    await rensaObekräftatKonto(admin, email)
 
     // ── Skicka inbjudan via Supabase Auth ────────────────────
     const { data: newInviteData, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
@@ -425,6 +444,7 @@ export async function skickaOmInbjudan(
   const admin = createAdminClient()
   const redirectTo = `${await getSiteUrl()}/login`
 
+  await rensaObekräftatKonto(admin, email)
   const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
 
   if (error) {
