@@ -100,7 +100,7 @@ export async function bjudIn(
       if (resendError) {
         console.error(`[bjudIn] om-inbjudan fel för ${email}:`, resendError.message, resendError)
 
-        const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(resendError.message)
+        const isAlreadyRegistered = /already.{0,15}registered|already exists|user already exists|email_exists/i.test(resendError.message)
         if (isAlreadyRegistered) {
           // Sök upp auth-ID och säkerställ profil
           const { data: authRow } = await (admin as any).schema('auth')
@@ -176,7 +176,7 @@ export async function bjudIn(
       console.error(`[bjudIn] fel för ${email}:`, error.message, error)
 
       // "already registered" → personen har ett aktivt konto, behandla som redan_registrerad
-      const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(error.message)
+      const isAlreadyRegistered = /already.{0,15}registered|already exists|user already exists|email_exists/i.test(error.message)
       if (isAlreadyRegistered) {
         // Sök upp auth-ID och säkerställ profil
         const { data: authRow } = await (admin as any).schema('auth')
@@ -448,7 +448,7 @@ export async function skickaOmInbjudan(
   const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
 
   if (error) {
-    const isAlreadyRegistered = /already registered|user already exists|email_exists/i.test(error.message)
+    const isAlreadyRegistered = /already.{0,15}registered|already exists|user already exists|email_exists/i.test(error.message)
 
     if (!isAlreadyRegistered) {
       console.error('[skickaOmInbjudan] fel:', error.message)
