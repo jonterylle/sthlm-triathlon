@@ -472,7 +472,7 @@ export async function skickaOmInbjudan(
       return { ok: false, meddelande: 'RESEND_API_KEY saknas — kan inte skicka e-post.' }
     }
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@sthlm-triathlon.se'
+    const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@funktionar.rylander.biz'
     const loginUrl  = linkData.properties.action_link
 
     const emailRes = await fetch('https://api.resend.com/emails', {
