@@ -496,8 +496,13 @@ export async function skickaOmInbjudan(
 
     if (!emailRes.ok) {
       const felText = await emailRes.text()
-      console.error('[skickaOmInbjudan] Resend fel:', felText)
-      return { ok: false, meddelande: 'Kunde inte skicka e-post via Resend.' }
+      console.error('[skickaOmInbjudan] Resend fel:', emailRes.status, felText)
+      let felDetalj = `HTTP ${emailRes.status}`
+      try {
+        const parsed = JSON.parse(felText)
+        felDetalj = parsed.message ?? parsed.error ?? felText
+      } catch { felDetalj = felText }
+      return { ok: false, meddelande: `Resend: ${felDetalj}` }
     }
   }
 
