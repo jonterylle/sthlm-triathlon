@@ -39,6 +39,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [inloggad, setInloggad] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -66,21 +67,40 @@ function LoginForm() {
       return;
     }
 
+    // VIKTIGT: inget await inuti callbacken — Supabase håller ett internt lås
+    // under callbackens körning och await här ger deadlock. Vi sätter bara en
+    // flagga synkront och gör allt async-arbete i effekten nedan.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if ((event !== "SIGNED_IN" && event !== "INITIAL_SESSION") || !session) return;
-        setStatus("loading");
-        const roll = await tillämpInbjudanRoll();
-        if (roll === "tl" || roll === "sektionsledare") {
-          window.location.replace("/dashboard");
-        } else {
-          window.location.replace("/welcome");
-        }
+        setInloggad(true);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Kör rollupplösning + redirect utanför onAuthStateChange-callbacken
+  useEffect(() => {
+    if (!inloggad) return;
+    setStatus("loading");
+
+    let avbruten = false;
+    (async () => {
+      let roll: string = "funktionar";
+      try {
+        roll = await tillämpInbjudanRoll();
+      } catch (err) {
+        console.error("[login] tillämpInbjudanRoll fel:", err);
+      }
+      if (avbruten) return;
+      window.location.replace(
+        roll === "tl" || roll === "sektionsledare" ? "/dashboard" : "/welcome"
+      );
+    })();
+
+    return () => { avbruten = true; };
+  }, [inloggad]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,7 +124,13 @@ function LoginForm() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-      {status === "sent" ? (
+      {inloggad ? (
+        <div className="text-center">
+          <div className="text-4xl mb-4">✅</div>
+          <h2 className="text-lg font-semibold text-brand-dark mb-2">Loggar in…</h2>
+          <p className="text-sm text-gray-500">Ett ögonblick, vi skickar dig vidare.</p>
+        </div>
+      ) : status === "sent" ? (
         <div className="text-center">
           <div className="text-4xl mb-4">📧</div>
           <h2 className="text-lg font-semibold text-brand-dark mb-2">Kolla din e-post!</h2>
