@@ -49,44 +49,37 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  // Handle implicit flow from invite emails (#access_token in URL hash)
+  // Lyssna på auth-händelser från Supabase (hanterar både invite- och magic-link-flödet).
+  // Med implicit flow processas #access_token automatiskt av Supabase-klienten vid
+  // sidladdning — hash är rensat innan vår kod körs, så vi kan inte läsa det manuellt.
+  // onAuthStateChange triggas av Supabase direkt efter att sessionen etablerats.
   useEffect(() => {
+    const supabase = createClient();
+
+    // Fånga eventuellt felmeddelande i hash (t.ex. utgången länk)
     const hash = window.location.hash;
-    if (!hash.includes("access_token")) return;
-
-    setStatus("loading");
-
-    async function handleInviteToken() {
+    if (hash.includes("error=")) {
       const params = new URLSearchParams(hash.substring(1));
-      const access_token = params.get("access_token");
-      const refresh_token = params.get("refresh_token");
-      if (!access_token || !refresh_token) return;
-
-      const supabase = createClient();
-
-      // Sätt session explicit från hash-token
-      const { data: { session }, error } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
-      });
-
-      if (error || !session) {
-        setStatus("error");
-        setErrorMsg("Inbjudningslänken är ogiltig eller har gått ut. Begär en ny inbjudan.");
-        return;
-      }
-
-      // Tillämpa rollen från inbjudan — uppdaterar även inbjudningsstatus och profil
-      const roll = await tillämpInbjudanRoll();
-
-      if (roll === "tl" || roll === "sektionsledare") {
-        window.location.replace("/dashboard");
-      } else {
-        window.location.replace("/welcome");
-      }
+      const desc = params.get("error_description") ?? "Länken är ogiltig eller har gått ut.";
+      setStatus("error");
+      setErrorMsg(decodeURIComponent(desc.replace(/\+/g, " ")));
+      return;
     }
 
-    handleInviteToken();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event !== "SIGNED_IN" || !session) return;
+        setStatus("loading");
+        const roll = await tillämpInbjudanRoll();
+        if (roll === "tl" || roll === "sektionsledare") {
+          window.location.replace("/dashboard");
+        } else {
+          window.location.replace("/welcome");
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
