@@ -68,7 +68,7 @@ function LoginForm() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event !== "SIGNED_IN" || !session) return;
+        if ((event !== "SIGNED_IN" && event !== "INITIAL_SESSION") || !session) return;
         setStatus("loading");
         const roll = await tillämpInbjudanRoll();
         if (roll === "tl" || roll === "sektionsledare") {
