@@ -9,7 +9,9 @@ import { join } from 'node:path'
  * kollar att koden faktiskt använder dem.
  */
 
-const rot = join(__dirname, '..')
+// process.cwd() är projektroten när vitest körs via npm-scriptet.
+// (__dirname finns inte i ESM-kontext, vilket vitest kör testerna i.)
+const rot = process.cwd()
 const läs = (p: string) => readFileSync(join(rot, p), 'utf8')
 
 describe('avsändaradress', () => {
