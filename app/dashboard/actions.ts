@@ -3,9 +3,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSiteUrl } from '@/lib/site-url'
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const TELEFON_RE = /^\+?[0-9\s\-]{7,15}$/
+import {
+  EMAIL_RE,
+  TELEFON_RE,
+  RESEND_FROM_FALLBACK,
+  normaliseraTelefon,
+  ärRedanRegistrerad,
+} from '@/lib/validering'
 
 export type InbjudanResultat = {
   email: string
@@ -100,7 +104,7 @@ export async function bjudIn(
       if (resendError) {
         console.error(`[bjudIn] om-inbjudan fel för ${email}:`, resendError.message, resendError)
 
-        const isAlreadyRegistered = /already.{0,15}registered|already exists|user already exists|email_exists/i.test(resendError.message)
+        const isAlreadyRegistered = ärRedanRegistrerad(resendError.message)
         if (isAlreadyRegistered) {
           // Sök upp auth-ID och säkerställ profil
           const { data: authRow } = await (admin as any).schema('auth')
@@ -176,7 +180,7 @@ export async function bjudIn(
       console.error(`[bjudIn] fel för ${email}:`, error.message, error)
 
       // "already registered" → personen har ett aktivt konto, behandla som redan_registrerad
-      const isAlreadyRegistered = /already.{0,15}registered|already exists|user already exists|email_exists/i.test(error.message)
+      const isAlreadyRegistered = ärRedanRegistrerad(error.message)
       if (isAlreadyRegistered) {
         // Sök upp auth-ID och säkerställ profil
         const { data: authRow } = await (admin as any).schema('auth')
@@ -245,10 +249,7 @@ export async function skickaSMSInbjudan(
 
   for (const telefon of nummer) {
     // Normalisera till E.164 — strip mellanslag, bindestreck, parenteser osv
-    const stripped = telefon.replace(/[^\d+]/g, '')
-    const normaliseradTelefon = stripped.startsWith('0')
-      ? '+46' + stripped.slice(1)
-      : stripped
+    const normaliseradTelefon = normaliseraTelefon(telefon)
 
     // Redan inbjuden via SMS?
     const { data: befintlig } = await supabase
@@ -358,8 +359,7 @@ export async function skickaGroupSMS(
   const fel: GroupSMSResultat['fel'] = []
 
   for (const p of mottagare) {
-    const stripped = (p.telefon as string).replace(/[^\d+]/g, '')
-    const telefon = stripped.startsWith('0') ? '+46' + stripped.slice(1) : stripped
+    const telefon = normaliseraTelefon(p.telefon as string)
 
     const smsRes = await fetch('https://api.46elks.com/a1/sms', {
       method: 'POST',
@@ -448,7 +448,7 @@ export async function skickaOmInbjudan(
   const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo })
 
   if (error) {
-    const isAlreadyRegistered = /already.{0,15}registered|already exists|user already exists|email_exists/i.test(error.message)
+    const isAlreadyRegistered = ärRedanRegistrerad(error.message)
 
     if (!isAlreadyRegistered) {
       console.error('[skickaOmInbjudan] fel:', error.message)
@@ -472,7 +472,7 @@ export async function skickaOmInbjudan(
       return { ok: false, meddelande: 'RESEND_API_KEY saknas — kan inte skicka e-post.' }
     }
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@funktionar.rylander.biz'
+    const fromEmail = process.env.RESEND_FROM_EMAIL ?? RESEND_FROM_FALLBACK
     const loginUrl  = linkData.properties.action_link
 
     const emailRes = await fetch('https://api.resend.com/emails', {

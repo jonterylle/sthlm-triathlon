@@ -1,0 +1,26 @@
+#!/bin/sh
+#
+# Kör typkontroll och tester före varje push.
+# Avbryter pushen om något fallerar.
+#
+# Aktiveras med:  git config core.hooksPath .githooks
+# Kringgås vid behov med:  git push --no-verify
+
+echo "▶ Typkontroll (tsc --noEmit)…"
+if ! npm run --silent type-check; then
+  echo ""
+  echo "✖ Typkontrollen misslyckades — pushen avbruten."
+  echo "  Rätta felen ovan, eller kringgå med: git push --no-verify"
+  exit 1
+fi
+
+echo "▶ Tester (vitest)…"
+if ! npm run --silent test; then
+  echo ""
+  echo "✖ Testerna misslyckades — pushen avbruten."
+  echo "  Rätta felen ovan, eller kringgå med: git push --no-verify"
+  exit 1
+fi
+
+echo "✔ Allt grönt — pushar."
+exit 0

@@ -12,3 +12,7 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
+tsconfig.tsbuildinfo 
