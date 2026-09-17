@@ -104,7 +104,7 @@ export default async function AnmalanPage({ params }: Props) {
       </form>
 
       <p className="mt-4 text-xs text-gray-400 text-center">
-        STHLM Triathlon 2026 · 9 aug · Stora Skuggan
+        STHLM Triathlon · 9 aug · Stora Skuggan
       </p>
     </Skal>
   )

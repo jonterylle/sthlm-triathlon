@@ -92,7 +92,7 @@ export default function SektionsledareApp({ rader, slNamn }: Props) {
     .filter((e, i, arr) => arr.indexOf(e) === i)
 
   const mailtoHref = allaEmails.length > 0
-    ? `mailto:${allaEmails.join(',')}?subject=STHLM Triathlon 2026 – ${sektionNamn}`
+    ? `mailto:${allaEmails.join(',')}?subject=STHLM Triathlon – ${sektionNamn}`
     : undefined
 
   function hanteraMatToggle(tilldelningId: string, nuläge: boolean) {

@@ -30,7 +30,7 @@ self.addEventListener('push', (event) => {
   let payload
   try { payload = event.data.json() } catch { payload = { title: 'STHLM Triathlon', body: event.data.text() } }
 
-  const title   = payload.title ?? 'STHLM Triathlon 2026'
+  const title   = payload.title ?? 'STHLM Triathlon'
   const options = {
     body:    payload.body ?? '',
     icon:    '/icon-192.png',

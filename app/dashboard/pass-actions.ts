@@ -174,7 +174,7 @@ async function skickaAndringsMail(
     const html = `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
         <div style="background:#0066CC;padding:20px;border-radius:8px 8px 0 0">
-          <h1 style="color:white;margin:0;font-size:20px">STHLM <span style="color:#FF6B35">Triathlon</span> 2026</h1>
+          <h1 style="color:white;margin:0;font-size:20px">STHLM <span style="color:#FF6B35">Triathlon</span></h1>
         </div>
         <div style="background:white;padding:24px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">
           <p style="color:#111827">Hej ${namn}!</p>

@@ -83,7 +83,7 @@ export default function FunktionarApp({
             </div>
             <div>
               <h1 className="text-sm font-bold text-gray-900 leading-tight">
-                STHLM <span className="text-[#FF6B35]">Triathlon</span> 2026
+                STHLM <span className="text-[#FF6B35]">Triathlon</span>
               </h1>
               <p className="text-[10px] text-gray-400 leading-tight">9 aug · Stora Skuggan</p>
             </div>

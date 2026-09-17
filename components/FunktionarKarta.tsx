@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import 'leaflet/dist/leaflet.css'
 import type { TilldelningInfo } from '@/components/FunktionarApp'
 
-// Arena: Stora Skuggan / STHLM Triathlon 2026
+// Arena: Stora Skuggan / STHLM Triathlon
 const ARENA_LAT = 59.364585
 const ARENA_LNG = 18.074520
 const KARTA_ZOOM = 14
@@ -76,7 +76,7 @@ export default function FunktionarKarta({ tilldelningar }: Props) {
         .addTo(map)
         .bindPopup(`
           <div style="font-family:sans-serif;font-size:13px;">
-            <strong>🏁 Arena – STHLM Triathlon 2026</strong><br>
+            <strong>🏁 Arena – STHLM Triathlon</strong><br>
             <span style="color:#666;">Stora Skuggan, Norra Djurgården</span>
           </div>
         `)

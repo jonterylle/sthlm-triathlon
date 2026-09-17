@@ -276,7 +276,7 @@ export async function skickaSMSInbjudan(
     }
 
     const anmalanUrl = `${siteUrl}/anmalan/${smsRad.token}`
-    const meddelande = `Hej! Du är inbjuden som funktionär till STHLM Triathlon 2026. Anmäl dig här: ${anmalanUrl}`
+    const meddelande = `Hej! Du är inbjuden som funktionär till STHLM Triathlon. Anmäl dig här: ${anmalanUrl}`
 
     // Skicka SMS via 46elks
     const auth = Buffer.from(`${elksUser}:${elksPass}`).toString('base64')
@@ -482,12 +482,12 @@ export async function skickaOmInbjudan(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `STHLM Triathlon 2026 <${fromEmail}>`,
+        from: `STHLM Triathlon <${fromEmail}>`,
         to: [email],
-        subject: 'Din inloggningslänk till STHLM Triathlon 2026',
+        subject: 'Din inloggningslänk till STHLM Triathlon',
         html: `
           <p>Hej!</p>
-          <p>Klicka på länken nedan för att logga in på STHLM Triathlon 2026:</p>
+          <p>Klicka på länken nedan för att logga in på STHLM Triathlon:</p>
           <p><a href="${loginUrl}" style="background:#0066CC;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Logga in</a></p>
           <p style="color:#999;font-size:12px;">Länken är giltig i 1 timme. Om du inte begärt denna länk kan du ignorera detta mail.</p>
         `,

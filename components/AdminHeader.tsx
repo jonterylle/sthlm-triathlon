@@ -30,7 +30,7 @@ export default function AdminHeader({ roleLabel, namn }: Props) {
             </div>
             <div>
               <p className="text-base font-bold text-gray-900 leading-tight">
-                STHLM <span className="text-[#FF6B35]">Triathlon</span> 2026
+                STHLM <span className="text-[#FF6B35]">Triathlon</span>
               </p>
               <p className="text-[11px] text-gray-400">9 aug · Stora Skuggan</p>
             </div>

@@ -3,7 +3,7 @@ import "./globals.css";
 import Script from "next/script";
 
 export const metadata: Metadata = {
-  title: "STHLM Triathlon 2026 — Funktionärsapp",
+  title: "STHLM Triathlon — Funktionärsapp",
   description: "Hantering av funktionärer för STHLM Triathlon 9 augusti 2026",
   manifest: "/manifest.json",
   appleWebApp: {

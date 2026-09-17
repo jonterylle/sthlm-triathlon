@@ -123,12 +123,12 @@ async function skickabekraftelsemail(
   const html = `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
       <div style="background:#0066CC;padding:20px;border-radius:8px 8px 0 0">
-        <h1 style="color:white;margin:0;font-size:20px">STHLM <span style="color:#FF6B35">Triathlon</span> 2026</h1>
+        <h1 style="color:white;margin:0;font-size:20px">STHLM <span style="color:#FF6B35">Triathlon</span></h1>
         <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px">9 augusti · Stora Skuggan, Norra Djurgården</p>
       </div>
       <div style="background:white;padding:24px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">
         <p style="color:#111827;font-size:16px">Hej ${namn}!</p>
-        <p style="color:#374151">Du har tilldelats ett pass som funktionär på STHLM Triathlon 2026.</p>
+        <p style="color:#374151">Du har tilldelats ett pass som funktionär på STHLM Triathlon.</p>
         <div style="background:#f0f7ff;border-left:4px solid #0066CC;padding:16px;border-radius:4px;margin:20px 0">
           <p style="margin:0 0 8px;font-weight:600;color:#0066CC">${sektionNamn}</p>
           <p style="margin:0 0 4px;color:#374151"><strong>Pass:</strong> ${pass.namn}</p>

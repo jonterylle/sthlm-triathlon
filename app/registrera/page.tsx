@@ -46,7 +46,7 @@ export default async function RegistreraPage({ searchParams }: Props) {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">
-              STHLM <span className="text-[#FF6B35]">Triathlon</span> 2026
+              STHLM <span className="text-[#FF6B35]">Triathlon</span>
             </h1>
             <p className="text-xs text-gray-500">Funktionärsregistrering</p>
           </div>
