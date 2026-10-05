@@ -15,3 +15,10 @@ Thumbs.db
 
 # TypeScript incremental build cache
 tsconfig.tsbuildinfo
+
+# Hemligheter och lokala arbetsfiler — ska aldrig committas
+vercel recovery/
+*recovery-codes*
+*.pem
+*.key
+_test_write.txt
