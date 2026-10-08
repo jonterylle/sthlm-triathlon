@@ -44,6 +44,50 @@ describe('login-flödet', () => {
   })
 })
 
+/**
+ * Plockar ut en exporterad funktions kropp ur en källfil.
+ *
+ * Klipper vid NÄSTA `export async function` i stället för vid första `\n}`.
+ * Första varianten gav falska utslag på funktioner med flerradig
+ * parametertyp (`data: { ... }`), där `}` stänger typen och inte kroppen.
+ */
+function funktionskropp(källa: string, namn: string): string {
+  const start = källa.indexOf(`export async function ${namn}`)
+  if (start === -1) throw new Error(`Hittade inte ${namn}`)
+  const efter = källa.indexOf('export async function ', start + 1)
+  return källa.slice(start, efter === -1 ? undefined : efter)
+}
+
+describe('behörighet: sektionsredigering', () => {
+  const actions = läs('app/dashboard/sektions-actions.ts')
+
+  it('uppdateraSektion använder sektionsbehörighet, inte bara TL', () => {
+    expect(funktionskropp(actions, 'uppdateraSektion'))
+      .toContain('verifieraSektionsbehorighet')
+  })
+
+  // Att skapa och radera sektioner, och att utse vem som ansvarar, är
+  // tävlingsledarbeslut. Skulle någon av dessa luckras upp till
+  // sektionsbehörighet kan en ansvarig radera sin sektion eller utse
+  // sig själv — därför är de låsta här.
+  it.each([
+    'skapaSektion',
+    'taBortSektion',
+    'tilldelaSektionsledare',
+    'taBortSektionsledare',
+  ])('%s är fortfarande TL-only', (namn: string) => {
+    expect(funktionskropp(actions, namn)).toContain('verifieraTL()')
+  })
+
+  it('SektionModal döljer SL-hantering och radering för icke-TL', () => {
+    const modal = läs('components/SektionModal.tsx')
+    // Kontrollerna för att utse ansvariga och radera sektionen får bara
+    // renderas för TL — annars erbjuds åtgärder som servern avvisar.
+    expect(modal).toContain('{!arNy && isTL && (')
+    expect(modal).toContain('{!arNy && !isTL && (')
+  })
+})
+
 describe('supabase-klienten', () => {
   it('använder implicit flow (löser cross-device-inloggning)', () => {
     const client = läs('lib/supabase/client.ts')

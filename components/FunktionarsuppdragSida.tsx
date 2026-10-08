@@ -554,6 +554,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
         <SektionModal
           nästaSortorder={nästaSortorder}
           allaSL={allaSL}
+          isTL={isTL}
           koppladeSL={[]}
           onClose={() => setSektionModal(null)}
           onSparat={hanteraSektionSparad}
@@ -570,6 +571,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
         <SektionModal
           sektion={sektionModal.sektion}
           allaSL={allaSL}
+          isTL={isTL}
           koppladeSL={lokalaSektionSL.filter(s => s.sektion_id === sektionModal.sektion.id)}
           onClose={() => setSektionModal(null)}
           onSparat={hanteraSektionSparad}

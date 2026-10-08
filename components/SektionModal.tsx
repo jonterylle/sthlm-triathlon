@@ -29,6 +29,12 @@ interface Props {
   onBorttagen: (sektionId: string) => void
   onSLTillagd: (sl: SektionSL) => void
   onSLBorttagen: (sektionId: string, profilId: string) => void
+  /**
+   * Tävlingsledare. Styr vad som får ändras i modalen:
+   * bara TL får utse sektionsansvariga eller ta bort sektionen.
+   * En sektionsansvarig redigerar innehållet i sin sektion.
+   */
+  isTL: boolean
 }
 
 export default function SektionModal({
@@ -41,6 +47,7 @@ export default function SektionModal({
   onBorttagen,
   onSLTillagd,
   onSLBorttagen,
+  isTL,
 }: Props) {
   const arNy = !sektion
 
@@ -250,15 +257,42 @@ export default function SektionModal({
             </div>
           </div>
 
-          {/* ── Sektionsledare (bara vid redigering av befintlig sektion) ── */}
-          {!arNy && (
+          {/* ── Sektionsansvariga ─────────────────────────────────── */}
+          {/* Läsvy för sektionsansvarig: bara TL får ändra vem som ansvarar,
+              annars skulle en ansvarig kunna ta bort sig själv eller lägga
+              till kollegor. Serveranropen avvisar det ändå — här döljs
+              kontrollerna så att de inte ens erbjuds. */}
+          {!arNy && !isTL && (
             <div className="pt-2 border-t border-gray-100">
-              <label className="block text-xs text-gray-500 mb-2">Sektionsledare</label>
+              <label className="block text-xs text-gray-500 mb-2">Sektionsansvariga</label>
+              <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+                {lokalaKoppladeSL.length === 0 ? (
+                  <span className="text-xs text-gray-300 italic">Ingen ansvarig utsedd</span>
+                ) : (
+                  lokalaKoppladeSL.map(sl => (
+                    <span
+                      key={sl.profil_id}
+                      className="inline-flex items-center text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-1 rounded-full"
+                    >
+                      {sl.full_name ?? sl.email}
+                    </span>
+                  ))
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                Kontakta tävlingsledningen för att ändra vem som är ansvarig.
+              </p>
+            </div>
+          )}
+
+          {!arNy && isTL && (
+            <div className="pt-2 border-t border-gray-100">
+              <label className="block text-xs text-gray-500 mb-2">Sektionsansvariga</label>
 
               {/* Kopplade SL */}
               <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
                 {lokalaKoppladeSL.length === 0 && (
-                  <span className="text-xs text-gray-300 italic">Ingen sektionsledare kopplad</span>
+                  <span className="text-xs text-gray-300 italic">Ingen ansvarig utsedd</span>
                 )}
                 {lokalaKoppladeSL.map(sl => (
                   bekräftaTaBortSL === sl.profil_id ? (
@@ -336,7 +370,7 @@ export default function SektionModal({
           >
             {isPending && !raderar ? 'Sparar…' : arNy ? 'Skapa sektion' : 'Spara ändringar'}
           </button>
-          {!arNy && (
+          {!arNy && isTL && (
             <button type="button" onClick={handleTaBort} disabled={isPending}
               className="w-full bg-white hover:bg-red-50 disabled:opacity-60 text-red-600 border border-red-200 font-medium py-3 rounded-xl text-sm transition-colors"
             >
