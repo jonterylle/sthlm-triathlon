@@ -41,6 +41,65 @@ export function ärRedanRegistrerad(felmeddelande: string): boolean {
   return REDAN_REGISTRERAD_RE.test(felmeddelande)
 }
 
+// ── Roller ────────────────────────────────────────────────────
+export type Roll = 'funktionar' | 'domare' | 'sektionsledare' | 'tl'
+
+export const ROLL_LABELS: Record<Roll, string> = {
+  funktionar:     'Funktionär',
+  domare:         'Domare',
+  sektionsledare: 'Sektionsledare',
+  tl:             'Tävlingsledare',
+}
+
+/**
+ * Tolkar en roll ur fritext (t.ex. en Excel-kolumn).
+ *
+ * Accepterar både databasvärdet och svensk benämning, oavsett skiftläge
+ * och med eller utan diakriter — "Funktionär", "funktionar" och
+ * "FUNKTIONAR" ger alla 'funktionar'.
+ *
+ * Returnerar null för okänt värde. Anropande kod ska avvisa raden i
+ * stället för att gissa: en felstavning får inte tyst ge en person
+ * högre behörighet än avsett.
+ */
+export function tolkaRoll(raw: string): Roll | null {
+  const utanDiakriter = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[äå]/g, 'a')
+    .replace(/ö/g, 'o')
+
+  if (!utanDiakriter) return null
+
+  // Kortformerna kräver exakt match. Vi kan inte strippa inre blanksteg
+  // här, för då skulle "t l" tolkas som tävlingsledare — nonsens-text i
+  // en cell får inte ge full behörighet.
+  if (utanDiakriter === 'tl') return 'tl'
+  if (utanDiakriter === 'sl') return 'sektionsledare'
+
+  // Längre benämningar tål blanksteg och bindestreck ("Tävlings ledare")
+  const kompakt = utanDiakriter.replace(/[\s_-]/g, '')
+
+  switch (kompakt) {
+    case 'funktionar':
+    case 'volontar':
+    case 'volunteer':
+      return 'funktionar'
+    case 'domare':
+    case 'judge':
+    case 'referee':
+      return 'domare'
+    case 'sektionsledare':
+    case 'sektionsansvarig':
+      return 'sektionsledare'
+    case 'tavlingsledare':
+    case 'racedirector':
+      return 'tl'
+    default:
+      return null
+  }
+}
+
 /**
  * Parsar en fritextlista med e-postadresser (kommaseparerad eller radbruten).
  * Trimmar, gemeniserar, filtrerar bort ogiltiga och kapar vid maxAntal.

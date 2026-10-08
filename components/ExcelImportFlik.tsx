@@ -2,6 +2,7 @@
 
 import { useState, useRef, useTransition } from 'react'
 import { importeraFunktionarer } from '@/app/dashboard/actions'
+import { tolkaRoll, ROLL_LABELS, type Roll } from '@/lib/validering'
 
 // ── Typer ─────────────────────────────────────────────────────
 interface ParsedRow {
@@ -11,6 +12,10 @@ interface ParsedRow {
   telefon: string
   klubb: string
   kompetenser: string[]
+  /** Roll från filens roll-kolumn. null = kolumn saknas, använd standardroll */
+  roll: Roll | null
+  /** Rått värde när roll-kolumnen fanns men inte kunde tolkas */
+  rollRaw: string
   fel: string | null
 }
 
@@ -45,7 +50,7 @@ function parseKompetenser(raw: string): string[] {
 function parseRader(data: unknown[][]): ParsedRow[] {
   // Hitta rubrikrad (rad med 'email' eller 'e-post')
   let headerIdx = 0
-  let emailKol = -1, namnKol = -1, telefonKol = -1, klubbKol = -1, kompKol = -1
+  let emailKol = -1, namnKol = -1, telefonKol = -1, klubbKol = -1, kompKol = -1, rollKol = -1
 
   for (let i = 0; i < Math.min(5, data.length); i++) {
     const row = data[i].map(c => String(c ?? '').toLowerCase().trim())
@@ -57,6 +62,7 @@ function parseRader(data: unknown[][]): ParsedRow[] {
       telefonKol = row.findIndex(c => c.includes('telefon') || c.includes('phone') || c.includes('mobil'))
       klubbKol   = row.findIndex(c => c.includes('klubb') || c.includes('club'))
       kompKol    = row.findIndex(c => c.includes('kompetens') || c.includes('skill'))
+      rollKol    = row.findIndex(c => c.includes('roll') || c === 'role' || c.includes('uppdragstyp'))
       break
     }
   }
@@ -73,6 +79,11 @@ function parseRader(data: unknown[][]): ParsedRow[] {
     const telefon   = telefonKol >= 0 ? String(row[telefonKol] ?? '').trim() : ''
     const klubb     = klubbKol   >= 0 ? String(row[klubbKol]   ?? '').trim() : ''
     const kompRaw   = kompKol    >= 0 ? String(row[kompKol]    ?? '').trim() : ''
+    const rollRaw   = rollKol    >= 0 ? String(row[rollKol]    ?? '').trim() : ''
+
+    const roll = rollRaw ? tolkaRoll(rollRaw) : null
+    // Okänd roll är ett fel, inte något att gissa kring
+    const rollFel = rollRaw && !roll ? `Okänd roll: "${rollRaw}"` : null
 
     rader.push({
       rad: i + 1,
@@ -81,7 +92,9 @@ function parseRader(data: unknown[][]): ParsedRow[] {
       telefon,
       klubb,
       kompetenser: parseKompetenser(kompRaw),
-      fel: !EMAIL_RE.test(email) ? 'Ogiltig e-postadress' : null,
+      roll,
+      rollRaw,
+      fel: !EMAIL_RE.test(email) ? 'Ogiltig e-postadress' : rollFel,
     })
   }
   return rader
@@ -94,6 +107,7 @@ export default function ExcelImportFlik() {
   const [resultat, setResultat]       = useState<ImportResultat[] | null>(null)
   const [laddas, setLaddas]           = useState(false)
   const [fel, setFel]                 = useState<string | null>(null)
+  const [standardRoll, setStandardRoll] = useState<Roll>('funktionar')
   const [isPending, startTransition]  = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -154,6 +168,7 @@ export default function ExcelImportFlik() {
     startTransition(async () => {
       const fd = new FormData()
       fd.append('rader', JSON.stringify(giltiga))
+      fd.append('standardRoll', standardRoll)
       const res = await importeraFunktionarer(fd)
       setResultat(res.resultat)
     })
@@ -168,6 +183,7 @@ export default function ExcelImportFlik() {
   }
 
   const giltiga  = rader.filter(r => !r.fel)
+  const antalMedRollIFil = rader.filter(r => r.roll !== null).length
   const ogiltiga = rader.filter(r => r.fel)
 
   // ── Resultatvy ───────────────────────────────────────────────
@@ -223,6 +239,37 @@ export default function ExcelImportFlik() {
           <button onClick={resetera} className="text-xs text-gray-400 hover:text-gray-600">Byt fil</button>
         </div>
 
+        {/* Rollväljare — gäller rader utan roll-kolumn i filen */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Roll för rader utan roll-kolumn
+          </label>
+          <select
+            value={standardRoll}
+            onChange={e => setStandardRoll(e.target.value as Roll)}
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066CC]"
+          >
+            {(Object.keys(ROLL_LABELS) as Roll[]).map(r => (
+              <option key={r} value={r}>{ROLL_LABELS[r]}</option>
+            ))}
+          </select>
+          {antalMedRollIFil > 0 ? (
+            <p className="text-xs text-gray-500">
+              {antalMedRollIFil} av {rader.length} rader har en egen roll i filen och påverkas inte av valet ovan.
+            </p>
+          ) : (
+            <p className="text-xs text-gray-500">
+              Filen saknar roll-kolumn — alla {giltiga.length} rader importeras som{' '}
+              <strong>{ROLL_LABELS[standardRoll]}</strong>.
+            </p>
+          )}
+          {standardRoll === 'tl' && antalMedRollIFil === 0 && (
+            <p className="text-xs text-amber-600">
+              Observera: tävlingsledare har full behörighet till hela appen.
+            </p>
+          )}
+        </div>
+
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -230,6 +277,7 @@ export default function ExcelImportFlik() {
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="px-3 py-2 text-left font-medium text-gray-500">Namn</th>
                   <th className="px-3 py-2 text-left font-medium text-gray-500">E-post</th>
+                  <th className="px-3 py-2 text-left font-medium text-gray-500">Roll</th>
                   <th className="px-3 py-2 text-left font-medium text-gray-500 hidden sm:table-cell">Telefon</th>
                   <th className="px-3 py-2 text-left font-medium text-gray-500 hidden md:table-cell">Klubb</th>
                   <th className="px-3 py-2 text-left font-medium text-gray-500 hidden lg:table-cell">Kompetenser</th>
@@ -241,6 +289,17 @@ export default function ExcelImportFlik() {
                   <tr key={r.rad} className={r.fel ? 'bg-red-50' : ''}>
                     <td className="px-3 py-2 text-gray-900">{r.namn || <span className="text-gray-300">—</span>}</td>
                     <td className="px-3 py-2 text-gray-700">{r.email}</td>
+                    <td className="px-3 py-2">
+                      {r.roll ? (
+                        <span className="inline-block bg-gray-100 text-gray-700 text-[10px] px-1.5 py-0.5 rounded-full">
+                          {ROLL_LABELS[r.roll]}
+                        </span>
+                      ) : r.rollRaw ? (
+                        <span className="text-red-500">{r.rollRaw}</span>
+                      ) : (
+                        <span className="text-gray-400 italic">{ROLL_LABELS[standardRoll]}</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-gray-500 hidden sm:table-cell">{r.telefon || '—'}</td>
                     <td className="px-3 py-2 text-gray-500 hidden md:table-cell">{r.klubb || '—'}</td>
                     <td className="px-3 py-2 hidden lg:table-cell">

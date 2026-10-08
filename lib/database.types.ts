@@ -1,4 +1,4 @@
-export type UserRole = 'tl' | 'sektionsledare' | 'funktionar'
+export type UserRole = 'tl' | 'sektionsledare' | 'funktionar' | 'domare'
 export type TilldelningStatus = 'bekraftad' | 'avbokad' | 'standby'
 export type SektionStatus = 'full' | 'delvis' | 'tom'
 export type SektionOmrade = 'simning' | 't1' | 'cykling' | 'lopning' | 'arena_t2' | 'ovrigt'

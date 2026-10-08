@@ -4,9 +4,62 @@ import {
   ärRedanRegistrerad,
   parseEmailLista,
   parseTelefonLista,
+  tolkaRoll,
+  ROLL_LABELS,
   EMAIL_RE,
   RESEND_FROM_FALLBACK,
 } from './validering'
+
+// ─────────────────────────────────────────────────────────────
+// 0. Rolltolkning vid Excel-import
+//    Säkerhetskritiskt: en feltolkad roll ger fel behörighet.
+//    Okänt värde MÅSTE ge null så att raden avvisas i stället för
+//    att tystlåtet bli funktionär — eller värre, tävlingsledare.
+// ─────────────────────────────────────────────────────────────
+describe('tolkaRoll', () => {
+  it('tolkar databasvärden', () => {
+    expect(tolkaRoll('funktionar')).toBe('funktionar')
+    expect(tolkaRoll('domare')).toBe('domare')
+    expect(tolkaRoll('sektionsledare')).toBe('sektionsledare')
+    expect(tolkaRoll('tl')).toBe('tl')
+  })
+
+  it('tolkar svenska benämningar med diakriter', () => {
+    expect(tolkaRoll('Funktionär')).toBe('funktionar')
+    expect(tolkaRoll('Tävlingsledare')).toBe('tl')
+    expect(tolkaRoll('Sektionsansvarig')).toBe('sektionsledare')
+  })
+
+  it('är skiftlägesokänslig och tål mellanslag', () => {
+    expect(tolkaRoll('  DOMARE  ')).toBe('domare')
+    expect(tolkaRoll('Tävlings ledare')).toBe('tl')
+  })
+
+  // Det viktigaste: okänt får inte tolkas som något
+  it('ger null för okänd roll', () => {
+    expect(tolkaRoll('chef')).toBeNull()
+    expect(tolkaRoll('admin')).toBeNull()
+    expect(tolkaRoll('superuser')).toBeNull()
+  })
+
+  it('ger null för tom sträng', () => {
+    expect(tolkaRoll('')).toBeNull()
+    expect(tolkaRoll('   ')).toBeNull()
+  })
+
+  it('tolkar inte felstavningar som tävlingsledare', () => {
+    // En slarvig rad ska avvisas, inte ge full behörighet
+    for (const s of ['tävlingsledar', 'tlx', 't l', 'tavling', 'ledare']) {
+      expect(tolkaRoll(s), `"${s}" ska inte bli tl`).not.toBe('tl')
+    }
+  })
+
+  it('har en etikett för varje roll', () => {
+    for (const roll of ['funktionar', 'domare', 'sektionsledare', 'tl'] as const) {
+      expect(ROLL_LABELS[roll]).toBeTruthy()
+    }
+  })
+})
 
 // ─────────────────────────────────────────────────────────────
 // 1. Telefonnormalisering till E.164

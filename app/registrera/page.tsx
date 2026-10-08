@@ -19,7 +19,8 @@ export default async function RegistreraPage({ searchParams }: Props) {
     .eq('id', user.id)
     .single()
 
-  if (!profile || (profile.role !== 'funktionar' && profile.role !== 'sektionsledare')) {
+  const fårRegistrera = ['funktionar', 'domare', 'sektionsledare']
+  if (!profile || !fårRegistrera.includes(profile.role)) {
     return redirect('/dashboard')
   }
 

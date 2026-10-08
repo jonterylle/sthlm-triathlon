@@ -9,6 +9,7 @@ import {
   RESEND_FROM_FALLBACK,
   normaliseraTelefon,
   ärRedanRegistrerad,
+  tolkaRoll,
 } from '@/lib/validering'
 
 export type InbjudanResultat = {
@@ -601,6 +602,7 @@ export async function importeraFunktionarer(
     telefon: string
     klubb: string
     kompetenser: string[]
+    roll?: string
   }>
 
   try {
@@ -610,6 +612,9 @@ export async function importeraFunktionarer(
   }
 
   if (!Array.isArray(rader) || rader.length === 0) return { resultat: [] }
+
+  // Standardroll från gränssnittet — används för rader utan roll-kolumn
+  const standardRoll = tolkaRoll(String(formData.get('standardRoll') ?? '')) ?? 'funktionar'
 
   // Max 200 rader per import
   const begransade = rader.slice(0, 200)
@@ -627,6 +632,15 @@ export async function importeraFunktionarer(
     const email = String(rad.email ?? '').trim().toLowerCase()
     if (!EMAIL_RE.test(email)) {
       resultat.push({ email, status: 'fel', meddelande: 'Ogiltig e-post' })
+      continue
+    }
+
+    // Roll per rad om kolumnen finns, annars vald standardroll.
+    // Okänt värde i filen avvisas hellre än tolkas fel — en felstavning
+    // ska inte tysta ge någon högre behörighet än avsett.
+    const radRoll = rad.roll ? tolkaRoll(String(rad.roll)) : standardRoll
+    if (!radRoll) {
+      resultat.push({ email, status: 'fel', meddelande: `Okänd roll: "${String(rad.roll).trim()}"` })
       continue
     }
 
@@ -652,7 +666,7 @@ export async function importeraFunktionarer(
     // när auth.users INSERT sker skapas ingen profil.
     const { data: nyInbjudan, error: insertError } = await supabase
       .from('inbjudningar')
-      .insert({ email, skickad_av: user.id, status: 'skickad', roll: 'funktionar' })
+      .insert({ email, skickad_av: user.id, status: 'skickad', roll: radRoll })
       .select('id')
       .single()
 
@@ -684,7 +698,7 @@ export async function importeraFunktionarer(
     if (authUserId) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (admin.from('profiles') as any).upsert(
-        { id: authUserId, email, role: 'funktionar' },
+        { id: authUserId, email, role: radRoll },
         { onConflict: 'id', ignoreDuplicates: true },
       )
     }
