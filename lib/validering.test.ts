@@ -5,10 +5,50 @@ import {
   parseEmailLista,
   parseTelefonLista,
   tolkaRoll,
+  tolkaSparadeIds,
   ROLL_LABELS,
   EMAIL_RE,
   RESEND_FROM_FALLBACK,
 } from './validering'
+
+// ─────────────────────────────────────────────────────────────
+// Sparat ihopfällningsläge från sessionStorage
+// Innehållet är inte att lita på — skadad eller främmande data får
+// inte krascha vyn, utan ska falla tillbaka på "allt ihopfällt".
+// ─────────────────────────────────────────────────────────────
+describe('tolkaSparadeIds', () => {
+  it('läser en sparad lista', () => {
+    const r = tolkaSparadeIds('["a","b"]')
+    expect([...r].sort()).toEqual(['a', 'b'])
+  })
+
+  it('ger tom mängd för null (inget sparat ännu)', () => {
+    expect(tolkaSparadeIds(null).size).toBe(0)
+  })
+
+  it('ger tom mängd för tom sträng', () => {
+    expect(tolkaSparadeIds('').size).toBe(0)
+  })
+
+  it('ger tom mängd för trasig JSON', () => {
+    expect(tolkaSparadeIds('{inte json').size).toBe(0)
+  })
+
+  it('ger tom mängd när värdet inte är en array', () => {
+    expect(tolkaSparadeIds('{"a":1}').size).toBe(0)
+    expect(tolkaSparadeIds('"text"').size).toBe(0)
+    expect(tolkaSparadeIds('42').size).toBe(0)
+  })
+
+  it('filtrerar bort element som inte är strängar', () => {
+    const r = tolkaSparadeIds('["a",1,null,{"b":2},"c"]')
+    expect([...r].sort()).toEqual(['a', 'c'])
+  })
+
+  it('tappar dubbletter', () => {
+    expect(tolkaSparadeIds('["a","a","b"]').size).toBe(2)
+  })
+})
 
 // ─────────────────────────────────────────────────────────────
 // 0. Rolltolkning vid Excel-import

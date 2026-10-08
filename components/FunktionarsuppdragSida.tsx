@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo, useTransition } from 'react'
+import { useState, useMemo, useEffect, useTransition } from 'react'
 import TilldelningsModal from '@/components/TilldelningsModal'
 import PassModal from '@/components/PassModal'
 import SektionModal from '@/components/SektionModal'
 import { taBortTilldelning } from '@/app/dashboard/tilldela'
+import { tolkaSparadeIds } from '@/lib/validering'
 import type { PassMedSektion, TilldeladPerPass, FunktionarForTilldelning, SektionBemanningsgrad, SektionSL, SektionsledareInfo } from '@/lib/database.types'
 
 const KOMPETENS_LABELS: Record<string, string> = {
@@ -24,6 +25,9 @@ function formateraDatumKort(iso: string): string {
   const d = new Date(iso + 'T12:00:00')
   return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })
 }
+
+/** Nyckel för sessionStorage — versionssuffix så ett gammalt format ignoreras */
+const SESSION_NYCKEL = 'funktionarsuppdrag:utfallda:v1'
 
 type PassModalState    = { typ: 'nytt' } | { typ: 'redigera'; pass: PassMedSektion }
 type SektionModalState = { typ: 'ny' }   | { typ: 'redigera'; sektion: SektionBemanningsgrad }
@@ -199,12 +203,42 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
   const totaltSaknas   = lokalaPasser.reduce((s, p) => s + Math.max(0, p.saknas), 0)
   const nästaSortorder = Math.max(0, ...lokalaSektioner.map(s => s.sortorder)) + 1
 
-  // ── Ihopfällda sektioner ─────────────────────────────────────
-  // Lagrar de som är STÄNGDA, så att nya sektioner är öppna som standard.
-  const [hopfallda, setHopfallda] = useState<Set<string>>(new Set())
+  // ── Utfällda sektioner ───────────────────────────────────────
+  // Lagrar de som är ÖPPNA, inte de stängda. Tomt läge betyder därför
+  // att allt är ihopfällt — vilket är utgångsläget när sidan öppnas —
+  // och en nytillkommen sektion hamnar ihopfälld som alla andra.
+  //
+  // Läget sparas i sessionStorage: lever kvar vid omladdning och
+  // navigering inom fliken, nollställs när fliken stängs.
+  const [utfallda, setUtfallda] = useState<Set<string>>(new Set())
+  const [sessionLast, setSessionLast] = useState(false)
+
+  // Läs sparat läge EFTER mount — sessionStorage finns inte vid
+  // serverrendering, och att läsa i useState-initieraren ger
+  // hydreringsmismatch.
+  useEffect(() => {
+    try {
+      const sparade = tolkaSparadeIds(sessionStorage.getItem(SESSION_NYCKEL))
+      if (sparade.size > 0) setUtfallda(sparade)
+    } catch {
+      // Privat läge eller blockerad lagring — kör vidare med allt ihopfällt
+    }
+    setSessionLast(true)
+  }, [])
+
+  // Spara vid ändring. Guarden hindrar att det tomma utgångsläget
+  // skriver över sparat läge innan vi hunnit läsa det.
+  useEffect(() => {
+    if (!sessionLast) return
+    try {
+      sessionStorage.setItem(SESSION_NYCKEL, JSON.stringify([...utfallda]))
+    } catch {
+      // Ingen lagring tillgänglig — läget gäller bara denna sidvisning
+    }
+  }, [utfallda, sessionLast])
 
   function växlaSektion(sektionId: string) {
-    setHopfallda(prev => {
+    setUtfallda(prev => {
       const nästa = new Set(prev)
       if (nästa.has(sektionId)) nästa.delete(sektionId)
       else nästa.add(sektionId)
@@ -212,11 +246,11 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
     })
   }
 
-  const allaHopfallda = grupperadePerSektion.length > 0 &&
-    grupperadePerSektion.every(g => hopfallda.has(g.sektionId))
+  const allaUtfallda = grupperadePerSektion.length > 0 &&
+    grupperadePerSektion.every(g => utfallda.has(g.sektionId))
 
   function växlaAlla() {
-    setHopfallda(allaHopfallda
+    setUtfallda(allaUtfallda
       ? new Set()
       : new Set(grupperadePerSektion.map(g => g.sektionId)))
   }
@@ -301,8 +335,19 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Expandera/fäll ihop alla — sektionerna är ihopfällda när sidan öppnas */}
+          <div className="flex justify-end -mb-3">
+            <button
+              type="button"
+              onClick={växlaAlla}
+              className="text-xs text-[#0066CC] hover:underline"
+            >
+              {allaUtfallda ? 'Fäll ihop alla' : `Expandera alla (${grupperadePerSektion.length})`}
+            </button>
+          </div>
+
           {grupperadePerSektion.map(({ sektionId, sektionNamn, sektionFarg, passer: gruppPasser, sektionObj }) => {
-            const ärHopfalld = hopfallda.has(sektionId)
+            const ärHopfalld = !utfallda.has(sektionId)
             const slForSektion = lokalaSektionSL.filter(sl => sl.sektion_id === sektionId)
             const beskrivning = sektionObj?.beskrivning?.trim()
             // TL redigerar alla sektioner; sektionsansvarig bara sina egna

@@ -41,6 +41,26 @@ export function ärRedanRegistrerad(felmeddelande: string): boolean {
   return REDAN_REGISTRERAD_RE.test(felmeddelande)
 }
 
+/**
+ * Tolkar en lista med id:n som sparats i sessionStorage.
+ *
+ * Innehållet är inte att lita på: det kan vara skadat, komma från en
+ * äldre version av appen, eller ha ändrats för hand i devtools. Allt
+ * som inte är en array av strängar ger en tom mängd, vilket för
+ * ihopfällningsläget betyder "allt ihopfällt" — samma som vid första
+ * besöket.
+ */
+export function tolkaSparadeIds(raw: string | null): Set<string> {
+  if (!raw) return new Set()
+  try {
+    const tolkat: unknown = JSON.parse(raw)
+    if (!Array.isArray(tolkat)) return new Set()
+    return new Set(tolkat.filter((i): i is string => typeof i === 'string'))
+  } catch {
+    return new Set()
+  }
+}
+
 // ── Roller ────────────────────────────────────────────────────
 export type Roll = 'funktionar' | 'domare' | 'sektionsledare' | 'tl'
 
