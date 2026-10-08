@@ -344,8 +344,8 @@ export default function ExcelImportFlik() {
         <div>
           <h2 className="text-sm font-semibold text-gray-900 mb-1">Importera funktionärer från Excel</h2>
           <p className="text-xs text-gray-500">
-            Ladda upp en .xlsx-fil med kolumnerna <strong>Namn</strong>, <strong>E-post</strong>, Telefon, Klubb och Kompetenser.
-            Varje giltig rad får ett inbjudningsmail.
+            Ladda upp en .xlsx-fil med kolumnerna <strong>Namn</strong>, <strong>E-post</strong>, Telefon, Klubb, Kompetenser och Roll.
+            Varje giltig rad får ett inbjudningsmail. Saknas Roll-kolumnen väljer du roll innan importen.
           </p>
         </div>
         <a
@@ -399,7 +399,8 @@ export default function ExcelImportFlik() {
                 <th className="text-left pr-4 py-1 font-medium">E-post *</th>
                 <th className="text-left pr-4 py-1 font-medium">Telefon</th>
                 <th className="text-left pr-4 py-1 font-medium">Klubb</th>
-                <th className="text-left py-1 font-medium">Kompetenser</th>
+                <th className="text-left pr-4 py-1 font-medium">Kompetenser</th>
+                <th className="text-left py-1 font-medium">Roll</th>
               </tr>
             </thead>
             <tbody>
@@ -408,12 +409,28 @@ export default function ExcelImportFlik() {
                 <td className="pr-4 py-1">anna@example.se</td>
                 <td className="pr-4 py-1">0701234567</td>
                 <td className="pr-4 py-1">IFK Göteborg</td>
-                <td className="py-1">sjukvård, körkort</td>
+                <td className="pr-4 py-1">sjukvård, körkort</td>
+                <td className="py-1">Funktionär</td>
+              </tr>
+              <tr className="text-gray-400">
+                <td className="pr-4 py-1">Erik Lind</td>
+                <td className="pr-4 py-1">erik@example.se</td>
+                <td className="pr-4 py-1">0709876543</td>
+                <td className="pr-4 py-1"></td>
+                <td className="pr-4 py-1"></td>
+                <td className="py-1">Domare</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p className="text-[10px] text-gray-400 mt-2">* Obligatorisk. Kolumnnamnen kan vara på svenska eller engelska.</p>
+        <p className="text-[10px] text-gray-400 mt-2">
+          * Obligatorisk. Kolumnnamnen kan vara på svenska eller engelska.
+        </p>
+        <p className="text-[10px] text-gray-400 mt-1">
+          <strong>Roll</strong> kan vara Funktionär, Domare, Sektionsledare eller Tävlingsledare.
+          Lämnas den tom används rollen du väljer före importen. Ett okänt värde gör att raden
+          hoppas över i stället för att gissas.
+        </p>
       </div>
     </div>
   )
