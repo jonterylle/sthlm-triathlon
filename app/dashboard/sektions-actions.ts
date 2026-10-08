@@ -13,6 +13,39 @@ async function verifieraTL() {
   return { supabase, user }
 }
 
+/**
+ * Behörighet att REDIGERA en specifik sektion:
+ * TL får redigera alla, sektionsansvarig får redigera sina egna.
+ *
+ * Obs: att skapa och ta bort sektioner kräver fortfarande TL (verifieraTL).
+ * RLS backar upp detta via policyn "SL uppdaterar egen sektion"
+ * (migration 032) — kontrollen här är första försvarslinjen, inte den enda.
+ */
+async function verifieraSektionsbehorighet(sektionId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles').select('id, role').eq('id', user.id).single()
+  if (!profile) return null
+
+  if (profile.role === 'tl') return { supabase, user, ärTL: true }
+
+  if (profile.role === 'sektionsledare') {
+    const { data: koppling } = await supabase
+      .from('sektion_sektionsledare')
+      .select('profil_id')
+      .eq('sektion_id', sektionId)
+      .eq('profil_id', user.id)
+      .maybeSingle()
+
+    if (koppling) return { supabase, user, ärTL: false }
+  }
+
+  return null
+}
+
 // ── Skapa ny sektion ──────────────────────────────────────────
 export async function skapaSektion(data: {
   namn: string
@@ -61,7 +94,8 @@ export async function uppdateraSektion(
     sortorder: number
   }
 ): Promise<{ ok: boolean; meddelande?: string }> {
-  const ctx = await verifieraTL()
+  // TL får redigera alla sektioner, sektionsansvarig bara sina egna
+  const ctx = await verifieraSektionsbehorighet(sektionId)
   if (!ctx) return { ok: false, meddelande: 'Ej behörig' }
   const { supabase } = ctx
 

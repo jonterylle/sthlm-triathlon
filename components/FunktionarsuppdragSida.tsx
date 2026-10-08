@@ -36,9 +36,11 @@ interface Props {
   sektionSL: SektionSL[]
   allaSL: SektionsledareInfo[]
   isTL: boolean
+  /** Inloggad användares profil-id — avgör vilka sektioner hen får redigera */
+  anvandarId: string
 }
 
-export default function FunktionarsuppdragSida({ passer, tilldelade, funktionärer, sektioner, sektionSL, allaSL, isTL }: Props) {
+export default function FunktionarsuppdragSida({ passer, tilldelade, funktionärer, sektioner, sektionSL, allaSL, isTL, anvandarId }: Props) {
   const [lokalaPasser,      setLokalaPasser]      = useState(passer)
   const [lokalaSektioner,   setLokalaSektioner]   = useState(sektioner)
   const [lokalaFunktionär,  setLokalaFunktionär]  = useState(funktionärer)
@@ -82,6 +84,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
   // Gruppera per sektion, sedan per datum inom sektionen
   const grupperadePerSektion = useMemo(() => {
     const map = new Map<string, {
+      sektionId: string
       sektionNamn: string
       sektionFarg: string
       passer: PassMedSektion[]
@@ -90,7 +93,13 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
     filtrerade.forEach(p => {
       if (!map.has(p.sektion_id)) {
         const sektionObj = lokalaSektioner.find(s => s.id === p.sektion_id)
-        map.set(p.sektion_id, { sektionNamn: p.sektion_namn, sektionFarg: p.sektion_farg, passer: [], sektionObj })
+        map.set(p.sektion_id, {
+          sektionId: p.sektion_id,
+          sektionNamn: p.sektion_namn,
+          sektionFarg: p.sektion_farg,
+          passer: [],
+          sektionObj,
+        })
       }
       map.get(p.sektion_id)!.passer.push(p)
     })
@@ -190,11 +199,27 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
   const totaltSaknas   = lokalaPasser.reduce((s, p) => s + Math.max(0, p.saknas), 0)
   const nästaSortorder = Math.max(0, ...lokalaSektioner.map(s => s.sortorder)) + 1
 
-  const sektionerUtanSL = lokalaSektioner.filter(
-    s => !lokalaSektionSL.some(sl => sl.sektion_id === s.id)
-  ).length
+  // ── Ihopfällda sektioner ─────────────────────────────────────
+  // Lagrar de som är STÄNGDA, så att nya sektioner är öppna som standard.
+  const [hopfallda, setHopfallda] = useState<Set<string>>(new Set())
 
-  const [visaAnsvar, setVisaAnsvar] = useState(true)
+  function växlaSektion(sektionId: string) {
+    setHopfallda(prev => {
+      const nästa = new Set(prev)
+      if (nästa.has(sektionId)) nästa.delete(sektionId)
+      else nästa.add(sektionId)
+      return nästa
+    })
+  }
+
+  const allaHopfallda = grupperadePerSektion.length > 0 &&
+    grupperadePerSektion.every(g => hopfallda.has(g.sektionId))
+
+  function växlaAlla() {
+    setHopfallda(allaHopfallda
+      ? new Set()
+      : new Set(grupperadePerSektion.map(g => g.sektionId)))
+  }
 
   return (
     <div className="space-y-6">
@@ -225,78 +250,6 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
           )}
         </div>
       </div>
-
-      {/* ── Sektionsansvar-visualisering ──────────────────────── */}
-      {isTL && lokalaSektioner.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setVisaAnsvar(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-700">Sektionsansvar</span>
-              {sektionerUtanSL > 0 && (
-                <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
-                  {sektionerUtanSL} utan ansvarig
-                </span>
-              )}
-            </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14" height="14"
-              fill="currentColor"
-              viewBox="0 0 16 16"
-              className={`text-gray-400 transition-transform ${visaAnsvar ? 'rotate-180' : ''}`}
-            >
-              <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
-            </svg>
-          </button>
-
-          {visaAnsvar && (
-            <div className="border-t border-gray-100 divide-y divide-gray-50">
-              {lokalaSektioner.map(s => {
-                const slForSektion = lokalaSektionSL.filter(sl => sl.sektion_id === s.id)
-                const harSL = slForSektion.length > 0
-                return (
-                  <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-                    {/* Färgpunkt + namn */}
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: s.farg }} />
-                    <span className="text-sm text-gray-700 w-40 flex-shrink-0 truncate">{s.namn}</span>
-
-                    {/* SL-chips */}
-                    <div className="flex flex-wrap gap-1.5 flex-1">
-                      {harSL ? (
-                        slForSektion.map(sl => (
-                          <span
-                            key={sl.profil_id}
-                            className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full"
-                          >
-                            {sl.full_name ?? sl.email}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-red-400 italic">Ingen ansvarig</span>
-                      )}
-                    </div>
-
-                    {/* Redigera-knapp */}
-                    <button
-                      onClick={() => setSektionModal({ typ: 'redigera', sektion: s })}
-                      className="text-gray-300 hover:text-[#0066CC] transition-colors p-1 rounded-lg hover:bg-blue-50 flex-shrink-0"
-                      title="Redigera sektion och sektionsledare"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
-                      </svg>
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Filter */}
       <div className="flex flex-wrap gap-2">
@@ -348,20 +301,73 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
         </div>
       ) : (
         <div className="space-y-6">
-          {grupperadePerSektion.map(({ sektionNamn, sektionFarg, passer: gruppPasser, sektionObj }) => (
-            <div key={sektionNamn}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: sektionFarg }} />
-                <h2 className="text-sm font-semibold text-gray-700">{sektionNamn}</h2>
-                <span className="text-xs text-gray-400">
-                  {gruppPasser.reduce((s, p) => s + p.tilldelade, 0)}/
-                  {gruppPasser.reduce((s, p) => s + p.behovs_antal, 0)} bemannade
-                </span>
-                {isTL && sektionObj && (
+          {grupperadePerSektion.map(({ sektionId, sektionNamn, sektionFarg, passer: gruppPasser, sektionObj }) => {
+            const ärHopfalld = hopfallda.has(sektionId)
+            const slForSektion = lokalaSektionSL.filter(sl => sl.sektion_id === sektionId)
+            const beskrivning = sektionObj?.beskrivning?.trim()
+            // TL redigerar alla sektioner; sektionsansvarig bara sina egna
+            const kanRedigera = isTL || slForSektion.some(sl => sl.profil_id === anvandarId)
+            return (
+            <div key={sektionId}>
+              <div className="flex items-start gap-2 mb-3">
+                {/* Klickbar rubrik — fäller ihop/expanderar passlistan */}
+                <button
+                  type="button"
+                  onClick={() => växlaSektion(sektionId)}
+                  aria-expanded={!ärHopfalld}
+                  className="flex items-start gap-2 flex-1 text-left group/rubrik min-w-0"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="12" height="12"
+                    fill="currentColor"
+                    viewBox="0 0 16 16"
+                    className={`text-gray-400 group-hover/rubrik:text-gray-600 transition-transform flex-shrink-0 mt-1 ${ärHopfalld ? '-rotate-90' : ''}`}
+                  >
+                    <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                  </svg>
+                  <span className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5" style={{ backgroundColor: sektionFarg }} />
+                  <div className="min-w-0">
+                    {/* Rad 1: namn + bemanning + antal pass */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-sm font-semibold text-gray-700">{sektionNamn}</h2>
+                      <span className="text-xs text-gray-400">
+                        {gruppPasser.reduce((s, p) => s + p.tilldelade, 0)}/
+                        {gruppPasser.reduce((s, p) => s + p.behovs_antal, 0)} bemannade
+                      </span>
+                      <span className="text-xs text-gray-300">
+                        {gruppPasser.length} {gruppPasser.length === 1 ? 'pass' : 'pass'}
+                      </span>
+                    </div>
+
+                    {/* Rad 2: beskrivning + sektionsansvariga */}
+                    <div className="flex items-center gap-2 flex-wrap mt-1">
+                      {beskrivning && (
+                        <span className="text-xs text-gray-500">{beskrivning}</span>
+                      )}
+                      {beskrivning && <span className="text-xs text-gray-300">·</span>}
+                      <span className="text-xs text-gray-400 flex-shrink-0">Ansvarig:</span>
+                      {slForSektion.length > 0 ? (
+                        slForSektion.map(sl => (
+                          <span
+                            key={sl.profil_id}
+                            className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-full"
+                          >
+                            {sl.full_name ?? sl.email}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-red-400 italic">ingen utsedd</span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+
+                {kanRedigera && sektionObj && (
                   <button
                     onClick={() => setSektionModal({ typ: 'redigera', sektion: sektionObj })}
-                    className="ml-auto text-gray-300 hover:text-[#0066CC] transition-colors p-1 rounded-lg hover:bg-blue-50"
-                    title="Redigera sektion"
+                    className="text-gray-300 hover:text-[#0066CC] transition-colors p-1 rounded-lg hover:bg-blue-50 flex-shrink-0 mt-0.5"
+                    title="Redigera sektion och sektionsansvariga"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
@@ -370,6 +376,7 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
                 )}
               </div>
 
+              {!ärHopfalld && (
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
@@ -501,8 +508,10 @@ export default function FunktionarsuppdragSida({ passer, tilldelade, funktionär
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
