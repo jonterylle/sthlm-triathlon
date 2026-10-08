@@ -88,6 +88,29 @@ describe('behörighet: sektionsredigering', () => {
   })
 })
 
+describe('roll vid inbjudan och import', () => {
+  const actions = läs('app/dashboard/actions.ts')
+
+  // Regression: handle_new_user-triggern skapar profilen med defaultrollen
+  // 'funktionar'. En upsert med ignoreDuplicates blir då en no-op och
+  // rollen skrevs aldrig — en importerad sektionsledare blev funktionär.
+  it('importeraFunktionarer sätter rollen explicit, inte bara via upsert', () => {
+    const kropp = funktionskropp(actions, 'importeraFunktionarer')
+    expect(kropp).toContain('.update({ role: radRoll })')
+  })
+
+  it('bjudIn sätter rollen explicit för nya konton', () => {
+    const kropp = funktionskropp(actions, 'bjudIn')
+    expect(kropp).toContain('.update({ role: roll })')
+  })
+
+  it('triggern läser rollen ur inbjudningar', () => {
+    const migration = läs('supabase/migrations/034_handle_new_user_satter_roll.sql')
+    expect(migration).toContain('inbjuden_roll')
+    expect(migration).toMatch(/INSERT INTO public\.profiles[\s\S]{0,200}role/)
+  })
+})
+
 describe('supabase-klienten', () => {
   it('använder implicit flow (löser cross-device-inloggning)', () => {
     const client = läs('lib/supabase/client.ts')

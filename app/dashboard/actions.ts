@@ -117,7 +117,16 @@ export async function bjudIn(
             )
           }
           await supabase.from('inbjudningar').update({ status: 'accepterad' }).eq('id', befintlig.id)
-          resultat.push({ email, status: 'redan_registrerad', meddelande: 'Användaren har redan ett aktivt konto.' })
+          // Rollen på ett BEFINTLIGT konto ändras medvetet inte här — en
+          // ominbjudan ska inte tyst höja någons behörighet. TL får i
+          // stället veta att rollen står kvar och kan ändra den manuellt.
+          resultat.push({
+            email,
+            status: 'redan_registrerad',
+            meddelande: roll !== 'funktionar'
+              ? `Användaren har redan ett konto. Rollen är oförändrad — sätt ${roll} manuellt vid behov.`
+              : 'Användaren har redan ett aktivt konto.',
+          })
           continue
         }
 
@@ -131,9 +140,14 @@ export async function bjudIn(
       if (resendData?.user?.id) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (admin.from('profiles') as any).upsert(
-          { id: resendData.user.id, email, role: 'funktionar' },
+          { id: resendData.user.id, email, role: roll },
           { onConflict: 'id', ignoreDuplicates: true },
         )
+        if (roll !== 'funktionar') {
+          await (admin.from('profiles') as any)
+            .update({ role: roll })
+            .eq('id', resendData.user.id)
+        }
       }
       await supabase.from('inbjudningar').update({
         status: 'skickad', felmeddelande: null, roll,
@@ -193,7 +207,14 @@ export async function bjudIn(
           )
         }
         await supabase.from('inbjudningar').update({ status: 'accepterad' }).eq('id', nyInbjudan.id)
-        resultat.push({ email, status: 'redan_registrerad', meddelande: 'Användaren har redan ett aktivt konto.' })
+        // Se kommentaren ovan: befintligt konto behåller sin roll.
+        resultat.push({
+          email,
+          status: 'redan_registrerad',
+          meddelande: roll !== 'funktionar'
+            ? `Användaren har redan ett konto. Rollen är oförändrad — sätt ${roll} manuellt vid behov.`
+            : 'Användaren har redan ett aktivt konto.',
+        })
         continue
       }
 
@@ -209,9 +230,17 @@ export async function bjudIn(
     if (newInviteData?.user?.id) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (admin.from('profiles') as any).upsert(
-        { id: newInviteData.user.id, email, role: 'funktionar' },
+        { id: newInviteData.user.id, email, role: roll },
         { onConflict: 'id', ignoreDuplicates: true },
       )
+
+      // Upserten är en no-op om triggern redan skapat profilen, och då
+      // gäller defaultrollen. Sätt rollen explicit för TL och SL.
+      if (roll !== 'funktionar') {
+        await (admin.from('profiles') as any)
+          .update({ role: roll })
+          .eq('id', newInviteData.user.id)
+      }
     }
 
     resultat.push({ email, status: 'skickad' })
@@ -701,6 +730,19 @@ export async function importeraFunktionarer(
         { id: authUserId, email, role: radRoll },
         { onConflict: 'id', ignoreDuplicates: true },
       )
+
+      // Upserten ovan är en no-op när handle_new_user-triggern redan
+      // skapat profilen — och då är rollen kolumnens default 'funktionar'.
+      // Sätt därför rollen explicit. Admin-klienten kringgår
+      // guard_profile_update eftersom auth.uid() är NULL för service role.
+      if (radRoll !== 'funktionar') {
+        const { error: rollFel } = await (admin.from('profiles') as any)
+          .update({ role: radRoll })
+          .eq('id', authUserId)
+        if (rollFel) {
+          console.error(`[importeraFunktionarer] kunde inte satta roll ${radRoll}:`, rollFel.message)
+        }
+      }
     }
 
     // ── Förifyll profilen med Excel-data ────────────────────────
