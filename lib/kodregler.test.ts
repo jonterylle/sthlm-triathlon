@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
@@ -104,10 +104,42 @@ describe('roll vid inbjudan och import', () => {
     expect(kropp).toContain('.update({ role: roll })')
   })
 
-  it('triggern läser rollen ur inbjudningar', () => {
-    const migration = läs('supabase/migrations/034_handle_new_user_satter_roll.sql')
-    expect(migration).toContain('inbjuden_roll')
-    expect(migration).toMatch(/INSERT INTO public\.profiles[\s\S]{0,200}role/)
+  /**
+   * Det här är kärnan i regressionsskyddet.
+   *
+   * Buggen kom INTE in genom att någon tog bort en rad TypeScript — den
+   * kom in i migration 022, som redefinierade handle_new_user och tappade
+   * rollhanteringen på vägen. Sedan gällde kolumnens default i ett halvår.
+   *
+   * Testet letar därför upp den SENASTE migrationen som definierar
+   * triggern och kräver att just den sätter role. Redefinierar någon
+   * triggern i en framtida migration utan att ta med rollen, fallerar
+   * pushen — oavsett att 034 fortfarande ligger kvar och ser korrekt ut.
+   */
+  it('den senaste definitionen av handle_new_user sätter role', () => {
+    const katalog = join(rot, 'supabase/migrations')
+    const definierande = readdirSync(katalog)
+      .filter(f => f.endsWith('.sql'))
+      .filter(f => /FUNCTION\s+(public\.)?handle_new_user/.test(
+        readFileSync(join(katalog, f), 'utf8'),
+      ))
+      .sort()   // filnamnen är nollprefixade, så lexikal sortering = ordning
+
+    expect(definierande.length, 'ingen migration definierar handle_new_user').toBeGreaterThan(0)
+
+    const senaste = definierande[definierande.length - 1]
+    const innehåll = readFileSync(join(katalog, senaste), 'utf8')
+
+    // Plocka ut funktionskroppen fram till avslutande $$
+    const start = innehåll.search(/FUNCTION\s+(public\.)?handle_new_user/)
+    const kropp = innehåll.slice(start, innehåll.indexOf('$$;', start))
+
+    expect(
+      /INSERT INTO\s+public\.profiles[\s\S]*?\brole\b/.test(kropp),
+      `${senaste} definierar handle_new_user utan att sätta role — ` +
+      `profilen får då kolumnens default 'funktionar' och rollen från ` +
+      `inbjudan tappas (samma bugg som migration 022 införde)`,
+    ).toBe(true)
   })
 })
 
